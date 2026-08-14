@@ -68,7 +68,7 @@ export async function authHeaders(): Promise<Record<string, string>> {
 export async function signIn(email: string, password: string) {
   const res = await fetch(`${currentApiBase()}/api/auth/sign-in/email`, {
     method: "POST",
-    headers: { "content-type": "application/json", origin: "rakazo://" },
+    headers: { "content-type": "application/json", origin: "meshvault://" },
     body: JSON.stringify({ email, password }),
   });
   const body = await res.json().catch(() => ({}));
@@ -88,7 +88,7 @@ export async function signOut() {
   const headers = await authHeaders();
   await fetch(`${currentApiBase()}/api/auth/sign-out`, {
     method: "POST",
-    headers: { "content-type": "application/json", origin: "rakazo://", ...headers },
+    headers: { "content-type": "application/json", origin: "meshvault://", ...headers },
   }).catch(() => undefined);
   await clearSessionToken();
 }
@@ -98,7 +98,7 @@ export async function rpc<T>(proc: string, body: unknown = {}): Promise<T> {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      origin: "rakazo://",
+      origin: "meshvault://",
       ...(await authHeaders()),
     },
     body: JSON.stringify({ json: body }),
@@ -184,7 +184,7 @@ export async function subscribeThread(
     headers: {
       "content-type": "application/json",
       accept: "text/event-stream",
-      origin: "rakazo://",
+      origin: "meshvault://",
       ...(await authHeaders()),
     },
     body: JSON.stringify({ json: { botId, cursor } }),

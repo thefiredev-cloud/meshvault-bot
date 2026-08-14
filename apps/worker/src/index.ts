@@ -35,7 +35,7 @@ import {
   ScriptedAgentRuntime,
   sleepComputerIfIdle,
 } from "@rakazo/adapters";
-import { resolveEncryptionKey } from "@rakazo/core";
+import { deploymentModelKey, modelSecretsToRedact } from "@rakazo/core";
 import { createDb } from "@rakazo/db";
 import { MarkdownMemoryStore } from "@rakazo/memory";
 
@@ -67,11 +67,9 @@ async function main() {
     memory: new MarkdownMemoryStore(prisma),
     home: new LocalAgentHomeStore(dataDir),
     connector: stack.connector,
-    secrets: [process.env.OPENROUTER_API_KEY ?? "", process.env.COMPOSIO_API_KEY ?? ""].filter(
-      Boolean,
-    ),
+    secrets: modelSecretsToRedact(),
     secretStore: secrets,
-    deploymentModelKey: process.env.OPENROUTER_API_KEY,
+    deploymentModelKey: deploymentModelKey(),
     dataDir,
     notifications: new ExpoPushProvider(dataDir),
     wakeup,
@@ -89,7 +87,7 @@ async function main() {
     },
   });
 
-  console.log("rakazo worker ready");
+  console.log("meshvault worker ready");
 }
 
 main().catch((error) => {

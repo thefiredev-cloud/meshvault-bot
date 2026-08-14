@@ -1,6 +1,8 @@
-# Self-hosting Rakazo
+# Self-hosting MeshVault Bot
 
 The signed-in product is a long-running API, a Graphile Worker, Postgres, and a computer provider (Docker supervisor or E2B). It is not a static site. The marketing site in `apps/www` can be hosted separately.
+
+MeshVault Bot is a fork of [Rakazo](https://github.com/elie222/rakazo) (Apache-2.0). Desktop is Electron. Mobile is the existing Expo iOS app.
 
 ## Local (source checkout)
 
@@ -8,8 +10,8 @@ Same as the README quick start: `.env` from `.env.example`, Postgres via Compose
 
 ## Docker Compose (single machine)
 
-1. Copy `.env.example` to `.env` and set `BETTER_AUTH_SECRET` and `ENCRYPTION_KEY` to long random strings. Rakazo refuses placeholder or missing secrets outside `development` / `test` (or when `RAKAZO_ALLOW_DEV_SECRETS=1` is set).
-2. Set `OPENROUTER_API_KEY` (and `COMPOSIO_API_KEY` if you want Plugins).
+1. Copy `.env.example` to `.env` and set `BETTER_AUTH_SECRET` and `ENCRYPTION_KEY` to long random strings. MeshVault refuses placeholder or missing secrets outside `development` / `test` (or when `MESHVAULT_ALLOW_DEV_SECRETS=1` / `RAKAZO_ALLOW_DEV_SECRETS=1` is set).
+2. Set `QWEN_API_KEY` or `DASHSCOPE_API_KEY` for the default Qwen path. Optional: `QWEN_BASE_URL` / `DASHSCOPE_BASE_URL` for a compatible OpenAI API. `OPENROUTER_API_KEY` still works. Set `SPARK_GX10_BASE_URL` when the local Spark+GX10 (DeepSeek V4 Flash) plane is up. `COMPOSIO_API_KEY` if you want Plugins.
 3. Build the computer image: `pnpm sandbox:build` (Compose also builds it via the `computer` service).
 4. `docker compose -f infra/compose/docker-compose.yml up --build`
 5. Open the web origin (`http://127.0.0.1:5173` by default). The first registered user becomes the deployment owner.
@@ -40,16 +42,20 @@ AGENT_RUNTIME=pi          # Keep scripted only for pnpm verify:fast.
 WAKEUP_DRIVER=graphile
 SANDBOX_IDLE_MS=600000    # pause the bot computer after 10 minutes idle
 E2B_API_KEY=              # when SANDBOX_PROVIDER=e2b
+QWEN_API_KEY=             # or DASHSCOPE_API_KEY
+QWEN_BASE_URL=            # optional; default DashScope international compatible-mode
+SPARK_GX10_BASE_URL=      # local OpenAI-compatible Spark+GX10 plane
+OPENROUTER_API_KEY=       # still supported
 ```
 
-Do not commit `.env`. Never put `COMPOSIO_API_KEY`, OpenRouter keys, or provider tokens in git, logs, or chat.
+Do not commit `.env`. Never put `COMPOSIO_API_KEY`, Qwen / DashScope keys, OpenRouter keys, or provider tokens in git, logs, or chat.
 
 ## Choosing a computer provider
 
 The Electron desktop app is a client of the same API. Docker and E2B still apply. On first launch, Electron asks the deployment owner whether bots should keep using Docker or run on this Mac as you. `SANDBOX_PROVIDER=desktop` is a separate, explicit provider that always runs commands on the service host.
 
 - **Docker** is the default for local use and the quickest self-hosted setup. Each bot gets a container and persistent home. Keep the supervisor private, as the included Compose file does. A public single-machine Docker deployment still shares one Docker host between its bot containers.
-- **E2B** runs bot computers away from the Rakazo host and is the recommended choice for public or multi-user production deployments.
+- **E2B** runs bot computers away from the MeshVault host and is the recommended choice for public or multi-user production deployments.
 - **Desktop provider** / **This Mac** runs commands on the API/worker host. Docker stays the default. The Electron app asks once; if you choose This Mac, bots can use working directories under your home folder. Do not enable it on a public or shared service. macOS does not show its own permission dialog for this.
 - **Fake** is only an emulator for verification.
 
@@ -71,9 +77,9 @@ This dumps Postgres (`pg_dump`) and archives `data/` into `backups/<stamp>/`.
 
 Pull the new source, run `pnpm --filter @rakazo/db migrate`, then restart API and worker. Product contracts stay compatible across cloud and self-hosted.
 
-## What “Rakazo Cloud” still needs
+## What “MeshVault Cloud” still needs
 
-`apps/www` (Astro, `output: "static"`, `site: https://rakazo.com`) can go live today on Vercel, Cloudflare Pages, or any static host. The waitlist link is `mailto:hello@rakazo.com`. That is the marketing site, not the product.
+`apps/www` (Astro, `output: "static"`, `site: https://meshvault.ai`) can go live today on Vercel, Cloudflare Pages, or any static host. The waitlist link is `mailto:tanner@meshvault.ai`. That is the marketing site, not the product.
 
 The product cannot be “pushed live” as a Vercel serverless app. Graphile Worker, Postgres `LISTEN`, Pi runs, and Docker computers need durable processes and a sandbox host.
 
@@ -85,11 +91,11 @@ To run a hosted product (same codebase):
 4. Persist `DATA_DIR` (bot homes, artifacts). Today that is a local filesystem (`LocalAgentHomeStore`), so attach a volume. Object-storage-backed homes are not wired yet.
 5. Choose computers: **`SANDBOX_PROVIDER=e2b`** with `E2B_API_KEY` for a public or multi-user production service. Each bot keeps one sandbox id (`providerRef`) and a graphical desktop with a browser. Take control, sign in, then release — the bot keeps that session. Idle boxes pause after `SANDBOX_IDLE_MS` (default 10 minutes) and resume on the next message or Take control. Docker remains the local and trusted single-machine default.
 6. A Hetzner CX22 (2 vCPU / 4 GB) is enough for API + worker + Postgres when E2B owns the desktops. 2 GB works for a quiet box; 8 GB is only needed if you also run Docker computers on that same machine.
-7. Set public HTTPS `WEB_ORIGIN` / `BETTER_AUTH_URL` / `API_URL`, secrets, and an OpenRouter (or other Pi) deployment key if you want to skip per-user model keys.
+7. Set public HTTPS `WEB_ORIGIN` / `BETTER_AUTH_URL` / `API_URL`, secrets, and a Qwen / DashScope (or OpenRouter / other Pi) deployment key if you want to skip per-user model keys.
 8. Put the web app behind the same origin as `/api` and `/rpc` (Vite preview proxy, or a reverse proxy). Docker noVNC connections use short-lived signed `/novnc/*` capabilities; do not replace that route with an unrestricted port proxy.
-9. Deploy `apps/www` to `rakazo.com` and point `app.rakazo.com` (or similar) at the product origin.
-10. Turn on `SIGNUP_ALLOWLIST` until you want open registration. There is no Rakazo-managed model billing in version 1 — users bring keys.
+9. Deploy `apps/www` to `meshvault.ai` and point `app.meshvault.ai` (or similar) at the product origin.
+10. Turn on `SIGNUP_ALLOWLIST` until you want open registration. There is no MeshVault-managed model billing in version 1 — users bring keys.
 
-Expo / desktop installers are clients of that origin (`EXPO_PUBLIC_API_URL`, `RAKAZO_WEB_URL`). They are not a Cloud control plane.
+Expo / desktop installers are clients of that origin (`EXPO_PUBLIC_API_URL`, `MESHVAULT_WEB_URL` / `RAKAZO_WEB_URL`). They are not a Cloud control plane.
 
-The iOS and Android app can also point at a self-hosted origin at runtime. On the sign-in screen, tap **Use a custom server** and enter the same HTTPS origin as `WEB_ORIGIN` (for example `https://app.example.com`). Store builds still default to `EXPO_PUBLIC_API_URL`; the in-app setting is an override for people running their own API. Changing the server signs the device out of any previous session.
+The iOS app can also point at a self-hosted origin at runtime. On the sign-in screen, tap **Use a custom server** and enter the same HTTPS origin as `WEB_ORIGIN` (for example `https://app.example.com`). Store builds still default to `EXPO_PUBLIC_API_URL`; the in-app setting is an override for people running their own API. Changing the server signs the device out of any previous session.

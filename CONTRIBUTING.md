@@ -1,6 +1,8 @@
-# Contributing to Rakazo
+# Contributing to MeshVault Bot
 
-Thanks for helping improve Rakazo. Keep changes focused and testable.
+Thanks for helping improve MeshVault. Keep changes focused and testable.
+
+This repository is a fork of [Rakazo](https://github.com/elie222/rakazo) (Apache-2.0). Keep the product architecture: Electron desktop, Expo iOS, Pi runtime, Docker/E2B computers.
 
 ## Run locally
 
@@ -21,7 +23,7 @@ pnpm dev
 
 | Command | What it does |
 | --- | --- |
-| `pnpm verify:fast` | **Default PR bar.** Unit, property, and in-process contract tests. Uses scripted runtime, fake sandbox, and in-memory wakeup — no live Composio or OpenRouter. |
+| `pnpm verify:fast` | **Default PR bar.** Unit, property, and in-process contract tests. Uses scripted runtime, fake sandbox, and in-memory wakeup — no live Composio, Qwen, or OpenRouter. |
 | `pnpm verify` | Optional. Postgres via Testcontainers, emulators, API, Playwright. Needs Docker. |
 | `pnpm verify:providers` | Optional. Live OpenRouter / E2B canaries. Needs Docker and real API keys. |
 | `pnpm check` | TypeScript (`tsc`) across the monorepo. |
@@ -33,11 +35,11 @@ CI runs `pnpm lint`, `pnpm check`, and `pnpm verify:fast` on every PR.
 
 - **Never** commit `.env` files or secrets.
 - **Never** paste API keys, tokens, or passwords in issues or PRs.
-- Use placeholders in examples (`your-openrouter-key`, etc.).
+- Use placeholders in examples (`your-qwen-key`, `your-openrouter-key`, etc.).
 
-The product path is **Pi + Docker + Graphile**. Emulator settings (`AGENT_RUNTIME=scripted`, `SANDBOX_PROVIDER=fake`, `WAKEUP_DRIVER=memory`) are for tests only.
+The product path is **Pi + Docker + Graphile**. Default models are **Qwen** (DashScope / compatible OpenAI API); Spark+GX10 is the local plane when configured. Emulator settings (`AGENT_RUNTIME=scripted`, `SANDBOX_PROVIDER=fake`, `WAKEUP_DRIVER=memory`) are for tests only.
 
-**Plugins** integrate via [Composio](https://composio.dev/) (optional `COMPOSIO_API_KEY`). Rakazo does not ship a Git- or MCP-based plugin marketplace.
+**Plugins** integrate via [Composio](https://composio.dev/) (optional `COMPOSIO_API_KEY`). MeshVault does not ship a Git- or MCP-based plugin marketplace.
 
 ## Pull requests
 
@@ -50,6 +52,5 @@ The product path is **Pi + Docker + Graphile**. Emulator settings (`AGENT_RUNTIM
 
 | Address | Use for |
 | --- | --- |
-| [security@rakazo.com](mailto:security@rakazo.com) | Vulnerabilities only — see [SECURITY.md](SECURITY.md) |
-| [support@rakazo.com](mailto:support@rakazo.com) | User and support questions |
-| [elie@rakazo.com](mailto:elie@rakazo.com) | Maintainer |
+| GitHub Security Advisories on [thefiredev-cloud/meshvault-bot](https://github.com/thefiredev-cloud/meshvault-bot) | Vulnerabilities — see [SECURITY.md](SECURITY.md) |
+| [tanner@meshvault.ai](mailto:tanner@meshvault.ai) | Maintainer |

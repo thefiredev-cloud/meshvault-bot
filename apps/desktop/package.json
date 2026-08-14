@@ -22,8 +22,8 @@
     "vitest": "^4.1.10"
   },
   "build": {
-    "appId": "dev.rakazo.desktop",
-    "productName": "Rakazo",
+    "appId": "ai.meshvault.desktop",
+    "productName": "MeshVault",
     "directories": {
       "output": "out",
       "buildResources": "assets"

@@ -58,6 +58,8 @@ export interface RouterDeps {
     defaultProvider: string;
     defaultModel: string;
     openRouterKey?: string;
+    qwenKey?: string;
+    deploymentModelKey?: string;
     webOrigin: string;
     screenProxySecret: string;
     sandboxProvider: string;
@@ -85,7 +87,10 @@ export function createRouter(deps: RouterDeps) {
         where: { id: "default" },
       });
       const hasDeployment = Boolean(
-        settings?.deploymentModelCredentialCipher || deps.env.openRouterKey,
+        settings?.deploymentModelCredentialCipher ||
+          deps.env.deploymentModelKey ||
+          deps.env.qwenKey ||
+          deps.env.openRouterKey,
       );
       return {
         userId: actor.userId,

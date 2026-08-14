@@ -1,6 +1,5 @@
 import { Agent, type AgentTool } from "@earendil-works/pi-agent-core";
 import { Type } from "@earendil-works/pi-ai";
-import { builtinModels } from "@earendil-works/pi-ai/providers/all";
 import type {
   AdapterContext,
   AgentRunRequest,
@@ -9,9 +8,11 @@ import type {
   ConnectorTool,
 } from "@rakazo/adapter-kit";
 import { builtinAgentTools, DELEGATION_TOOL_NAMES } from "./builtin-tools.js";
+import { defaultPiModel, defaultPiProvider, fallbackApiKey } from "@rakazo/core";
+import { piModels } from "./pi-registry.js";
 
 const running = new Map<string, AbortController>();
-const models = builtinModels();
+const models = piModels();
 const MAX_PARALLEL_SUBAGENTS = 4;
 
 export class PiAgentRuntime implements AgentRuntime {
@@ -37,19 +38,19 @@ export class PiAgentRuntime implements AgentRuntime {
     const work = (async () => {
       try {
         const provider =
-          request.model.provider === "scripted" ? "openrouter" : request.model.provider;
-        const modelId =
-          request.model.id === "scripted"
-            ? (process.env.PI_DEFAULT_MODEL ?? "deepseek/deepseek-v4-flash-0731")
-            : request.model.id;
-        const model = models.getModel(provider, modelId) ?? models.getModel("openrouter", modelId);
+          request.model.provider === "scripted" ? defaultPiProvider() : request.model.provider;
+        const modelId = request.model.id === "scripted" ? defaultPiModel() : request.model.id;
+        const model =
+          models.getModel(provider, modelId) ??
+          models.getModel("qwen", modelId) ??
+          models.getModel("openrouter", modelId);
         if (!model) {
           queue.push({ type: "text", text: `Unknown model ${provider}/${modelId}` });
           queue.push({ type: "done" });
           return;
         }
 
-        const apiKey = request.model.apiKey ?? process.env.OPENROUTER_API_KEY;
+        const apiKey = request.model.apiKey ?? fallbackApiKey(provider);
         const toolDefs = request.tools.length ? request.tools : builtinAgentTools;
         const nestedAgents = new Set<Agent>();
         const host: ToolHost = {
@@ -71,7 +72,7 @@ export class PiAgentRuntime implements AgentRuntime {
           initialState: {
             systemPrompt:
               request.instructions ||
-              "You are a Rakazo bot with a real computer. Use write_file, shell, remember, and request_takeover when they are the right tools. Be concise.",
+              "You are a MeshVault bot with a real computer. Use write_file, shell, remember, and request_takeover when they are the right tools. Be concise.",
             model,
             thinkingLevel: "off",
             tools,
@@ -177,7 +178,7 @@ function toAgentTool(tool: ConnectorTool, host: ToolHost): AgentTool {
       if (tool.name === "destination.write") {
         return {
           collection: String(raw.collection ?? "notes"),
-          title: String(raw.title ?? "Rakazo result"),
+          title: String(raw.title ?? "MeshVault result"),
           body: String(raw.body ?? ""),
         };
       }
@@ -284,7 +285,7 @@ async function executeSubagent(host: ToolHost, executionId: string, args: Record
     getApiKey: async () => host.apiKey,
     initialState: {
       systemPrompt: [
-        `You are a Rakazo subagent named "${name}".`,
+        `You are a MeshVault subagent named "${name}".`,
         "You run inside the parent bot's turn — you are not a separate bot chat.",
         "Complete the task and return a concise result. Do not spawn bots or further subagents.",
         extra,

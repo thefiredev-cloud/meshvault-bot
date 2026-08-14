@@ -3,33 +3,37 @@ import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
 import { fetchGithubStars, formatStarCount } from "../github";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { GITHUB_URL } from "../site";
+import { GITHUB_URL, RAKAZO_UPSTREAM_URL, SITE_URL } from "../site";
 
 const stars = await fetchGithubStars();
 const starsLabel = stars === null ? "Star" : formatStarCount(stars);
+const host = new URL(SITE_URL).host;
 ---
 
 <BaseLayout
-  title="Privacy · Rakazo"
-  description="How Rakazo treats information on this marketing site."
+  title="Privacy · MeshVault"
+  description="How MeshVault treats information on this marketing site."
 >
   <div class="container">
     <Header starsLabel={starsLabel} />
     <main id="main" class="privacy-copy">
       <h1>Privacy</h1>
       <p>
-        This page is for rakazo.com, the public marketing site. The open-source product is self-hosted; we do
+        This page is for {host}, the public marketing site. The open-source product is self-hosted; we do
         not operate your bots or see your model keys.
       </p>
       <ul>
         <li>The site is static. It does not set an account cookie or require sign-in.</li>
         <li>
           GitHub star counts are fetched at build time from the public
-          <a href={GITHUB_URL}>elie222/rakazo</a> API.
+          <a href={GITHUB_URL}>thefiredev-cloud/meshvault-bot</a> API.
         </li>
         <li>
           “Join the waitlist” opens your mail client. If you write to us, we will use that address only to
-          follow up about Rakazo Cloud.
+          follow up about MeshVault Cloud.
+        </li>
+        <li>
+          MeshVault Bot is a fork of <a href={RAKAZO_UPSTREAM_URL}>elie222/rakazo</a> (Apache-2.0).
         </li>
       </ul>
       <p>

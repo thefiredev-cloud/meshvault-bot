@@ -2,7 +2,7 @@
 
 ## Reporting vulnerabilities
 
-Email **security@rakazo.com** only. Do not open public GitHub issues for security bugs.
+Use **GitHub Security Advisories** on [thefiredev-cloud/meshvault-bot](https://github.com/thefiredev-cloud/meshvault-bot/security/advisories/new), or email **tanner@meshvault.ai**. Do not open public GitHub issues for security bugs.
 
 Please include:
 
@@ -14,17 +14,16 @@ We will acknowledge your report and work on a fix. Please do not file a public i
 
 ## Other contact
 
-- General support: **support@rakazo.com**
-- Maintainer: **elie@rakazo.com**
+- Maintainer: **tanner@meshvault.ai**
 
 ## Scope
 
-This policy covers the Rakazo self-hosted product in **this repository**.
+This policy covers the MeshVault Bot self-hosted product in **this repository**.
 
 Out of scope:
 
 - Third-party AI models and their APIs
-- Composio, E2B, and other external services
+- Composio, E2B, DashScope, OpenRouter, and other external services
 - Operator misconfiguration (exposed secrets, open databases, weak passwords)
 
 ## Supported versions
@@ -32,3 +31,7 @@ Out of scope:
 We support security fixes on the current `main` branch and the latest release (beta).
 
 There is no bug bounty program at this time.
+
+## Upstream
+
+MeshVault Bot is a fork of [Rakazo](https://github.com/elie222/rakazo). Issues that also affect upstream can be reported there as well.
