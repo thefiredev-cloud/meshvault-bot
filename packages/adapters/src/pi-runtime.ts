@@ -9,11 +9,19 @@ import type {
   ConnectorTool,
 } from "@rakazo/adapter-kit";
 import { builtinAgentTools, DELEGATION_TOOL_NAMES } from "./builtin-tools.js";
+import { registerGateway } from "./pi-gateway.js";
 
 // Modified by FireDev LLC dba MeshVault on 2026-08-13.
 
 const running = new Map<string, AbortController>();
 const models = builtinModels();
+// Registered lazily: tsx evaluates this module before the worker's dotenv
+// loadRootEnv() runs, so a top-level call here always saw an empty env and
+// the worker answered "Unknown model meshvault-gateway/..." while the API
+// (which registers at request time in pi-models) listed it fine.
+function ensureGateway() {
+  registerGateway(models);
+}
 const MAX_PARALLEL_SUBAGENTS = 4;
 
 export class PiAgentRuntime implements AgentRuntime {
@@ -31,6 +39,7 @@ export class PiAgentRuntime implements AgentRuntime {
   }
 
   async *run(request: AgentRunRequest, context: AdapterContext): AsyncIterable<AgentRuntimeEvent> {
+    ensureGateway();
     const controller = new AbortController();
     running.set(request.runId, controller);
     const signal = context.signal ?? controller.signal;
