@@ -28,6 +28,31 @@
       "paths": ["AGENTS.md", "PLAN.md", ".agents/context.json"],
       "worked": "Rituals live in AGENTS.md. No CLAUDE.md in this repo. Structured context is .agents/context.json (append JSON records). PLAN.md is plan→decompose→validate→repeat. Failed impl → revise plan, retry; no LLM review loop. Do not add mulch/seeds.",
       "failed": null
+    },
+    {
+      "at": "2026-08-14",
+      "paths": [
+        "packages/db/prisma/schema.prisma",
+        "packages/db/prisma/migrations/0004_bot_models/migration.sql",
+        "apps/api/src/router.ts",
+        "packages/adapters/src/executor.ts",
+        "packages/core/src/model-env.ts",
+        "apps/web/src/pages/Shell.tsx"
+      ],
+      "worked": "Bot provider/model pairs persist in Prisma and flow through create/update/get. Executor precedence is resumed run, bot, scoped workspace default, deployment default, scripted fixture. Credential provider upsert and default switching are transactional and workspace scoped; PostgreSQL unique indexes enforce one provider row and one default. Exact provider/model and exact env-key routing passed 175 tests plus 2 Chromium journeys with an explicit OrbStack socket and test-only ENCRYPTION_KEY.",
+      "failed": "Testcontainers did not discover the active OrbStack context without DOCKER_HOST. The verify harness also omits ENCRYPTION_KEY; supplying a test-only value completed the gate."
+    },
+    {
+      "at": "2026-08-14",
+      "paths": [
+        "packages/adapters/src/executor.ts",
+        "packages/adapters/src/pi-models.ts",
+        "packages/adapters/src/pi-gateway.ts",
+        "apps/api/src/router.ts",
+        "packages/testkit/src/journeys.test.ts"
+      ],
+      "worked": "Executor preflight now rejects incomplete or unknown exact provider/model pairs and fails the run when neither a scoped credential nor the selected Pi provider's own ambient auth resolves. A configured Mesh Bot gateway explicitly supports its documented keyless local mode. Credential rotation without modelId preserves the existing provider model and default state; a new provider requires an explicit model. Full verification applied four migrations, passed 181 tests, and passed two Chromium journeys.",
+      "failed": null
     }
   ]
 }

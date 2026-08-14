@@ -9,15 +9,21 @@ import type {
   NotificationProvider,
   SandboxProvider,
   WakeupDriver,
-} from "@rakazo/adapter-kit";
-import type { Actor, MessageBlock, RunStatus } from "@rakazo/contracts";
-import { assertTransition, containsSecret, nextCronDate, redactSecrets } from "@rakazo/core";
-import { appendEvent, type PrismaClient } from "@rakazo/db";
+} from "@meshbot/adapter-kit";
+import type { Actor, MessageBlock, RunStatus } from "@meshbot/contracts";
+import { assertTransition, containsSecret, nextCronDate, redactSecrets } from "@meshbot/core";
+import { appendEvent, type PrismaClient } from "@meshbot/db";
 import { builtinAgentTools } from "./builtin-tools.js";
 import { deleteSpawnedBot, spawnBot } from "./child-bots.js";
 import { collectLogIds } from "./composio-connector.js";
 import { scheduleComputerSleep } from "./computer-idle.js";
 import { resolveAgentHomePath } from "./home.js";
+import {
+  hasAmbientPiProviderAuth,
+  isKnownPiModel,
+  type PiModelSelection,
+  requireKnownPiModel,
+} from "./pi-models.js";
 import { parseModelSecret, resolveModelApiKey, secretValuesToRedact } from "./pi-oauth.js";
 import { inferScript } from "./scripted-runtime.js";
 import type { EncryptedSecretStore } from "./secrets.js";
@@ -35,6 +41,69 @@ export interface ExecutorDeps {
   dataDir?: string;
   notifications?: NotificationProvider;
   wakeup?: WakeupDriver;
+}
+
+type StoredModelSelection = {
+  modelProvider: string | null;
+  modelId: string | null;
+};
+
+export function resolveBotModelSelection(
+  run: StoredModelSelection,
+  bot: StoredModelSelection,
+  workspaceDefault: { provider: string; defaultModel: string | null } | null,
+  deploymentDefault: { defaultModelProvider: string | null; defaultModelId: string | null } | null,
+  isKnown: (candidate: PiModelSelection) => boolean = isKnownPiModel,
+): PiModelSelection {
+  const pairs = [
+    { source: "resumed run", provider: run.modelProvider, id: run.modelId },
+    { source: "bot", provider: bot.modelProvider, id: bot.modelId },
+    {
+      source: "workspace default",
+      provider: workspaceDefault?.provider,
+      id: workspaceDefault?.defaultModel,
+    },
+    {
+      source: "deployment default",
+      provider: deploymentDefault?.defaultModelProvider,
+      id: deploymentDefault?.defaultModelId,
+    },
+  ];
+  for (const pair of pairs) {
+    const hasProvider = Boolean(pair.provider);
+    const hasModel = Boolean(pair.id);
+    if (hasProvider !== hasModel) {
+      throw new Error(`Incomplete ${pair.source} model selection`);
+    }
+    if (pair.provider && pair.id) {
+      return requireKnownPiModel({ provider: pair.provider, id: pair.id }, isKnown);
+    }
+  }
+  return requireKnownPiModel({ provider: "scripted", id: "scripted" }, isKnown);
+}
+
+export async function requireBotModelAccess(
+  selection: PiModelSelection,
+  options: {
+    scriptedRuntime: boolean;
+    credentialPresent: boolean;
+    apiKey?: string;
+    hasAmbientAuth?: (providerId: string) => Promise<boolean>;
+  },
+): Promise<void> {
+  if (options.scriptedRuntime) return;
+  if (selection.provider === "scripted") {
+    throw new Error("Choose a model before running the production model runtime");
+  }
+  if (options.apiKey?.trim()) return;
+  const hasAmbientAuth = options.credentialPresent
+    ? false
+    : await (options.hasAmbientAuth ?? hasAmbientPiProviderAuth)(selection.provider);
+  if (!hasAmbientAuth) {
+    throw new Error(
+      `No workspace credential or configured provider authentication for ${selection.provider}`,
+    );
+  }
 }
 
 export function createRunExecutor(deps: ExecutorDeps) {
@@ -146,21 +215,58 @@ export function createRunExecutor(deps: ExecutorDeps) {
         connectedProviders: connectedPlugins.map((row) => row.provider),
       };
 
-      await appendEvent(deps.prisma, {
-        workspaceId: run.workspaceId,
-        threadId: thread.id,
-        botId: bot.id,
-        type: "run.started",
-        runId,
-        payload: { trigger: run.trigger },
-      });
-
-      const credential = await deps.prisma.userModelCredential.findFirst({
-        where: { userId: run.userId, workspaceId: run.workspaceId, isDefault: true },
-      });
-      const settings = await deps.prisma.deploymentSettings.findUnique({
-        where: { id: "default" },
-      });
+      const modelAccess = await (async () => {
+        try {
+          await appendEvent(deps.prisma, {
+            workspaceId: run.workspaceId,
+            threadId: thread.id,
+            botId: bot.id,
+            type: "run.started",
+            runId,
+            payload: { trigger: run.trigger },
+          });
+          const workspaceDefault = await deps.prisma.userModelCredential.findFirst({
+            where: { userId: run.userId, workspaceId: run.workspaceId, isDefault: true },
+          });
+          const settings = await deps.prisma.deploymentSettings.findUnique({
+            where: { id: "default" },
+          });
+          const selection = resolveBotModelSelection(run, bot, workspaceDefault, settings);
+          const credential =
+            workspaceDefault?.provider === selection.provider
+              ? workspaceDefault
+              : await deps.prisma.userModelCredential.findFirst({
+                  where: {
+                    userId: run.userId,
+                    workspaceId: run.workspaceId,
+                    provider: selection.provider,
+                  },
+                });
+          await deps.prisma.run.update({
+            where: { id: runId },
+            data: { modelProvider: selection.provider, modelId: selection.id },
+          });
+          const resolved = await resolveModelKey(deps, run.userId, run.workspaceId, credential);
+          const apiKey = resolved.apiKey;
+          const scripted = deps.runtime.describe().capabilities.scripted;
+          await requireBotModelAccess(selection, {
+            scriptedRuntime: scripted,
+            credentialPresent: Boolean(credential),
+            apiKey,
+          });
+          return {
+            selection,
+            apiKey,
+            scripted,
+            runSecrets: [...deps.secrets, ...resolved.redact],
+          };
+        } catch (error) {
+          await failRun(deps, run, bot, error);
+          return null;
+        }
+      })();
+      if (!modelAccess) return;
+      const { selection, apiKey, scripted, runSecrets } = modelAccess;
       const discovered = deps.connector ? await deps.connector.discoverTools(context) : [];
       const tools = [
         ...builtinAgentTools,
@@ -173,14 +279,10 @@ export function createRunExecutor(deps: ExecutorDeps) {
           | "system",
         content: blocksToText(m.blocks as MessageBlock[]),
       }));
-      const resolved = await resolveModelKey(deps, run.userId, run.workspaceId, credential);
-      const apiKey = resolved.apiKey;
-      const runSecrets = [...deps.secrets, ...resolved.redact];
       const computer = await ensureComputer(deps, bot.id, context);
 
       let assembled = "";
       let lastProgressAt = 0;
-      const scripted = deps.runtime.describe().capabilities.scripted;
       const script = scripted
         ? inferScript(task.prompt, resumeFromTakeover ? "takeover" : undefined)
         : undefined;
@@ -200,7 +302,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
         }
         if (name === "shell") {
           const command = String(args.command ?? args.cmd ?? "");
-          const cwd = String(args.cwd ?? (computer.kind === "desktop" ? "." : "/home/rakazo"));
+          const cwd = String(args.cwd ?? (computer.kind === "desktop" ? "." : "/home/meshbot"));
           return runSandboxCommand(deps.sandbox, computer, ["bash", "-lc", command], cwd, context);
         }
         if (name === "remember") {
@@ -347,8 +449,8 @@ export function createRunExecutor(deps: ExecutorDeps) {
             history,
             tools,
             model: {
-              provider: credential?.provider ?? settings?.defaultModelProvider ?? "scripted",
-              id: credential?.defaultModel ?? settings?.defaultModelId ?? "scripted",
+              provider: selection.provider,
+              id: selection.id,
               apiKey,
             },
             resumeFromCheckpoint: resumeFromTakeover ? "takeover" : undefined,
@@ -464,14 +566,24 @@ export function createRunExecutor(deps: ExecutorDeps) {
               ]);
             }
           } else if (event.type === "usage") {
+            const actualModel = requireKnownPiModel({
+              provider: event.provider,
+              id: event.model,
+            });
+            if (event.provider !== "scripted" || selection.provider === "scripted") {
+              await deps.prisma.run.update({
+                where: { id: runId },
+                data: { modelProvider: actualModel.provider, modelId: actualModel.id },
+              });
+            }
             await deps.prisma.usageRecord.create({
               data: {
                 workspaceId: run.workspaceId,
                 botId: bot.id,
                 userId: run.userId,
                 runId,
-                provider: event.provider,
-                model: event.model,
+                provider: actualModel.provider,
+                model: actualModel.id,
                 inputTokens: event.inputTokens,
                 outputTokens: event.outputTokens,
               },
@@ -542,31 +654,46 @@ export function createRunExecutor(deps: ExecutorDeps) {
           });
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        await deps.prisma.run.update({
-          where: { id: runId },
-          data: { status: "failed", error: message, completedAt: new Date() },
-        });
-        await appendEvent(deps.prisma, {
-          workspaceId: run.workspaceId,
-          threadId: thread.id,
-          botId: bot.id,
-          type: "run.failed",
-          runId,
-          payload: { error: message },
-        });
-        if (bot.notifyOnFinish) {
-          await notifyRun(deps, run, {
-            kind: "failure",
-            title: `${bot.name} failed`,
-            body: message.slice(0, 180),
-            botId: bot.id,
-            threadId: thread.id,
-          });
-        }
+        await failRun(deps, run, bot, error);
       }
     },
   };
+}
+
+async function failRun(
+  deps: ExecutorDeps,
+  run: {
+    id: string;
+    workspaceId: string;
+    userId: string;
+    botId: string;
+    threadId: string;
+  },
+  bot: { id: string; name: string; notifyOnFinish: boolean },
+  error: unknown,
+) {
+  const message = error instanceof Error ? error.message : String(error);
+  await deps.prisma.run.update({
+    where: { id: run.id },
+    data: { status: "failed", error: message, completedAt: new Date() },
+  });
+  await appendEvent(deps.prisma, {
+    workspaceId: run.workspaceId,
+    threadId: run.threadId,
+    botId: bot.id,
+    type: "run.failed",
+    runId: run.id,
+    payload: { error: message },
+  });
+  if (bot.notifyOnFinish) {
+    await notifyRun(deps, run, {
+      kind: "failure",
+      title: `${bot.name} failed`,
+      body: message.slice(0, 180),
+      botId: bot.id,
+      threadId: run.threadId,
+    });
+  }
 }
 
 async function notifyRun(
@@ -738,30 +865,30 @@ async function resolveModelKey(
   workspaceId: string,
   credential: { secretId: string; provider: string } | null,
 ): Promise<{ apiKey?: string; redact: string[] }> {
-  if (credential && deps.secretStore) {
-    const row = await deps.prisma.secret.findUnique({ where: { id: credential.secretId } });
-    if (row) {
-      const plaintext = deps.secretStore.load(row.ciphertext);
-      const parsed = parseModelSecret(plaintext);
-      const apiKey = await resolveModelApiKey(plaintext, credential.provider, {
-        persist: async (next) => {
-          const stored = await deps.secretStore!.put(next, {
-            operationId: "cred",
-            traceId: "cred-refresh",
-            workspaceId,
-            userId,
-            signal: new AbortController().signal,
-          });
-          await deps.prisma.secret.update({
-            where: { id: row.id },
-            data: { ciphertext: stored.ciphertext },
-          });
-        },
+  if (!credential) return { redact: [] };
+  if (!deps.secretStore) throw new Error("Model credential storage is unavailable");
+  const row = await deps.prisma.secret.findFirst({
+    where: { id: credential.secretId, userId, workspaceId },
+  });
+  if (!row) throw new Error(`Model credential for ${credential.provider} is unavailable`);
+  const plaintext = deps.secretStore.load(row.ciphertext);
+  const parsed = parseModelSecret(plaintext);
+  const apiKey = await resolveModelApiKey(plaintext, credential.provider, {
+    persist: async (next) => {
+      const stored = await deps.secretStore!.put(next, {
+        operationId: "cred",
+        traceId: "cred-refresh",
+        workspaceId,
+        userId,
+        signal: new AbortController().signal,
       });
-      return { apiKey, redact: [...secretValuesToRedact(parsed), apiKey] };
-    }
-  }
-  return { apiKey: deps.deploymentModelKey, redact: [] };
+      await deps.prisma.secret.update({
+        where: { id: row.id },
+        data: { ciphertext: stored.ciphertext },
+      });
+    },
+  });
+  return { apiKey, redact: [...secretValuesToRedact(parsed), apiKey] };
 }
 
 function blocksToText(blocks: MessageBlock[]): string {

@@ -5,7 +5,7 @@ import type {
   ConnectorEvent,
   ConnectorProvider,
   ConnectorTool,
-} from "@rakazo/adapter-kit";
+} from "@meshbot/adapter-kit";
 
 export interface DestinationRecord {
   id: string;

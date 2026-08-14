@@ -8,8 +8,8 @@ import type {
   ProcessEvent,
   SandboxProvider,
   ScreenRequest,
-} from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
+} from "@meshbot/adapter-kit";
+import type { PrismaClient } from "@meshbot/db";
 import { DesktopSandboxProvider } from "./desktop-sandbox.js";
 import { createSandboxProvider } from "./sandbox-factory.js";
 

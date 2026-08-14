@@ -5,7 +5,7 @@ import {
   DesktopSandboxProvider,
   FakeSandboxProvider,
   ManagedSandboxEmulator,
-} from "@rakazo/adapters";
+} from "@meshbot/adapters";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };
@@ -49,7 +49,7 @@ describeJourneys("required product journeys", () => {
     ReturnType<typeof import("../../../apps/api/src/app.ts").createApp>
   >["wakeup"];
   const stamp = Date.now();
-  const dataDir = mkdtempSync(path.join(tmpdir(), "rakazo-journey-"));
+  const dataDir = mkdtempSync(path.join(tmpdir(), "meshbot-journey-"));
 
   beforeAll(async () => {
     const { createApp } = await import("../../../apps/api/src/app.ts");
@@ -72,8 +72,8 @@ describeJourneys("required product journeys", () => {
   });
 
   it("1+2: two users are isolated and two bots keep separate homes", async () => {
-    const ada = await signup(app, `ada-j-${stamp}@rakazo.test`, "Ada Journey");
-    const bob = await signup(app, `bob-j-${stamp}@rakazo.test`, "Bob Journey");
+    const ada = await signup(app, `ada-j-${stamp}@meshbot.test`, "Ada Journey");
+    const bob = await signup(app, `bob-j-${stamp}@meshbot.test`, "Bob Journey");
 
     const adaMe = await rpc<Me>(app, ada, "me");
     const bobMe = await rpc<Me>(app, bob, "me");
@@ -129,7 +129,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("3: disconnect and reconnect from a cursor reconstructs the thread", async () => {
-    const cookie = await signup(app, `cursor-j-${stamp}@rakazo.test`, "Cursor");
+    const cookie = await signup(app, `cursor-j-${stamp}@meshbot.test`, "Cursor");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
       title: "",
@@ -153,7 +153,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("4: takeover login then resume without exposing credentials", async () => {
-    const cookie = await signup(app, `takeover-j-${stamp}@rakazo.test`, "Takeover");
+    const cookie = await signup(app, `takeover-j-${stamp}@meshbot.test`, "Takeover");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
       title: "",
@@ -185,7 +185,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("5: a routine wakes the bot and posts into the existing thread", async () => {
-    const cookie = await signup(app, `routine-j-${stamp}@rakazo.test`, "Routine");
+    const cookie = await signup(app, `routine-j-${stamp}@meshbot.test`, "Routine");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
       title: "",
@@ -242,7 +242,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("7: destination write is independently inspectable and credentials stay out of the thread", async () => {
-    const cookie = await signup(app, `dest-j-${stamp}@rakazo.test`, "Dest");
+    const cookie = await signup(app, `dest-j-${stamp}@meshbot.test`, "Dest");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
       title: "",
@@ -252,11 +252,15 @@ describeJourneys("required product journeys", () => {
     });
     const before = connector.records.length;
     const secret = "sk-or-v1-should-never-leak-into-thread";
+    const openrouter = (
+      await rpc<Array<{ provider: string; id: string }>>(app, cookie, "models/list")
+    ).find((model) => model.provider === "openrouter");
+    expect(openrouter).toBeTruthy();
     await rpc(app, cookie, "models/connect", {
       provider: "openrouter",
       apiKey: secret,
       label: "test",
-      modelId: "scripted",
+      modelId: openrouter!.id,
     });
     await sendAndWait(app, cookie, bot.id, "write this to the destination crm as a note");
     expect(connector.records.length).toBeGreaterThan(before);
@@ -268,7 +272,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("8: retrying a completed effect does not duplicate the destination write", async () => {
-    const cookie = await signup(app, `crash-j-${stamp}@rakazo.test`, "Crash");
+    const cookie = await signup(app, `crash-j-${stamp}@meshbot.test`, "Crash");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
       title: "",
@@ -298,7 +302,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("9: export includes memory and files but not secrets or browser sessions", async () => {
-    const cookie = await signup(app, `export-j-${stamp}@rakazo.test`, "Export");
+    const cookie = await signup(app, `export-j-${stamp}@meshbot.test`, "Export");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
       title: "",
@@ -307,11 +311,15 @@ describeJourneys("required product journeys", () => {
       notifyOnFinish: true,
     });
     const secret = "sk-or-v1-export-must-redact-this-key";
+    const openrouter = (
+      await rpc<Array<{ provider: string; id: string }>>(app, cookie, "models/list")
+    ).find((model) => model.provider === "openrouter");
+    expect(openrouter).toBeTruthy();
     await rpc(app, cookie, "models/connect", {
       provider: "openrouter",
       apiKey: secret,
       label: "hidden",
-      modelId: "scripted",
+      modelId: openrouter!.id,
     });
     await sendAndWait(
       app,
@@ -330,8 +338,8 @@ describeJourneys("required product journeys", () => {
   });
 
   it("10: deleting a bot removes it, its home, and is isolated", async () => {
-    const ada = await signup(app, `delete-j-${stamp}@rakazo.test`, "Delete Ada");
-    const bob = await signup(app, `delete-bob-j-${stamp}@rakazo.test`, "Delete Bob");
+    const ada = await signup(app, `delete-j-${stamp}@meshbot.test`, "Delete Ada");
+    const bob = await signup(app, `delete-bob-j-${stamp}@meshbot.test`, "Delete Bob");
     const keep = await rpc<Bot>(app, ada, "bots/create", {
       name: "Keep",
       title: "",
@@ -369,7 +377,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("12: a bot can spawn a regular bot and must confirm the name to delete it", async () => {
-    const cookie = await signup(app, `spawn-j-${stamp}@rakazo.test`, "Spawn");
+    const cookie = await signup(app, `spawn-j-${stamp}@meshbot.test`, "Spawn");
     const parent = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
       title: "",
@@ -423,7 +431,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("13: a subagent shows up in the parent thread without creating a bot", async () => {
-    const cookie = await signup(app, `subagent-j-${stamp}@rakazo.test`, "Subagent");
+    const cookie = await signup(app, `subagent-j-${stamp}@meshbot.test`, "Subagent");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
       title: "",
@@ -448,7 +456,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("14: this-mac is refused unless the sandbox is docker", async () => {
-    const cookie = await signup(app, `host-j-${stamp}@rakazo.test`, "Host");
+    const cookie = await signup(app, `host-j-${stamp}@meshbot.test`, "Host");
     const me = await rpc<Me>(app, cookie, "me");
     expect(me.canChooseHostComputer).toBe(false);
     await prisma.deploymentSettings.update({
@@ -460,10 +468,128 @@ describeJourneys("required product journeys", () => {
     expect(res.status).toBeGreaterThanOrEqual(400);
     expect(text).toMatch(/This Mac mode is only available/i);
   });
+
+  it("15: model credentials stay scoped and two bots dispatch different providers", async () => {
+    const cookie = await signup(app, `models-j-${stamp}@meshbot.test`, "Models");
+    const me = await rpc<Me>(app, cookie, "me");
+    const catalog = await rpc<
+      Array<{ provider: string; id: string; auth?: "api-key" | "oauth" | "both" }>
+    >(app, cookie, "models/list");
+    const qwen = catalog.find((model) => model.provider === "qwen");
+    const openrouter = catalog.find((model) => model.provider === "openrouter");
+    const anthropic = catalog.find((model) => model.provider === "anthropic");
+    expect(qwen).toBeTruthy();
+    expect(openrouter).toBeTruthy();
+    expect(anthropic).toBeTruthy();
+
+    await rpc(app, cookie, "models/connect", {
+      provider: qwen!.provider,
+      modelId: qwen!.id,
+      apiKey: "qwen-test-key-1",
+    });
+    await rpc(app, cookie, "models/connect", {
+      provider: openrouter!.provider,
+      modelId: openrouter!.id,
+      apiKey: "openrouter-test-key",
+    });
+    await rpc(app, cookie, "models/connect", {
+      provider: qwen!.provider,
+      modelId: qwen!.id,
+      apiKey: "qwen-test-key-2",
+    });
+
+    const rows = await prisma.userModelCredential.findMany({
+      where: { userId: me.userId, workspaceId: me.workspaceId },
+    });
+    expect(rows).toHaveLength(2);
+    expect(rows.filter((row) => row.isDefault)).toHaveLength(1);
+    expect(rows.find((row) => row.isDefault)?.provider).toBe("qwen");
+
+    const missing = await raw(app, cookie, "models/setDefault", {
+      provider: anthropic!.provider,
+      modelId: anthropic!.id,
+    });
+    expect(missing.status).toBeGreaterThanOrEqual(400);
+    expect(
+      await prisma.userModelCredential.count({
+        where: { userId: me.userId, workspaceId: me.workspaceId, isDefault: true },
+      }),
+    ).toBe(1);
+
+    await rpc(app, cookie, "models/setDefault", {
+      provider: openrouter!.provider,
+      modelId: openrouter!.id,
+    });
+    const reconnected = await rpc<{ isDefault: boolean }>(app, cookie, "models/connect", {
+      provider: qwen!.provider,
+      apiKey: "qwen-test-key-3",
+    });
+    expect(reconnected.isDefault).toBe(false);
+    const afterReconnect = await prisma.userModelCredential.findMany({
+      where: { userId: me.userId, workspaceId: me.workspaceId },
+    });
+    expect(afterReconnect.find((row) => row.provider === qwen!.provider)?.defaultModel).toBe(
+      qwen!.id,
+    );
+    expect(afterReconnect.find((row) => row.isDefault)?.provider).toBe(openrouter!.provider);
+
+    const missingSelection = await raw(app, cookie, "models/connect", {
+      provider: anthropic!.provider,
+      apiKey: "anthropic-test-key",
+    });
+    expect(missingSelection.status).toBeGreaterThanOrEqual(400);
+    expect(
+      await prisma.userModelCredential.count({
+        where: { userId: me.userId, workspaceId: me.workspaceId },
+      }),
+    ).toBe(2);
+
+    const qwenBot = await rpc<Bot>(app, cookie, "bots/create", {
+      name: "Qwen bot",
+      title: "",
+      description: "",
+      instructions: "",
+      notifyOnFinish: true,
+      modelProvider: qwen!.provider,
+      modelId: qwen!.id,
+    });
+    const openrouterBot = await rpc<Bot>(app, cookie, "bots/create", {
+      name: "OpenRouter bot",
+      title: "",
+      description: "",
+      instructions: "",
+      notifyOnFinish: true,
+      modelProvider: openrouter!.provider,
+      modelId: openrouter!.id,
+    });
+    await sendAndWait(app, cookie, qwenBot.id, "report qwen routing");
+    await sendAndWait(app, cookie, openrouterBot.id, "report openrouter routing");
+
+    const dispatched = await prisma.run.findMany({
+      where: { botId: { in: [qwenBot.id, openrouterBot.id] } },
+      select: { botId: true, modelProvider: true, modelId: true },
+    });
+    expect(dispatched).toEqual(
+      expect.arrayContaining([
+        { botId: qwenBot.id, modelProvider: qwen!.provider, modelId: qwen!.id },
+        {
+          botId: openrouterBot.id,
+          modelProvider: openrouter!.provider,
+          modelId: openrouter!.id,
+        },
+      ]),
+    );
+  });
 });
 
 type Me = { workspaceId: string; userId: string; canChooseHostComputer: boolean };
-type Bot = { id: string; name: string; parentBotId?: string | null };
+type Bot = {
+  id: string;
+  name: string;
+  parentBotId?: string | null;
+  modelProvider?: string | null;
+  modelId?: string | null;
+};
 type Snap = {
   messages: Array<{ seq: number; blocks: unknown[] }>;
   run: { status: string } | null;

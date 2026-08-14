@@ -12,27 +12,27 @@ import {
 describe("graphical computer spec", () => {
   it("creates a VNC desktop, not an alpine sleep fallback", () => {
     const options = containerCreateOptions({
-      name: "rakazo-bot-abc",
+      name: "meshbot-bot-abc",
       image: COMPUTER_IMAGE,
       botId: "abc",
       workspaceId: "ws",
-      homePath: "/var/rakazo/homes/abc",
-      networkMode: "rakazo_default",
+      homePath: "/var/meshbot/homes/abc",
+      networkMode: "meshbot_default",
     });
-    expect(options.Image).toBe("rakazo/computer:local");
+    expect(options.Image).toBe("meshbot/computer:local");
     expect(options.Image).not.toMatch(/alpine/);
     expect(options).not.toHaveProperty("Entrypoint");
     expect(JSON.stringify(options)).not.toMatch(/sleep/);
-    expect(options.HostConfig.Binds).toEqual(["/var/rakazo/homes/abc:/home/rakazo"]);
+    expect(options.HostConfig.Binds).toEqual(["/var/meshbot/homes/abc:/home/meshbot"]);
     expect(options.Env).toContain(
-      "PATH=/home/rakazo/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PATH=/home/meshbot/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
     );
-    expect(options.Env).toContain("NPM_CONFIG_PREFIX=/home/rakazo/.local");
+    expect(options.Env).toContain("NPM_CONFIG_PREFIX=/home/meshbot/.local");
     expect(options.ExposedPorts).toEqual({ "6080/tcp": {} });
     expect(options.HostConfig.PortBindings["6080/tcp"]?.[0]?.HostIp).toBe("127.0.0.1");
     expect(options.HostConfig.ShmSize).toBeGreaterThanOrEqual(256 * 1024 * 1024);
     expect(options.HostConfig.ReadonlyPaths).toContain("/usr/share/novnc");
-    expect(options.HostConfig.NetworkMode).toBe("rakazo_default");
+    expect(options.HostConfig.NetworkMode).toBe("meshbot_default");
   });
 
   it("ships a browser desktop, not a fullscreen terminal", () => {
@@ -40,12 +40,12 @@ describe("graphical computer spec", () => {
     const dockerfile = readFileSync(path.join(root, "Dockerfile"), "utf8");
     const start = readFileSync(path.join(root, "start.sh"), "utf8");
     expect(dockerfile).toMatch(/chromium/);
-    expect(start).toMatch(/rakazo-browser/);
+    expect(start).toMatch(/meshbot-browser/);
     expect(start).not.toMatch(/windowsize 1280 800/);
   });
 
   it("keeps container names stable so a bot can resume", () => {
-    expect(containerNameFor("bot_1")).toBe("rakazo-bot-bot_1");
+    expect(containerNameFor("bot_1")).toBe("meshbot-bot-bot_1");
     expect(containerNameFor("bot_1")).toBe(containerNameFor("bot_1"));
   });
 

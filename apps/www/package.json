@@ -1,5 +1,5 @@
 {
-  "name": "@rakazo/www",
+  "name": "@meshbot/www",
   "version": "0.1.0",
   "private": true,
   "license": "Apache-2.0",
@@ -12,8 +12,9 @@
   },
   "dependencies": {
     "@astrojs/react": "^6.0.2",
-    "@rakazo/ui-web": "workspace:*",
+    "@meshbot/ui-web": "workspace:*",
     "astro": "^7.2.1",
+    "cookie": "^2.0.1",
     "react": "19.0.0",
     "react-dom": "19.0.0"
   },

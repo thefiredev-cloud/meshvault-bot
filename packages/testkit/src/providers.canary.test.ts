@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { E2BSandboxProvider, PiAgentRuntime } from "@rakazo/adapters";
+import { E2BSandboxProvider, PiAgentRuntime } from "@meshbot/adapters";
 import { afterAll, describe, expect, it } from "vitest";
 
 function loadEnvFile() {
@@ -39,7 +39,7 @@ describeE2b("live E2B canary", () => {
       signal: new AbortController().signal,
     };
     const computer = await sandbox.provision(
-      { botId: "canary", homePath: "/home/user/rakazo-home" },
+      { botId: "canary", homePath: "/home/user/meshbot-home" },
       ctx,
     );
     let stdout = "";
@@ -96,7 +96,7 @@ describePiApp("live OpenRouter product journey", () => {
 
   it("completes a bot turn through the API with the live model", async () => {
     const { createApp } = await import("../../../apps/api/src/app.ts");
-    const dataDir = mkdtempSync(path.join(tmpdir(), "rakazo-pi-"));
+    const dataDir = mkdtempSync(path.join(tmpdir(), "meshbot-pi-"));
     const handles = await createApp({
       databaseUrl: process.env.DATABASE_URL!,
       dataDir,
@@ -105,7 +105,7 @@ describePiApp("live OpenRouter product journey", () => {
     });
     stop = handles.stop;
     const stamp = Date.now();
-    const email = `pi-${stamp}@rakazo.test`;
+    const email = `pi-${stamp}@meshbot.test`;
     const signup = await handles.app.request("/api/auth/sign-up/email", {
       method: "POST",
       headers: { "content-type": "application/json", origin: "http://127.0.0.1:5173" },

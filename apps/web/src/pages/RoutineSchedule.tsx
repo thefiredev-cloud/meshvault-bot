@@ -5,7 +5,7 @@ import {
   type CronUnit,
   cronFromPreset,
   describeCronPreset,
-} from "@rakazo/core";
+} from "@meshbot/core";
 
 const UNITS: CronUnit[] = ["minutes", "hours", "days"];
 const NUMBERS = [1, 2, 3, 5, 10, 15, 30, 45];

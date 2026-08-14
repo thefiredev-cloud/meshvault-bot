@@ -1,5 +1,5 @@
 {
-  "name": "@rakazo/memory",
+  "name": "@meshbot/memory",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "type": "module",
@@ -15,9 +15,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@rakazo/adapter-kit": "workspace:*",
-    "@rakazo/contracts": "workspace:*",
-    "@rakazo/db": "workspace:*"
+    "@meshbot/adapter-kit": "workspace:*",
+    "@meshbot/contracts": "workspace:*",
+    "@meshbot/db": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.2",

@@ -28,6 +28,10 @@ export function App() {
       />
       <Route path="/app" element={user ? <ShellPage /> : <Navigate to="/sign-in" replace />} />
       <Route
+        path="/app/brain"
+        element={user ? <ShellPage view="brain" /> : <Navigate to="/sign-in" replace />}
+      />
+      <Route
         path="/app/:botId"
         element={user ? <ShellPage /> : <Navigate to="/sign-in" replace />}
       />

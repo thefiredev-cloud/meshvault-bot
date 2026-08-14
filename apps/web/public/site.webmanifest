@@ -1,7 +1,7 @@
 {
-  "name": "MeshVault",
-  "short_name": "MeshVault",
-  "description": "Your team of always-on agents.",
+  "name": "Mesh Bot",
+  "short_name": "Mesh Bot",
+  "description": "Private bots on computers you control.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#050506",

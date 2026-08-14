@@ -1,6 +1,6 @@
-import type { ConnectionCatalogItem } from "@rakazo/contracts";
-import { Button } from "@rakazo/ui-web";
-import { useEffect, useMemo, useState } from "react";
+import type { ConnectionCatalogItem } from "@meshbot/contracts";
+import { Button } from "@meshbot/ui-web";
+import { useEffect, useRef, useState } from "react";
 import { rpc } from "../lib/rpc";
 
 let cachedCatalog: ConnectionCatalogItem[] = [];
@@ -10,11 +10,11 @@ function markConnected(items: ConnectionCatalogItem[], slug: string, connected: 
 }
 
 export function PluginsOverlay({ onClose }: { onClose: () => void }) {
-  const [query, setQuery] = useState("");
   const [catalog, setCatalog] = useState<ConnectionCatalogItem[]>(cachedCatalog);
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(cachedCatalog.length === 0);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   async function refresh() {
     const items = await rpc.connections.catalog({});
@@ -31,14 +31,14 @@ export function PluginsOverlay({ onClose }: { onClose: () => void }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const visible = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return catalog;
-    return catalog.filter(
-      (item) =>
-        item.name.toLowerCase().includes(needle) || item.slug.toLowerCase().includes(needle),
-    );
-  }, [catalog, query]);
+  useEffect(() => {
+    closeButtonRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
 
   function setItemConnected(slug: string, connected: boolean) {
     cachedCatalog = markConnected(cachedCatalog, slug, connected);
@@ -48,25 +48,36 @@ export function PluginsOverlay({ onClose }: { onClose: () => void }) {
   async function connect(item: ConnectionCatalogItem) {
     setError(null);
     setPending(item.slug);
+    const popup = window.open("about:blank", "meshvault-composio", "popup,width=720,height=800");
+    if (!popup) {
+      setError("Allow popups for Mesh Bot, then try Connect again.");
+      setPending(null);
+      return;
+    }
+    popup.opener = null;
     try {
       const started = await rpc.connections.begin({ provider: item.slug, displayName: item.name });
-      if (started.authorizationUrl)
-        window.open(started.authorizationUrl, "_blank", "noopener,noreferrer");
-      if (item.noAuth && !started.authorizationUrl) {
-        setItemConnected(item.slug, true);
-        return;
+      if (!started.authorizationUrl) {
+        throw new Error("Composio did not return a sign-in URL.");
       }
+      popup.location.replace(started.authorizationUrl);
       for (let i = 0; i < 45; i += 1) {
         const row = await rpc.connections
           .complete({ connectionId: started.connectionId })
           .catch(() => undefined);
         if (row?.status === "connected") {
           setItemConnected(item.slug, true);
+          popup.close();
           return;
+        }
+        if (row?.status === "error") {
+          throw new Error("Composio sign-in failed.");
         }
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
+      throw new Error("Composio sign-in is still waiting. Finish it, then try Connect again.");
     } catch (err) {
+      popup.close();
       setError(err instanceof Error ? err.message : "Could not connect");
     } finally {
       setPending(null);
@@ -95,17 +106,25 @@ export function PluginsOverlay({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center bg-[rgba(4,4,5,.62)] p-10">
-      <div className="flex h-[760px] w-[1080px] max-w-full flex-col overflow-hidden rounded-[26px] border border-[#232326] bg-[#141416] shadow-[0_40px_90px_rgba(0,0,0,.55)]">
-        <div className="flex items-start justify-between px-8 pt-7">
+    <div className="absolute inset-0 z-30 flex items-center justify-center bg-[rgba(4,4,5,.62)] p-4 sm:p-10">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="plugins-title"
+        className="flex w-[680px] max-w-full flex-col overflow-hidden rounded-[26px] border border-[#232326] bg-[#141416] shadow-[0_40px_90px_rgba(0,0,0,.55)]"
+      >
+        <div className="flex items-start justify-between px-6 pt-6">
           <div>
-            <div className="text-2xl font-medium text-[#F1F1F2]">Plugins</div>
+            <div id="plugins-title" className="text-2xl font-medium text-[#F1F1F2]">
+              Plugins
+            </div>
             <p className="mt-1 text-[13.5px] text-[#7A7A80]">
-              {loading ? "Loading catalog…" : `${catalog.length} apps`}
+              {loading ? "Loading Composio…" : "Connect apps once, then use them in bot chats."}
             </p>
           </div>
           <button
             type="button"
+            ref={closeButtonRef}
             aria-label="Close plugins"
             onClick={onClose}
             className="text-[#85858A]"
@@ -113,21 +132,16 @@ export function PluginsOverlay({ onClose }: { onClose: () => void }) {
             ✕
           </button>
         </div>
-        <div className="px-8 pt-4">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search apps"
-            className="w-full rounded-[13px] border border-[#26262A] bg-[#101012] px-4 py-3 text-[15px] text-[#ECECEE] outline-none"
-          />
-        </div>
-        <div className="rk-scroll flex-1 overflow-y-auto px-8 py-6">
+        <div className="rk-scroll overflow-y-auto px-6 py-5">
           {error ? <p className="mb-4 text-sm text-[#C94244]">{error}</p> : null}
           {!loading && catalog.length === 0 ? (
-            <p className="text-[#6C6C70]">Composio is not configured on this deployment.</p>
+            <p className="text-[#6C6C70]">Composio is unavailable on this deployment.</p>
           ) : null}
-          {visible.map((item) => (
-            <div key={item.slug} className="flex items-center gap-4 rounded-[13px] px-3 py-2.5">
+          {catalog.map((item) => (
+            <div
+              key={item.slug}
+              className="flex items-center gap-4 rounded-[13px] border border-[#232326] bg-[#101012] px-4 py-4"
+            >
               {item.logo ? (
                 <img
                   src={item.logo}
@@ -142,8 +156,7 @@ export function PluginsOverlay({ onClose }: { onClose: () => void }) {
               <div className="min-w-0 flex-1">
                 <div className="text-[15.5px] font-medium text-[#ECECEE]">{item.name}</div>
                 <div className="text-[13.5px] text-[#7A7A80]">
-                  {item.slug}
-                  {item.noAuth ? " · no auth" : ""}
+                  Gmail, Slack, GitHub, calendars, files, and more
                 </div>
               </div>
               {item.connected ? (
@@ -154,7 +167,7 @@ export function PluginsOverlay({ onClose }: { onClose: () => void }) {
                   disabled={pending === item.slug}
                   onClick={() => void revoke(item)}
                 >
-                  {pending === item.slug ? "Revoking…" : "Revoke"}
+                  {pending === item.slug ? "Disconnecting…" : "Disconnect"}
                 </Button>
               ) : (
                 <Button

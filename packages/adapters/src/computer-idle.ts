@@ -1,6 +1,6 @@
-import type { SandboxProvider, WakeupDriver } from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
-import { appendEvent } from "@rakazo/db";
+import type { SandboxProvider, WakeupDriver } from "@meshbot/adapter-kit";
+import type { PrismaClient } from "@meshbot/db";
+import { appendEvent } from "@meshbot/db";
 
 export const DEFAULT_SANDBOX_IDLE_MS = 10 * 60 * 1000;
 

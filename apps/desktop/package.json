@@ -1,5 +1,5 @@
 {
-  "name": "@rakazo/desktop",
+  "name": "@meshbot/desktop",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "type": "module",
@@ -13,7 +13,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@rakazo/contracts": "workspace:*"
+    "@meshbot/contracts": "workspace:*"
   },
   "devDependencies": {
     "electron": "^37.3.1",
@@ -22,8 +22,8 @@
     "vitest": "^4.1.10"
   },
   "build": {
-    "appId": "ai.meshvault.desktop",
-    "productName": "MeshVault",
+    "appId": "ai.meshbot.desktop",
+    "productName": "Mesh Bot",
     "directories": {
       "output": "out",
       "buildResources": "assets"

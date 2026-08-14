@@ -29,19 +29,23 @@ import {
   ExpoPushProvider,
   GraphileWakeupDriver,
   InMemoryWakeupDriver,
-  isComposioEnabled,
   LocalAgentHomeStore,
   PiAgentRuntime,
+  resolveComposioCallbackUrl,
   ScriptedAgentRuntime,
   sleepComputerIfIdle,
-} from "@rakazo/adapters";
-import { deploymentModelKey, modelSecretsToRedact } from "@rakazo/core";
-import { createDb } from "@rakazo/db";
-import { MarkdownMemoryStore } from "@rakazo/memory";
+} from "@meshbot/adapters";
+import { deploymentModelKey, modelSecretsToRedact, resolveEncryptionKey } from "@meshbot/core";
+import { createDb } from "@meshbot/db";
+import { MarkdownMemoryStore } from "@meshbot/memory";
 
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) throw new Error("DATABASE_URL is required");
+  const composioCallbackUrl = resolveComposioCallbackUrl(
+    process.env.API_URL ?? "http://127.0.0.1:3100",
+    process.env.NODE_ENV,
+  );
   const { prisma } = createDb(databaseUrl);
   const runtime =
     process.env.AGENT_RUNTIME === "scripted" ? new ScriptedAgentRuntime() : new PiAgentRuntime();
@@ -52,10 +56,14 @@ async function main() {
     dataDir,
     prisma,
   });
-  const stack = createConnectorStack(isComposioEnabled(process.env.COMPOSIO_API_KEY));
+  const secrets = new EncryptedSecretStore(resolveEncryptionKey(process.env));
+  const stack = createConnectorStack({
+    prisma,
+    secrets,
+    callbackUrl: composioCallbackUrl,
+  });
   const connector = stack.destination;
   await connector.start();
-  const secrets = new EncryptedSecretStore(resolveEncryptionKey(process.env));
   const wakeup =
     process.env.WAKEUP_DRIVER === "memory"
       ? new InMemoryWakeupDriver()
@@ -87,7 +95,7 @@ async function main() {
     },
   });
 
-  console.log("meshvault worker ready");
+  console.log("meshbot worker ready");
 }
 
 main().catch((error) => {

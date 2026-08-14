@@ -34,12 +34,6 @@ describe("model env", () => {
     expect(defaultPiModel({})).toBe(DEFAULT_QWEN_MODEL);
   });
 
-  it("uses Spark+GX10 as the local plane when SPARK_GX10_BASE_URL is set", () => {
-    const env = { SPARK_GX10_BASE_URL: "http://127.0.0.1:8000/v1" };
-    expect(defaultPiProvider(env)).toBe("spark-gx10");
-    expect(defaultPiModel(env)).toBe("deepseek-v4-flash");
-  });
-
   it("keeps an explicit OpenRouter default", () => {
     const env = { PI_DEFAULT_PROVIDER: "openrouter" };
     expect(defaultPiProvider(env)).toBe("openrouter");
@@ -49,9 +43,17 @@ describe("model env", () => {
   it("resolves BYO keys the same way OpenRouter is wired", () => {
     expect(fallbackApiKey("qwen", { QWEN_API_KEY: "q" })).toBe("q");
     expect(fallbackApiKey("openrouter", { OPENROUTER_API_KEY: "or" })).toBe("or");
-    expect(fallbackApiKey("spark-gx10", {})).toBe("local");
+    expect(fallbackApiKey("meshbot-gateway", { MESHBOT_GATEWAY_KEY: "gw" })).toBe("gw");
+    expect(fallbackApiKey("anthropic", { QWEN_API_KEY: "must-not-leak" })).toBeUndefined();
     expect(hasDeploymentModelKey({ OPENROUTER_API_KEY: "or" })).toBe(true);
     expect(hasDeploymentModelKey({ DASHSCOPE_API_KEY: "d" })).toBe(true);
+    expect(hasDeploymentModelKey({ MESHBOT_GATEWAY_URL: "http://127.0.0.1:4000" })).toBe(true);
     expect(hasDeploymentModelKey({})).toBe(false);
+  });
+
+  it("requires an explicit model for providers without a product default", () => {
+    expect(() => defaultPiModel({ PI_DEFAULT_PROVIDER: "anthropic" })).toThrow(
+      /PI_DEFAULT_MODEL is required/,
+    );
   });
 });

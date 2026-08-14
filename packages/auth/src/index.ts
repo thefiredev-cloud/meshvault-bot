@@ -1,10 +1,12 @@
 import { randomBytes } from "node:crypto";
-import { emailAllowed, parseAllowlist, signupsOpen } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
+import { emailAllowed, parseAllowlist, signupsOpen } from "@meshbot/core";
+import type { PrismaClient } from "@meshbot/db";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { APIError } from "better-auth/api";
 import { bearer, organization } from "better-auth/plugins";
+
+// Modified by FireDev LLC dba MeshVault on 2026-08-13.
 
 export interface AuthEnv {
   secret: string;
@@ -21,7 +23,7 @@ function newId(): string {
 
 export function createAuth(prisma: PrismaClient, env: AuthEnv) {
   return betterAuth({
-    appName: "MeshVault",
+    appName: "Mesh Bot",
     secret: env.secret,
     baseURL: env.baseURL,
     trustedOrigins: [env.webOrigin, env.baseURL, ...(env.extraOrigins ?? [])],

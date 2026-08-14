@@ -8,7 +8,7 @@ import type {
   SandboxProvider,
   ScreenRequest,
   ScreenSession,
-} from "@rakazo/adapter-kit";
+} from "@meshbot/adapter-kit";
 
 export interface FakeBox {
   ref: ComputerRef;

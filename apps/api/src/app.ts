@@ -1,5 +1,4 @@
-import { RPCHandler } from "@orpc/server/fetch";
-import type { SandboxProvider, WakeupDriver } from "@rakazo/adapter-kit";
+import type { SandboxProvider, WakeupDriver } from "@meshbot/adapter-kit";
 import {
   type ComposioConnector,
   createConnectorStack,
@@ -10,16 +9,17 @@ import {
   ExpoPushProvider,
   GraphileWakeupDriver,
   InMemoryWakeupDriver,
-  isComposioEnabled,
   LocalAgentHomeStore,
   PiAgentRuntime,
   PiOAuthLogins,
+  resolveComposioCallbackUrl,
   ScriptedAgentRuntime,
   sleepComputerIfIdle,
-} from "@rakazo/adapters";
-import { blockedAuthPaths, createAuth } from "@rakazo/auth";
-import { createDb, type PrismaClient, requireMembership } from "@rakazo/db";
-import { MarkdownMemoryStore } from "@rakazo/memory";
+} from "@meshbot/adapters";
+import { blockedAuthPaths, createAuth } from "@meshbot/auth";
+import { createDb, type PrismaClient, requireMembership } from "@meshbot/db";
+import { MarkdownMemoryStore } from "@meshbot/memory";
+import { RPCHandler } from "@orpc/server/fetch";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { type AppEnv, loadEnv } from "./env.js";
@@ -40,6 +40,7 @@ export async function createApp(
   overrides: Partial<AppEnv> & { prisma?: PrismaClient } = {},
 ): Promise<AppHandles> {
   const env = { ...loadEnv(process.env), ...overrides };
+  const composioCallbackUrl = resolveComposioCallbackUrl(env.apiUrl, env.nodeEnv);
   const created = overrides.prisma
     ? { prisma: overrides.prisma, pool: undefined }
     : createDb(env.databaseUrl);
@@ -58,7 +59,7 @@ export async function createApp(
     signupsEnabled: env.signupsEnabled,
     signupAllowlist: env.signupAllowlist,
     extraOrigins: [
-      "rakazo://",
+      "meshbot://",
       "meshvault://",
       "exp://",
       "exp://*",
@@ -84,10 +85,13 @@ export async function createApp(
   const oauthLogins = new PiOAuthLogins();
   const home = new LocalAgentHomeStore(env.dataDir);
   const memory = new MarkdownMemoryStore(prisma);
-  const stack = createConnectorStack(isComposioEnabled(env.composioApiKey));
+  const stack = createConnectorStack({
+    prisma,
+    secrets,
+    callbackUrl: composioCallbackUrl,
+  });
   const connector = stack.destination;
   await connector.start();
-  void stack.composio?.warmDirectory().catch(() => undefined);
   const runtime =
     env.agentRuntime === "scripted" ? new ScriptedAgentRuntime() : new PiAgentRuntime();
   const notifications = new ExpoPushProvider(env.dataDir);
@@ -98,7 +102,7 @@ export async function createApp(
     memory,
     home,
     connector: stack.connector,
-    secrets: [env.openRouterKey ?? "", env.qwenKey ?? "", env.composioApiKey ?? ""].filter(Boolean),
+    secrets: [env.openRouterKey ?? "", env.qwenKey ?? ""].filter(Boolean),
     secretStore: secrets,
     deploymentModelKey: env.deploymentModelKey,
     dataDir: env.dataDir,
@@ -155,6 +159,17 @@ export async function createApp(
       credentials: true,
     }),
   );
+  app.get("/api/connections/composio/callback", async (c) => {
+    c.header("cache-control", "no-store");
+    c.header("content-security-policy", "default-src 'none'");
+    c.header("referrer-policy", "no-referrer");
+    try {
+      await stack.composio.completeCallback(new URL(c.req.url).searchParams);
+      return c.text("Composio connected. You can close this window.");
+    } catch {
+      return c.text("Composio could not connect. Return to Mesh Bot and try again.", 400);
+    }
+  });
   app.on(["GET", "POST"], "/api/auth/*", async (c) => {
     const path = new URL(c.req.url).pathname.replace("/api/auth", "");
     if (blockedAuthPaths.some((blocked) => path.startsWith(blocked))) {
@@ -206,7 +221,7 @@ export function isTrustedOrigin(origin: string, env: AppEnv) {
   if (!origin) return true;
   if (origin === env.webOrigin || origin === env.apiUrl || origin === env.authUrl) return true;
   if (
-    origin.startsWith("rakazo://") ||
+    origin.startsWith("meshbot://") ||
     origin.startsWith("meshvault://") ||
     origin.startsWith("exp://")
   )

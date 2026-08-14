@@ -18,7 +18,7 @@ We will acknowledge your report and work on a fix. Please do not file a public i
 
 ## Scope
 
-This policy covers the MeshVault Bot self-hosted product in **this repository**.
+This policy covers the Mesh Bot self-hosted product in **this repository**.
 
 Out of scope:
 
@@ -31,7 +31,3 @@ Out of scope:
 We support security fixes on the current `main` branch and the latest release (beta).
 
 There is no bug bounty program at this time.
-
-## Upstream
-
-MeshVault Bot is a fork of [Rakazo](https://github.com/elie222/rakazo). Issues that also affect upstream can be reported there as well.

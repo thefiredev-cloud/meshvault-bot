@@ -3,8 +3,7 @@ import path from "node:path";
 import { app, BrowserWindow, ipcMain } from "electron";
 import { browserWindowOptions } from "./window-options.js";
 
-const WEB_URL =
-  process.env.MESHVAULT_WEB_URL ?? process.env.RAKAZO_WEB_URL ?? "http://127.0.0.1:5173";
+const WEB_URL = process.env.MESHBOT_WEB_URL ?? "http://127.0.0.1:5173";
 
 function windowFrom(event: Electron.IpcMainInvokeEvent) {
   return BrowserWindow.fromWebContents(event.sender);

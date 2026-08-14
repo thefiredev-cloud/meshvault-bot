@@ -11,6 +11,8 @@ export const BotSchema = z.object({
   instructions: z.string(),
   color: z.string(),
   notifyOnFinish: z.boolean(),
+  modelProvider: z.string().nullable(),
+  modelId: z.string().nullable(),
   parentBotId: Id.nullable(),
   threadId: Id,
   preview: z.string(),
@@ -20,25 +22,46 @@ export const BotSchema = z.object({
 });
 export type Bot = z.infer<typeof BotSchema>;
 
-export const CreateBotInput = z.object({
-  name: z.string().min(1).max(80),
-  title: z.string().max(160).default(""),
-  description: z.string().max(4000).default(""),
-  instructions: z.string().max(20000).default(""),
-  notifyOnFinish: z.boolean().default(true),
-  color: z.string().optional(),
-});
+const modelSelectionFields = {
+  modelProvider: z.string().min(1).nullable().optional(),
+  modelId: z.string().min(1).nullable().optional(),
+};
+
+function completeModelSelection(input: { modelProvider?: string | null; modelId?: string | null }) {
+  return Boolean(input.modelProvider) === Boolean(input.modelId);
+}
+
+export const CreateBotInput = z
+  .object({
+    name: z.string().min(1).max(80),
+    title: z.string().max(160).default(""),
+    description: z.string().max(4000).default(""),
+    instructions: z.string().max(20000).default(""),
+    notifyOnFinish: z.boolean().default(true),
+    color: z.string().optional(),
+    ...modelSelectionFields,
+  })
+  .refine(completeModelSelection, {
+    message: "modelProvider and modelId must be set together",
+    path: ["modelProvider"],
+  });
 export type CreateBotInput = z.infer<typeof CreateBotInput>;
 
-export const UpdateBotInput = z.object({
-  botId: Id,
-  name: z.string().min(1).max(80).optional(),
-  title: z.string().max(160).optional(),
-  description: z.string().max(4000).optional(),
-  instructions: z.string().max(20000).optional(),
-  notifyOnFinish: z.boolean().optional(),
-  color: z.string().optional(),
-});
+export const UpdateBotInput = z
+  .object({
+    botId: Id,
+    name: z.string().min(1).max(80).optional(),
+    title: z.string().max(160).optional(),
+    description: z.string().max(4000).optional(),
+    instructions: z.string().max(20000).optional(),
+    notifyOnFinish: z.boolean().optional(),
+    color: z.string().optional(),
+    ...modelSelectionFields,
+  })
+  .refine(completeModelSelection, {
+    message: "modelProvider and modelId must be set together",
+    path: ["modelProvider"],
+  });
 
 export const RoutineSchema = z.object({
   id: Id,
@@ -94,6 +117,42 @@ export const ConnectionCatalogItemSchema = z.object({
   noAuth: z.boolean(),
 });
 export type ConnectionCatalogItem = z.infer<typeof ConnectionCatalogItemSchema>;
+
+export const BrainNodeSchema = z.object({
+  id: z.string(),
+  tags: z.array(z.string()),
+  mtime: z.number(),
+});
+export type BrainNode = z.infer<typeof BrainNodeSchema>;
+
+export const BrainEdgeSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+});
+export type BrainEdge = z.infer<typeof BrainEdgeSchema>;
+
+export const BrainGraphSchema = z.discriminatedUnion("available", [
+  z.object({
+    available: z.literal(true),
+    nodes: z.array(BrainNodeSchema),
+    edges: z.array(BrainEdgeSchema),
+    totalNodes: z.number().int().nonnegative(),
+    totalEdges: z.number().int().nonnegative(),
+    truncated: z.boolean(),
+    updatedAt: z.string().nullable(),
+  }),
+  z.object({
+    available: z.literal(false),
+    reason: z.enum([
+      "not-configured",
+      "unreachable",
+      "unauthorized",
+      "identity-mismatch",
+      "invalid-response",
+    ]),
+  }),
+]);
+export type BrainGraph = z.infer<typeof BrainGraphSchema>;
 
 export const CapabilityInstallSchema = z.object({
   id: Id,

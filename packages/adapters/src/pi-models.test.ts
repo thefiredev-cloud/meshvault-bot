@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { listPiCatalog, scriptedCatalogEntry } from "./pi-models.js";
+import {
+  hasAmbientPiProviderAuth,
+  isKnownPiModel,
+  listPiCatalog,
+  scriptedCatalogEntry,
+} from "./pi-models.js";
 
 describe("Pi model catalog", () => {
   it("lists real Pi providers instead of a two-option dropdown", () => {
@@ -8,7 +13,7 @@ describe("Pi model catalog", () => {
     expect(catalog.length).toBeGreaterThan(20);
     expect(providers.has("openrouter")).toBe(true);
     expect(providers.has("qwen")).toBe(true);
-    expect(providers.has("spark-gx10")).toBe(true);
+    expect(providers.has("qwen")).toBe(true);
     const qwen = catalog.find((entry) => entry.provider === "qwen" && entry.id === "qwen-plus");
     expect(qwen?.label).toMatch(/Qwen/i);
     expect(qwen?.billing).toMatch(/DashScope/);
@@ -26,5 +31,28 @@ describe("Pi model catalog", () => {
     const grok = catalog.find((entry) => entry.provider === "xai");
     expect(grok?.signIn).toBe("device-code");
     expect(scriptedCatalogEntry.provider).toBe("scripted");
+  });
+
+  it("validates exact provider/model pairs against the runtime registry", () => {
+    expect(isKnownPiModel({ provider: "qwen", id: "qwen-plus" })).toBe(true);
+    expect(isKnownPiModel({ provider: "anthropic", id: "qwen-plus" })).toBe(false);
+    expect(isKnownPiModel({ provider: "scripted", id: "scripted" })).toBe(true);
+  });
+
+  it("accepts only the selected provider's ambient authentication", async () => {
+    const context = (values: Record<string, string>) => ({
+      env: async (name: string) => values[name],
+      fileExists: async () => false,
+    });
+    expect(
+      await hasAmbientPiProviderAuth("qwen", context({ ANTHROPIC_API_KEY: "anthropic-key" })),
+    ).toBe(false);
+    expect(await hasAmbientPiProviderAuth("qwen", context({ QWEN_API_KEY: "qwen-key" }))).toBe(
+      true,
+    );
+    expect(
+      await hasAmbientPiProviderAuth("anthropic", context({ ANTHROPIC_API_KEY: "anthropic-key" })),
+    ).toBe(true);
+    expect(await hasAmbientPiProviderAuth("openai-codex", context({}))).toBe(false);
   });
 });

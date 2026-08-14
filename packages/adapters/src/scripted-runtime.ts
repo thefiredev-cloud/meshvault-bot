@@ -3,7 +3,9 @@ import type {
   AgentRunRequest,
   AgentRuntime,
   AgentRuntimeEvent,
-} from "@rakazo/adapter-kit";
+} from "@meshbot/adapter-kit";
+
+// Modified by FireDev LLC dba MeshVault on 2026-08-13.
 
 const running = new Map<string, AbortController>();
 
@@ -179,7 +181,7 @@ export function inferScript(
         toolCalls: [
           {
             name: "destination.write",
-            args: { collection: "notes", title: "MeshVault result", body: prompt },
+            args: { collection: "notes", title: "Mesh Bot result", body: prompt },
           },
         ],
         complete: true,

@@ -1,4 +1,4 @@
-import { ChatMarkdown } from "@rakazo/chat-ui/web";
+import { ChatMarkdown } from "@meshbot/chat-ui/web";
 import type {
   Bot,
   ComputerStatus,
@@ -6,19 +6,20 @@ import type {
   Routine,
   ThreadMessage,
   ThreadSnapshot,
-} from "@rakazo/contracts";
+} from "@meshbot/contracts";
 import {
   cronFromPreset,
   defaultCronPreset,
   formatCron,
   presetFromCron,
   subagentBlockFromPayload,
-} from "@rakazo/core";
-import { BotAvatar, Button } from "@rakazo/ui-web";
+} from "@meshbot/core";
+import { BotAvatar, Button } from "@meshbot/ui-web";
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { authClient } from "../lib/auth";
 import { rpc } from "../lib/rpc";
+import { BrainOverlay } from "./Brain";
 import { HostComputerPrompt } from "./HostComputerPrompt";
 import { PluginsOverlay } from "./PluginsOverlay";
 import { RoutineSchedule } from "./RoutineSchedule";
@@ -26,7 +27,7 @@ import { WindowChrome } from "./WindowChrome";
 
 type Panel = "computer" | "settings" | "routine" | "create" | null;
 
-export function ShellPage() {
+export function ShellPage({ view = "chat" }: { view?: "chat" | "brain" }) {
   const { botId } = useParams();
   const navigate = useNavigate();
   const session = authClient.useSession();
@@ -63,7 +64,7 @@ export function ShellPage() {
       navigate("/onboarding", { replace: true });
       return;
     }
-    if (!botId || !list.some((bot) => bot.id === botId)) {
+    if (view !== "brain" && (!botId || !list.some((bot) => bot.id === botId))) {
       navigate(`/app/${list[0]!.id}`, { replace: true });
     }
   }
@@ -83,12 +84,13 @@ export function ShellPage() {
 
   useEffect(() => {
     void refreshBots();
+    if (view === "brain") return;
     const poll = window.setInterval(() => void refreshBots().catch(() => undefined), 4000);
     return () => window.clearInterval(poll);
-  }, []);
+  }, [view]);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active || view === "brain") return;
     const abort = new AbortController();
     let fallback: number | undefined;
     void (async () => {
@@ -137,7 +139,7 @@ export function ShellPage() {
       abort.abort();
       if (fallback !== undefined) window.clearInterval(fallback);
     };
-  }, [active?.id]);
+  }, [active?.id, view]);
 
   const filtered = useMemo(
     () => bots.filter((b) => `${b.name} ${b.preview}`.toLowerCase().includes(query.toLowerCase())),
@@ -301,6 +303,31 @@ export function ShellPage() {
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          onClick={() => navigate("/app/brain")}
+          className="mx-3 mb-1 flex items-center gap-3 rounded-[11px] px-2.5 py-2 hover:bg-[#131315]"
+          style={{ background: view === "brain" ? "#161618" : "transparent" }}
+        >
+          <span className="grid h-[30px] w-[30px] place-items-center rounded-full bg-[#17171A] text-[#9A9AA0]">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M9.5 4A2.5 2.5 0 0 0 7 6.5V8a3 3 0 0 0-1 5.83V16a3 3 0 0 0 3 3h.5" />
+              <path d="M14.5 4A2.5 2.5 0 0 1 17 6.5V8a3 3 0 0 1 1 5.83V16a3 3 0 0 1-3 3h-.5" />
+              <path d="M12 3v18M8 10h4m0 5h4" />
+            </svg>
+          </span>
+          <span className="text-[14.5px] text-[#C9C9CE]">Brain</span>
+        </button>
         <button
           type="button"
           onClick={() => setPluginsOpen(true)}
@@ -698,6 +725,10 @@ export function ShellPage() {
       </aside>
 
       {pluginsOpen ? <PluginsOverlay onClose={() => setPluginsOpen(false)} /> : null}
+
+      {view === "brain" ? (
+        <BrainOverlay onClose={() => navigate(active ? `/app/${active.id}` : "/app")} />
+      ) : null}
 
       {booting ? (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-[22px] bg-[rgba(4,4,5,.96)]">
@@ -1132,6 +1163,8 @@ function BotSettings({
     title?: string;
     description?: string;
     instructions?: string;
+    modelProvider?: string | null;
+    modelId?: string | null;
   }) => Promise<void>;
   onExport: () => Promise<void>;
   onDelete: () => Promise<void>;
@@ -1139,9 +1172,19 @@ function BotSettings({
   const [name, setName] = useState(bot.name);
   const [title, setTitle] = useState(bot.title);
   const [description, setDescription] = useState(bot.description);
+  const [models, setModels] = useState<Awaited<ReturnType<typeof rpc.models.list>>>([]);
+  const [modelProvider, setModelProvider] = useState(bot.modelProvider);
+  const [modelId, setModelId] = useState(bot.modelId);
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void rpc.models
+      .list()
+      .then(setModels)
+      .catch(() => setModels([]));
+  }, []);
 
   return (
     <div>
@@ -1173,10 +1216,43 @@ function BotSettings({
           className="mt-2 w-full rounded-[11px] border border-[#26262A] bg-transparent px-3.5 py-3 text-[#ECECEE]"
         />
       </label>
+      <label className="mt-4 block text-[14px] text-[#85858A]">
+        Model
+        <select
+          value={modelProvider && modelId ? JSON.stringify([modelProvider, modelId]) : ""}
+          onChange={(event) => {
+            const selected = models.find(
+              (model) => JSON.stringify([model.provider, model.id]) === event.target.value,
+            );
+            setModelProvider(selected?.provider ?? null);
+            setModelId(selected?.id ?? null);
+          }}
+          className="mt-2 w-full rounded-[11px] border border-[#26262A] bg-transparent px-3.5 py-3 text-[#ECECEE]"
+        >
+          <option value="">Workspace default</option>
+          {models.map((model) => (
+            <option
+              key={`${model.provider}:${model.id}`}
+              value={JSON.stringify([model.provider, model.id])}
+            >
+              {model.providerName ?? model.provider}: {model.label}
+            </option>
+          ))}
+        </select>
+      </label>
       <div className="mt-5 flex flex-col items-start gap-3">
         <button
           type="button"
-          onClick={() => void onSave({ name, title, description, instructions: description })}
+          onClick={() =>
+            void onSave({
+              name,
+              title,
+              description,
+              instructions: description,
+              modelProvider,
+              modelId,
+            })
+          }
           className="rounded-[11px] bg-[#F1F1EF] px-4 py-2 text-[#17171A]"
         >
           Save

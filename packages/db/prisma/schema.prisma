@@ -164,7 +164,7 @@ model UserModelCredential {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  @@index([userId, workspaceId])
+  @@unique([userId, workspaceId, provider])
   @@map("user_model_credentials")
 }
 
@@ -179,6 +179,8 @@ model Bot {
   instructions   String   @default("")
   color          String
   notifyOnFinish Boolean  @default(true)
+  modelProvider  String?
+  modelId        String?
   parentBotId    String?
   parent         Bot?     @relation("BotChildren", fields: [parentBotId], references: [id], onDelete: SetNull)
   children       Bot[]    @relation("BotChildren")

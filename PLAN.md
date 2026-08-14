@@ -22,3 +22,15 @@ Add MeshVault Bot agent rituals and a short planning template without mulch/seed
 ## Repeat
 
 Empty — first pass.
+
+## Provider correctness subtask
+
+- [x] Persist exact provider/model on each bot and expose it through existing bot contracts.
+- [x] Scope credential defaults to one user workspace and make provider upserts atomic and unique.
+- [x] Dispatch exact provider/model pairs without cross-provider model or key fallback.
+- [x] Add the model selector to the existing bot settings panel.
+- [x] Apply all four migrations, pass 175 tests, and pass both Chromium journeys.
+- [x] Reject incomplete or unknown persisted run, bot, default, and usage model pairs.
+- [x] Fail closed without a scoped credential while preserving exact-provider ambient and local gateway auth.
+- [x] Preserve a provider's model/default when reconnecting without a model; require one for a new provider.
+- [x] Re-run all four migrations, pass 181 tests, and pass both Chromium journeys.
