@@ -131,3 +131,9 @@ Empty — first pass.
 - [x] Add a visible Expo founding path: honest pre-release copy, lead form, Buy the $49 pack.
 - [x] Do not add, enable, or label an App Store / TestFlight / Download on iPhone control.
 - [x] Prove the form POST, mocked checkout open, and absent download state with tests.
+
+## iOS founding PR rebase / check-green subtask
+
+- [x] Rebase `cursor/ios-founding-checkout-2e10` onto current main after #13.
+- [x] Annotate `handleCreateCheckout` and `handleInstallLead` so the public return type is `Promise<Response>`.
+- [x] Push the same PR #14 and leave `pnpm check` green.

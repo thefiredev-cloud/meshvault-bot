@@ -240,6 +240,18 @@
       ],
       "worked": "Expo founding screen is reachable from sign-in and the inbox account menu. It states iOS is pre-release with no App Store/TestFlight download, POSTs leads to /api/install-lead, and opens only the Stripe url returned by POST /api/create-checkout?offer=meshvault-skill-pack-starter. Missing RESEND_API_KEY or STRIPE_SECRET_KEY is 503 with contact@meshvault.ai. No download button. Focused 20 commerce tests and verify:fast 214/19 passed.",
       "failed": null
+    },
+    {
+      "at": "2026-08-14",
+      "paths": [
+        "apps/api/src/commerce.ts",
+        "apps/mobile/app/index.tsx",
+        "apps/mobile/app/_layout.tsx",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Rebased #14 onto main after #13. Kept #13 /commerce plus /founding. handleCreateCheckout and handleInstallLead now return Promise<Response> so tsc does not leak undici-types (TS2742). Local pnpm check 19/19, lint clean, verify:fast 225/19.",
+      "failed": null
     }
   ]
 }
