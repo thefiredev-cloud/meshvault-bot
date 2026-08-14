@@ -99,20 +99,22 @@ export default function Home() {
     const onSignOut = () => void signOut().then(() => setHasSession(false));
 
     const openCommerce = () => router.push("/commerce");
+    const openFounding = () => router.push("/founding");
 
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
           title,
           message: details || undefined,
-          options: ["Skills pack", "Sign out", "Cancel"],
-          destructiveButtonIndex: 1,
-          cancelButtonIndex: 2,
+          options: ["Skills pack", "Founding install", "Sign out", "Cancel"],
+          destructiveButtonIndex: 2,
+          cancelButtonIndex: 3,
           userInterfaceStyle: "dark",
         },
         (index) => {
           if (index === 0) openCommerce();
-          if (index === 1) onSignOut();
+          if (index === 1) openFounding();
+          if (index === 2) onSignOut();
         },
       );
       return;
@@ -120,6 +122,7 @@ export default function Home() {
 
     Alert.alert(title, details || undefined, [
       { text: "Skills pack", onPress: openCommerce },
+      { text: "Founding install", onPress: openFounding },
       { text: "Cancel", style: "cancel" },
       { text: "Sign out", style: "destructive", onPress: onSignOut },
     ]);

@@ -22,6 +22,7 @@ import { MarkdownMemoryStore } from "@meshbot/memory";
 import { RPCHandler } from "@orpc/server/fetch";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { handleCreateCheckout, handleInstallLead } from "./commerce.js";
 import { type AppEnv, loadEnv } from "./env.js";
 import { createRouter } from "./router.js";
 
@@ -159,6 +160,8 @@ export async function createApp(
       credentials: true,
     }),
   );
+  app.all("/api/create-checkout", (c) => handleCreateCheckout(c.req.raw));
+  app.all("/api/install-lead", (c) => handleInstallLead(c.req.raw));
   app.get("/api/connections/composio/callback", async (c) => {
     c.header("cache-control", "no-store");
     c.header("content-security-policy", "default-src 'none'");
