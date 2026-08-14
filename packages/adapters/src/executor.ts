@@ -151,7 +151,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
       const run = await deps.prisma.run.findUnique({ where: { id: runId } });
       if (!run) return;
       if (["completed", "failed", "cancelled"].includes(run.status)) return;
-      const resumeFromTakeover = run.status === "waiting_takeover";
+      const resumeFromTakeover = run.status === "waiting_takeover" || run.checkpoint === "takeover";
 
       const fence = run.leaseFence + 1;
       const leased = await deps.prisma.run.updateMany({
@@ -502,6 +502,16 @@ export function createRunExecutor(deps: ExecutorDeps) {
             });
             return;
           } else if (event.type === "takeover") {
+            await deps.prisma.$transaction([
+              deps.prisma.computer.updateMany({
+                where: { botId: bot.id },
+                data: { state: "running", controlHolder: "none", controlRunId: null },
+              }),
+              deps.prisma.run.update({
+                where: { id: runId },
+                data: { status: "waiting_takeover", checkpoint: "takeover" },
+              }),
+            ]);
             if (assembled.trim()) {
               await publishMessage(deps, actor, thread.id, bot.id, runId, "bot", [
                 { kind: "text", text: assembled },
@@ -517,14 +527,6 @@ export function createRunExecutor(deps: ExecutorDeps) {
               type: "computer.takeover.requested",
               runId,
               payload: { reason: event.reason },
-            });
-            await deps.prisma.computer.updateMany({
-              where: { botId: bot.id },
-              data: { state: "running", controlHolder: "none" },
-            });
-            await deps.prisma.run.update({
-              where: { id: runId },
-              data: { status: "waiting_takeover" },
             });
             await notifyRun(deps, run, {
               kind: "takeover",
@@ -629,7 +631,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
         ]);
         await deps.prisma.run.update({
           where: { id: runId },
-          data: { status: "completed", completedAt: new Date() },
+          data: { status: "completed", checkpoint: null, completedAt: new Date() },
         });
         await deps.prisma.task.update({
           where: { id: run.taskId },

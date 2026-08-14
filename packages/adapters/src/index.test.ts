@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FakeSandboxProvider } from "./fake-sandbox.js";
+import { promptForAgentRun } from "./pi-runtime.js";
 import { inferScript } from "./scripted-runtime.js";
 import { EncryptedSecretStore } from "./secrets.js";
 
@@ -55,6 +56,20 @@ describe("scripted runtime", () => {
         t.toolCalls?.some((c) => c.name === "delete_bot" && c.args.confirm_name === "Scout"),
       ),
     ).toBe(true);
+  });
+});
+
+describe("Pi runtime takeover resume", () => {
+  it("turns the checkpoint into explicit post-handoff continuation context", () => {
+    const prompt = promptForAgentRun({
+      prompt: "install the cli and sign in",
+      resumeFromCheckpoint: "takeover",
+    });
+    expect(prompt).toContain("owner completed the screen takeover");
+    expect(prompt).toContain("returned control to you");
+    expect(prompt).toContain("Continue the original task");
+    expect(prompt).toContain("install the cli and sign in");
+    expect(promptForAgentRun({ prompt: "ordinary task" })).toBe("ordinary task");
   });
 });
 

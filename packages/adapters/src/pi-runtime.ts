@@ -73,6 +73,7 @@ export class PiAgentRuntime implements AgentRuntime {
         };
         const tools = toolDefs.map((tool) => toAgentTool(tool, host));
         const history = toHistory(request.history, request.prompt);
+        const prompt = promptForAgentRun(request);
 
         const agent = new Agent({
           streamFn: (m, ctx, options) => models.streamSimple(m, ctx, options),
@@ -129,7 +130,7 @@ export class PiAgentRuntime implements AgentRuntime {
         });
 
         queue.push({ type: "progress", text: "working…" });
-        await agent.prompt(request.prompt);
+        await agent.prompt(prompt);
         await agent.waitForIdle();
         signal.removeEventListener("abort", onAbort);
 
@@ -161,6 +162,20 @@ export class PiAgentRuntime implements AgentRuntime {
       running.delete(request.runId);
     }
   }
+}
+
+export function promptForAgentRun(
+  request: Pick<AgentRunRequest, "prompt" | "resumeFromCheckpoint">,
+): string {
+  if (request.resumeFromCheckpoint !== "takeover") return request.prompt;
+  return [
+    "The owner completed the screen takeover you requested and returned control to you.",
+    "Continue the original task from the computer's current state.",
+    "Do not repeat completed steps or request another takeover unless a new owner-only step is required.",
+    "",
+    "Original task:",
+    request.prompt,
+  ].join("\n");
 }
 
 function toHistory(history: AgentRunRequest["history"], prompt: string) {

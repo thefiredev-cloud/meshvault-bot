@@ -171,9 +171,24 @@ describeJourneys("required product journeys", () => {
       bot.id,
       (snap) => snap.run?.status === "waiting_takeover",
     );
+    const runId = waiting.run!.id;
+    const attemptsBefore = await prisma.attempt.count({ where: { runId } });
     expect(JSON.stringify(waiting.messages)).not.toMatch(/password|secret|token/i);
     await rpc(app, cookie, "computer/boot", { botId: bot.id });
     await rpc(app, cookie, "computer/takeover", { botId: bot.id });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const held = await rpc<Snap>(app, cookie, "threads/get", { botId: bot.id });
+    expect(held.run?.id).toBe(runId);
+    expect(held.run?.status).toBe("waiting_takeover");
+    expect(held.computer.controlHolder).toBe("user");
+    expect(await prisma.attempt.count({ where: { runId } })).toBe(attemptsBefore);
+
+    const releases = await Promise.all([
+      raw(app, cookie, "computer/release", { botId: bot.id }),
+      raw(app, cookie, "computer/release", { botId: bot.id }),
+    ]);
+    expect(releases.filter((response) => response.status < 400)).toHaveLength(1);
+    expect(releases.filter((response) => response.status >= 400)).toHaveLength(1);
     const done = await waitFor(
       app,
       cookie,
@@ -182,6 +197,7 @@ describeJourneys("required product journeys", () => {
     );
     expect(JSON.stringify(done.messages).toLowerCase()).toMatch(/signed in|session/);
     expect(done.run?.status ?? "completed").not.toBe("waiting_takeover");
+    expect(await prisma.attempt.count({ where: { runId } })).toBe(attemptsBefore + 1);
   });
 
   it("5: a routine wakes the bot and posts into the existing thread", async () => {
@@ -592,7 +608,8 @@ type Bot = {
 };
 type Snap = {
   messages: Array<{ seq: number; blocks: unknown[] }>;
-  run: { status: string } | null;
+  run: { id: string; status: string } | null;
+  computer: { controlHolder: string };
 };
 
 async function signup(app: App, email: string, name: string) {

@@ -34,3 +34,11 @@ Empty — first pass.
 - [x] Fail closed without a scoped credential while preserving exact-provider ambient and local gateway auth.
 - [x] Preserve a provider's model/default when reconnecting without a model; require one for a new provider.
 - [x] Re-run all four migrations, pass 181 tests, and pass both Chromium journeys.
+
+## Takeover release sequencing subtask
+
+- [x] Keep a takeover-requested run waiting while the owner controls the computer.
+- [x] Atomically release owner control and queue only the matching waiting run.
+- [x] Give Pi explicit post-takeover continuation context through the existing checkpoint.
+- [x] Prove API, journey, and browser behavior cannot complete before release.
+- [x] Pass focused tests, lint, check, build, and the full verification gate.
