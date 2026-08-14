@@ -1,4 +1,4 @@
-import { ChatMarkdown } from "@meshbot/chat-ui/web";
+import { ChatMarkdown } from "@meshvault/chat-ui/web";
 import type {
   Bot,
   ComputerStatus,
@@ -6,15 +6,15 @@ import type {
   Routine,
   ThreadMessage,
   ThreadSnapshot,
-} from "@meshbot/contracts";
+} from "@meshvault/contracts";
 import {
   cronFromPreset,
   defaultCronPreset,
   formatCron,
   presetFromCron,
   subagentBlockFromPayload,
-} from "@meshbot/core";
-import { BotAvatar, Button } from "@meshbot/ui-web";
+} from "@meshvault/core";
+import { BotAvatar, Button } from "@meshvault/ui-web";
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { authClient } from "../lib/auth";

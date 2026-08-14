@@ -9,8 +9,8 @@ import type {
   MemorySnapshot,
   MemoryStore,
   PortableFile,
-} from "@meshbot/adapter-kit";
-import type { PrismaClient } from "@meshbot/db";
+} from "@meshvault/adapter-kit";
+import type { PrismaClient } from "@meshvault/db";
 
 export class MarkdownMemoryStore implements MemoryStore {
   constructor(private readonly prisma: PrismaClient) {}

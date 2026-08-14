@@ -1,12 +1,12 @@
-# Mesh Bot
+# MeshVault
 
 Open-source [Grok Bot](https://x.ai) alternative we ship. Electron desktop + Expo iOS. Bring your own model.
 
-Default model path is **Qwen** (DashScope / compatible OpenAI API). OpenRouter and the rest of the Pi catalog stay available. Deployment-owned local models use the explicit `MESHBOT_GATEWAY_*` OpenAI-compatible gateway.
+Default model path is **Qwen** (DashScope / compatible OpenAI API). OpenRouter and the rest of the Pi catalog stay available. Deployment-owned local models use the explicit `MESHVAULT_GATEWAY_*` OpenAI-compatible gateway.
 
 Each bot has one thread, one computer, memory, routines, and history. A bot can also spawn more bots — each a regular peer with its own thread and computer — or run short-lived subagents inside the current turn. This repository is the complete core product — it runs without a MeshVault-operated control plane.
 
-Mesh Bot is maintained by Tanner Osterkamp / [thefiredev-cloud](https://github.com/thefiredev-cloud). License and upstream attribution are recorded in [`LICENSE`](./LICENSE), [`NOTICE`](./NOTICE), and [`UPSTREAM.md`](./UPSTREAM.md).
+MeshVault is maintained by Tanner Osterkamp / [thefiredev-cloud](https://github.com/thefiredev-cloud). License and upstream attribution are recorded in [`LICENSE`](./LICENSE), [`NOTICE`](./NOTICE), and [`UPSTREAM.md`](./UPSTREAM.md).
 
 Web, desktop (Electron), and mobile (Expo iOS). The product is still early (beta). Notable product changes are in [`CHANGELOG.md`](./CHANGELOG.md).
 
@@ -46,8 +46,8 @@ Edit `.env`:
 
 - Set `BETTER_AUTH_SECRET` and `ENCRYPTION_KEY` to long random strings before any network exposure. Placeholder values only work in local `development` / `test` runs.
 - Put your Qwen / DashScope key in `QWEN_API_KEY` or `DASHSCOPE_API_KEY` (or skip the key and paste one during onboarding). Optional: `QWEN_BASE_URL` / `DASHSCOPE_BASE_URL` for a compatible OpenAI API (default DashScope international).
-- OpenRouter still works: `OPENROUTER_API_KEY`. For deployment-owned local models, set `MESHBOT_GATEWAY_URL`, `MESHBOT_GATEWAY_KEY`, and the exact comma-separated `MESHBOT_GATEWAY_MODELS` served by that endpoint.
-- ChatGPT Plus or Pro, GitHub Copilot, or SuperGrok / X Premium: skip the key and sign in on the **Connect a model** screen. Pick **OpenAI Codex**, **GitHub Copilot**, or **xAI**, then sign in with the device code Pi shows. Claude API keys work. Claude Pro / Max login is not in the Mesh Bot web UI yet because Pi's Claude flow needs a localhost callback or manual code rather than a device code.
+- OpenRouter still works: `OPENROUTER_API_KEY`. For deployment-owned local models, set `MESHVAULT_GATEWAY_URL`, `MESHVAULT_GATEWAY_KEY`, and the exact comma-separated `MESHVAULT_GATEWAY_MODELS` served by that endpoint.
+- ChatGPT Plus or Pro, GitHub Copilot, or SuperGrok / X Premium: skip the key and sign in on the **Connect a model** screen. Pick **OpenAI Codex**, **GitHub Copilot**, or **xAI**, then sign in with the device code Pi shows. Claude API keys work. Claude Pro / Max login is not in the MeshVault web UI yet because Pi's Claude flow needs a localhost callback or manual code rather than a device code.
 - Plugins use personal Composio sign-in through the fixed remote MCP endpoint.
 
 Then:
@@ -81,17 +81,17 @@ The app you open and the computer provider are separate choices. Web, Electron, 
 
 | `SANDBOX_PROVIDER` | Where agent commands run | Best fit | Isolation notes |
 | --- | --- | --- | --- |
-| `docker` (default) | A per-bot Docker container on your machine. The Electron app can switch this to This Mac without changing the env var. | Quick local setup and trusted single-machine self-hosting | Good local isolation and persistent bot homes. The supervisor controls the local Docker daemon, so keep its port private; Mesh Bot does this by default. |
-| `e2b` | A remote E2B sandbox | Public or multi-user deployments | Stronger separation from the Mesh Bot application host. Requires `E2B_API_KEY`. This Mac is not available. |
-| `desktop` | Directly on the API/worker host. Working directories under the process user's home folder are allowed. | A trusted single-user local process | Least isolated. Model-initiated shell commands run with the Mesh Bot process's OS permissions. Do not use it on a public or shared server. The Electron first-run "This Mac" choice uses this provider while leaving `SANDBOX_PROVIDER=docker`. |
+| `docker` (default) | A per-bot Docker container on your machine. The Electron app can switch this to This Mac without changing the env var. | Quick local setup and trusted single-machine self-hosting | Good local isolation and persistent bot homes. The supervisor controls the local Docker daemon, so keep its port private; MeshVault does this by default. |
+| `e2b` | A remote E2B sandbox | Public or multi-user deployments | Stronger separation from the MeshVault application host. Requires `E2B_API_KEY`. This Mac is not available. |
+| `desktop` | Directly on the API/worker host. Working directories under the process user's home folder are allowed. | A trusted single-user local process | Least isolated. Model-initiated shell commands run with the MeshVault process's OS permissions. Do not use it on a public or shared server. The Electron first-run "This Mac" choice uses this provider while leaving `SANDBOX_PROVIDER=docker`. |
 | `fake` | An in-process emulator | Tests only | Does not run a real computer. |
 
-Docker remains the recommended quick start for someone running Mesh Bot on their own machine. E2B is the safer boundary when untrusted users or public traffic share a deployment.
+Docker remains the recommended quick start for someone running MeshVault on their own machine. E2B is the safer boundary when untrusted users or public traffic share a deployment.
 
 If this Postgres was created with `prisma db push` before checked-in migrations existed, mark the baseline once:
 
 ```bash
-pnpm --filter @meshbot/db exec prisma migrate resolve --applied 0001_init
+pnpm --filter @meshvault/db exec prisma migrate resolve --applied 0001_init
 ```
 
 ## Run the desktop app
@@ -99,17 +99,17 @@ pnpm --filter @meshbot/db exec prisma migrate resolve --applied 0001_init
 The Electron shell loads the same web UI. Leave `pnpm dev` running, then:
 
 ```bash
-pnpm --filter @meshbot/desktop dev
+pnpm --filter @meshvault/desktop dev
 ```
 
-Native red / yellow / green buttons close, minimize, and zoom that window. They do nothing in the browser tab. On first launch the desktop app asks whether bots should keep using Docker or run on this Mac as you. Docker stays the default. macOS will not show a permission prompt for that choice — the consent is Mesh Bot's.
+Native red / yellow / green buttons close, minimize, and zoom that window. They do nothing in the browser tab. On first launch the desktop app asks whether bots should keep using Docker or run on this Mac as you. Docker stays the default. macOS will not show a permission prompt for that choice — the consent is MeshVault's.
 
-Development defaults to `http://127.0.0.1:5173`. A packaged build asks for the HTTPS origin served by the Windows-owned Mesh Bot runtime and remembers it. Use **Mesh Bot → Change Server…** to change it; `MESHBOT_WEB_URL` remains the explicit startup override.
+Development defaults to `http://127.0.0.1:5173`. A packaged build asks for the HTTPS origin served by the Windows-owned MeshVault runtime and remembers it. Use **MeshVault → Change Server…** to change it; `MESHVAULT_WEB_URL` remains the explicit startup override.
 
 Packaged installers (optional):
 
 ```bash
-pnpm --filter @meshbot/desktop pack
+pnpm --filter @meshvault/desktop pack
 ```
 
 Outputs land in `apps/desktop/out/` (macOS dmg/zip, Windows NSIS, Linux AppImage). Those builds still need a running API and web origin.
@@ -123,14 +123,14 @@ export CSC_KEY_PASSWORD='<certificate password>'
 export APPLE_API_KEY='<absolute path to AuthKey_*.p8>'
 export APPLE_API_KEY_ID='<App Store Connect key id>'
 export APPLE_API_ISSUER='<App Store Connect issuer id>'
-pnpm --filter @meshbot/desktop release:mac
+pnpm --filter @meshvault/desktop release:mac
 ```
 
 The preflight names every missing field before TypeScript compilation or packaging. It does not print credential values. The release config writes only to `apps/desktop/out/release/`, requires a valid signing identity, enables hardened runtime, and uses electron-builder's built-in notarization. Ordinary unsigned `pack` builds stay in `apps/desktop/out/` and cannot be mistaken for release output. Verify the produced app and disk image before publishing either artifact:
 
 ```bash
 MESH_RELEASE_DIR="apps/desktop/out/release"
-MESH_APP="$(find "$MESH_RELEASE_DIR" -maxdepth 2 -type d -name 'Mesh Bot.app' -print -quit)"
+MESH_APP="$(find "$MESH_RELEASE_DIR" -maxdepth 2 -type d -name 'MeshVault.app' -print -quit)"
 test -n "$MESH_APP"
 codesign --verify --deep --strict --verbose=2 "$MESH_APP"
 codesign -dvv "$MESH_APP" 2>&1 | grep -F 'Authority=Developer ID Application:'
@@ -145,7 +145,7 @@ hdiutil verify "$MESH_DMG"
 Mobile is the existing Expo app (`apps/mobile`). Leave `pnpm dev` running, then:
 
 ```bash
-pnpm --filter @meshbot/mobile start
+pnpm --filter @meshvault/mobile start
 ```
 
 Point the app at your API origin (`EXPO_PUBLIC_API_URL`, or **Use a custom server** on the sign-in screen).
@@ -153,11 +153,11 @@ Point the app at your API origin (`EXPO_PUBLIC_API_URL`, or **Use a custom serve
 Before a production iPhone build, supply the exact Apple and Expo identity assigned to this app:
 
 ```bash
-export MESHBOT_IOS_BUNDLE_IDENTIFIER='<assigned bundle id>'
-export MESHBOT_IOS_BUILD_NUMBER='<next build number>'
-export MESHBOT_EXPO_OWNER='<Expo account>'
-export MESHBOT_EXPO_PROJECT_ID='<EAS project id>'
-pnpm --filter @meshbot/mobile release:ios:check
+export MESHVAULT_IOS_BUNDLE_IDENTIFIER='<assigned bundle id>'
+export MESHVAULT_IOS_BUILD_NUMBER='<next build number>'
+export MESHVAULT_EXPO_OWNER='<Expo account>'
+export MESHVAULT_EXPO_PROJECT_ID='<EAS project id>'
+pnpm --filter @meshvault/mobile release:ios:check
 cd apps/mobile && eas build --platform ios --profile production
 ```
 
@@ -179,7 +179,7 @@ packages/core contracts db auth memory ui-web adapter-kit adapters testkit
 infra/compose sandboxes
 ```
 
-`apps/www` is the public marketing site. It is not the signed-in product. Workspace packages use the `@meshbot/*` scope.
+`apps/www` is the public marketing site. It is not the signed-in product. Workspace packages use the `@meshvault/*` scope.
 
 ## Self-host and Cloud
 

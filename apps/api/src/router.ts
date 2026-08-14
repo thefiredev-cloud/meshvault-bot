@@ -4,7 +4,7 @@ import type {
   MemoryStore,
   SandboxProvider,
   WakeupDriver,
-} from "@meshbot/adapter-kit";
+} from "@meshvault/adapter-kit";
 import {
   type ComposioConnector,
   destroyBot,
@@ -18,8 +18,8 @@ import {
   scriptedCatalogEntry,
   serializeModelSecret,
   touchRunningComputer,
-} from "@meshbot/adapters";
-import type { Auth } from "@meshbot/auth";
+} from "@meshvault/adapters";
+import type { Auth } from "@meshvault/auth";
 import {
   type Actor,
   appContract,
@@ -28,14 +28,14 @@ import {
   type Me,
   type MessageBlock,
   type ThreadSnapshot,
-} from "@meshbot/contracts";
+} from "@meshvault/contracts";
 import {
   isOwnerApprovalDecision,
   nextCronDate,
   ownerApprovalCheckpoint,
   parseOwnerApprovalCheckpoint,
   projectMessages,
-} from "@meshbot/core";
+} from "@meshvault/core";
 import {
   appendEvent,
   createRepos,
@@ -46,7 +46,7 @@ import {
   type Prisma,
   type PrismaClient,
   requireMembership,
-} from "@meshbot/db";
+} from "@meshvault/db";
 import { implement, ORPCError } from "@orpc/server";
 import { brainFailure, normalizeBrainGraph } from "./brain.js";
 import { addScreenProxyCapability } from "./screen-proxy.js";

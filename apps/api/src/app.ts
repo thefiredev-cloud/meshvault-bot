@@ -1,4 +1,4 @@
-import type { SandboxProvider, WakeupDriver } from "@meshbot/adapter-kit";
+import type { SandboxProvider, WakeupDriver } from "@meshvault/adapter-kit";
 import {
   type ComposioConnector,
   createConnectorStack,
@@ -15,10 +15,10 @@ import {
   resolveComposioCallbackUrl,
   ScriptedAgentRuntime,
   sleepComputerIfIdle,
-} from "@meshbot/adapters";
-import { blockedAuthPaths, createAuth } from "@meshbot/auth";
-import { createDb, type PrismaClient, requireMembership } from "@meshbot/db";
-import { MarkdownMemoryStore } from "@meshbot/memory";
+} from "@meshvault/adapters";
+import { blockedAuthPaths, createAuth } from "@meshvault/auth";
+import { createDb, type PrismaClient, requireMembership } from "@meshvault/db";
+import { MarkdownMemoryStore } from "@meshvault/memory";
 import { RPCHandler } from "@orpc/server/fetch";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -59,7 +59,7 @@ export async function createApp(
     signupsEnabled: env.signupsEnabled,
     signupAllowlist: env.signupAllowlist,
     extraOrigins: [
-      "meshbot://",
+      "meshvault://",
       "meshvault://",
       "exp://",
       "exp://*",
@@ -167,7 +167,7 @@ export async function createApp(
       await stack.composio.completeCallback(new URL(c.req.url).searchParams);
       return c.text("Composio connected. You can close this window.");
     } catch {
-      return c.text("Composio could not connect. Return to Mesh Bot and try again.", 400);
+      return c.text("Composio could not connect. Return to MeshVault and try again.", 400);
     }
   });
   app.on(["GET", "POST"], "/api/auth/*", async (c) => {
@@ -221,7 +221,7 @@ export function isTrustedOrigin(origin: string, env: AppEnv) {
   if (!origin) return true;
   if (origin === env.webOrigin || origin === env.apiUrl || origin === env.authUrl) return true;
   if (
-    origin.startsWith("meshbot://") ||
+    origin.startsWith("meshvault://") ||
     origin.startsWith("meshvault://") ||
     origin.startsWith("exp://")
   )

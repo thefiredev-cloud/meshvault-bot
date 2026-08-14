@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Mesh Bot",
-    "slug": "meshbot",
-    "scheme": "meshbot",
+    "name": "MeshVault",
+    "slug": "meshvault",
+    "scheme": "meshvault",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",

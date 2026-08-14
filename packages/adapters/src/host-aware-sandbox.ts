@@ -8,8 +8,8 @@ import type {
   ProcessEvent,
   SandboxProvider,
   ScreenRequest,
-} from "@meshbot/adapter-kit";
-import type { PrismaClient } from "@meshbot/db";
+} from "@meshvault/adapter-kit";
+import type { PrismaClient } from "@meshvault/db";
 import { DesktopSandboxProvider } from "./desktop-sandbox.js";
 import { createSandboxProvider } from "./sandbox-factory.js";
 

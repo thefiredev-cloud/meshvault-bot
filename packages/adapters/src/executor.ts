@@ -11,8 +11,8 @@ import {
   type OwnerApprovalRequired,
   type SandboxProvider,
   type WakeupDriver,
-} from "@meshbot/adapter-kit";
-import type { Actor, MessageBlock, RunStatus } from "@meshbot/contracts";
+} from "@meshvault/adapter-kit";
+import type { Actor, MessageBlock, RunStatus } from "@meshvault/contracts";
 import {
   assertTransition,
   canAcquireRunLease,
@@ -23,8 +23,8 @@ import {
   parseOwnerApprovalCheckpoint,
   redactSecrets,
   shouldYieldToOwnerApproval,
-} from "@meshbot/core";
-import { appendEvent, type PrismaClient } from "@meshbot/db";
+} from "@meshvault/core";
+import { appendEvent, type PrismaClient } from "@meshvault/db";
 import { builtinAgentTools } from "./builtin-tools.js";
 import { deleteSpawnedBot, spawnBot } from "./child-bots.js";
 import { collectLogIds } from "./composio-connector.js";
@@ -344,7 +344,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
         }
         if (name === "shell") {
           const command = String(args.command ?? args.cmd ?? "");
-          const cwd = String(args.cwd ?? (computer.kind === "desktop" ? "." : "/home/meshbot"));
+          const cwd = String(args.cwd ?? (computer.kind === "desktop" ? "." : "/home/meshvault"));
           return runSandboxCommand(deps.sandbox, computer, ["bash", "-lc", command], cwd, context);
         }
         if (name === "remember") {

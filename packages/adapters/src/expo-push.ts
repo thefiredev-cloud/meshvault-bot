@@ -4,7 +4,7 @@ import type {
   AdapterContext,
   NotificationMessage,
   NotificationProvider,
-} from "@meshbot/adapter-kit";
+} from "@meshvault/adapter-kit";
 
 export function pushTokenPath(dataDir: string, userId: string) {
   return path.join(dataDir, "push-tokens", `${userId}.txt`);

@@ -4,6 +4,6 @@ This repository is derived from [elie222/rakazo](https://github.com/elie222/raka
 
 Rakazo is licensed under Apache License 2.0. The upstream `LICENSE` file and Git history are retained. FireDev LLC dba MeshVault began modifying this derivative on 2026-08-13.
 
-Mesh Bot changes include product identity, package scopes, local protocol names, container identity, model routing, a bounded Brain surface, personal Composio OAuth, build coverage, and release hardening. The original name remains only in this provenance record, `NOTICE`, `LICENSE`, and retained Git history.
+MeshVault changes include product identity, package scopes, local protocol names, container identity, model routing, a bounded Brain surface, personal Composio OAuth, build coverage, and release hardening. The original name remains only in this provenance record, `NOTICE`, `LICENSE`, and retained Git history.
 
 MeshVault is not affiliated with or endorsed by xAI. Grok Bot is used only as a public behavior reference.

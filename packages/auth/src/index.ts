@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
-import { emailAllowed, parseAllowlist, signupsOpen } from "@meshbot/core";
-import type { PrismaClient } from "@meshbot/db";
+import { emailAllowed, parseAllowlist, signupsOpen } from "@meshvault/core";
+import type { PrismaClient } from "@meshvault/db";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { APIError } from "better-auth/api";
@@ -23,7 +23,7 @@ function newId(): string {
 
 export function createAuth(prisma: PrismaClient, env: AuthEnv) {
   return betterAuth({
-    appName: "Mesh Bot",
+    appName: "MeshVault",
     secret: env.secret,
     baseURL: env.baseURL,
     trustedOrigins: [env.webOrigin, env.baseURL, ...(env.extraOrigins ?? [])],

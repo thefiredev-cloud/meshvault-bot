@@ -35,10 +35,10 @@ import {
   resolveComposioCallbackUrl,
   ScriptedAgentRuntime,
   sleepComputerIfIdle,
-} from "@meshbot/adapters";
-import { deploymentModelKey, modelSecretsToRedact, resolveEncryptionKey } from "@meshbot/core";
-import { createDb } from "@meshbot/db";
-import { MarkdownMemoryStore } from "@meshbot/memory";
+} from "@meshvault/adapters";
+import { deploymentModelKey, modelSecretsToRedact, resolveEncryptionKey } from "@meshvault/core";
+import { createDb } from "@meshvault/db";
+import { MarkdownMemoryStore } from "@meshvault/memory";
 
 const QUEUED_RUN_RECOVERY_MS = 5_000;
 
@@ -105,7 +105,7 @@ async function main() {
     );
   }, QUEUED_RUN_RECOVERY_MS).unref();
 
-  console.log("meshbot worker ready");
+  console.log("meshvault worker ready");
 }
 
 main().catch((error) => {

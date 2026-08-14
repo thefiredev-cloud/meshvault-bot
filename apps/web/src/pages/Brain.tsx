@@ -1,5 +1,5 @@
-import type { BrainGraph, BrainNode } from "@meshbot/contracts";
-import { Button } from "@meshbot/ui-web";
+import type { BrainGraph, BrainNode } from "@meshvault/contracts";
+import { Button } from "@meshvault/ui-web";
 import { BrainCircuit, Rotate3D } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { rpc } from "../lib/rpc";
@@ -15,7 +15,7 @@ const failureCopy: Record<Extract<BrainGraph, { available: false }>["reason"], s
     "The Windows vault rejected this credential. Pair the runtime again before loading Brain.",
   "identity-mismatch":
     "The Windows node certificate did not match its pinned identity. Brain stays closed until the node is paired again.",
-  "invalid-response": "The Windows vault returned a graph Mesh Bot could not safely read.",
+  "invalid-response": "The Windows vault returned a graph MeshVault could not safely read.",
 };
 
 export function BrainOverlay({ onClose }: { onClose: () => void }) {

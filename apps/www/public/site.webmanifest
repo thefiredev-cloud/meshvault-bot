@@ -1,6 +1,6 @@
 {
-  "name": "Mesh Bot",
-  "short_name": "Mesh Bot",
+  "name": "MeshVault",
+  "short_name": "MeshVault",
   "description": "Open-source Grok Bot alternative. Your keys, your model, your machine.",
   "start_url": "/",
   "display": "browser",

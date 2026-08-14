@@ -1,4 +1,4 @@
-import type { AdapterContext, ConnectorEvent } from "@meshbot/adapter-kit";
+import type { AdapterContext, ConnectorEvent } from "@meshvault/adapter-kit";
 import { describe, expect, it } from "vitest";
 import {
   asConnectorTools,
@@ -137,7 +137,7 @@ function fakeSessionFactory(
       async connect() {
         if (mode !== "begin") return;
         if (!provider.saveClientInformation) throw new Error("OAuth client storage missing");
-        await provider.saveClientInformation({ client_id: "meshbot-test-client" });
+        await provider.saveClientInformation({ client_id: "meshvault-test-client" });
         await provider.saveCodeVerifier("test-pkce-verifier");
         const state = await provider.state?.();
         await provider.redirectToAuthorization(
@@ -174,7 +174,7 @@ describe("personal Composio MCP OAuth", () => {
     const store = new MemoryOAuthStore();
     const callbacks: URLSearchParams[] = [];
     const sessions: Array<"begin" | "callback" | "runtime"> = [];
-    const connector = new ComposioConnector(store, "https://meshbot.test/callback", {
+    const connector = new ComposioConnector(store, "https://meshvault.test/callback", {
       now: () => Date.parse("2026-08-13T00:00:00.000Z"),
       stateFactory: () => "fixed-state",
       sessionFactory: fakeSessionFactory(callbacks, sessions),
@@ -186,7 +186,7 @@ describe("personal Composio MCP OAuth", () => {
       authorizationUrl: "https://login.composio.dev/authorize?state=fixed-state",
     });
     expect(store.bundle).toMatchObject({
-      clientInformation: { client_id: "meshbot-test-client" },
+      clientInformation: { client_id: "meshvault-test-client" },
       codeVerifier: "test-pkce-verifier",
       userId: context.userId,
       workspaceId: context.workspaceId,
@@ -261,7 +261,7 @@ describe("personal Composio MCP OAuth", () => {
     let now = Date.parse("2026-08-13T00:00:00.000Z");
     const store = new MemoryOAuthStore();
     const callbacks: URLSearchParams[] = [];
-    const connector = new ComposioConnector(store, "https://meshbot.test/callback", {
+    const connector = new ComposioConnector(store, "https://meshvault.test/callback", {
       now: () => now,
       stateFactory: () => "fixed-state",
       sessionFactory: fakeSessionFactory(callbacks),
@@ -316,7 +316,7 @@ describe("personal Composio MCP OAuth", () => {
     store.bundle = encryptedBundle;
     store.readError = true;
     const sessions: Array<"begin" | "callback" | "runtime"> = [];
-    const connector = new ComposioConnector(store, "https://meshbot.test/callback", {
+    const connector = new ComposioConnector(store, "https://meshvault.test/callback", {
       sessionFactory: fakeSessionFactory([], sessions),
     });
 

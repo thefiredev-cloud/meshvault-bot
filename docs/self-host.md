@@ -1,4 +1,4 @@
-# Self-hosting Mesh Bot
+# Self-hosting MeshVault
 
 The signed-in product is a long-running API, a Graphile Worker, Postgres, and a computer provider (Docker supervisor or E2B). It is not a static site. The marketing site in `apps/www` can be hosted separately.
 
@@ -6,17 +6,17 @@ Desktop is Electron. Mobile is the existing Expo iOS app. License and provenance
 
 ## Local (source checkout)
 
-Same as the README quick start: `.env` from `.env.example`, Postgres via Compose, `pnpm sandbox:build`, `pnpm dev`, then [http://127.0.0.1:5173](http://127.0.0.1:5173). Electron: `pnpm --filter @meshbot/desktop dev` while that stack is up.
+Same as the README quick start: `.env` from `.env.example`, Postgres via Compose, `pnpm sandbox:build`, `pnpm dev`, then [http://127.0.0.1:5173](http://127.0.0.1:5173). Electron: `pnpm --filter @meshvault/desktop dev` while that stack is up.
 
 ## Docker Compose (single machine)
 
-1. Copy `.env.example` to `.env` and set `BETTER_AUTH_SECRET` and `ENCRYPTION_KEY` to long random strings. Mesh Bot refuses placeholder or missing secrets outside `development` / `test` (or when `MESHBOT_ALLOW_DEV_SECRETS=1` is set).
-2. Set `QWEN_API_KEY` or `DASHSCOPE_API_KEY` for the default Qwen path. Optional: `QWEN_BASE_URL` / `DASHSCOPE_BASE_URL` for a compatible OpenAI API. `OPENROUTER_API_KEY` still works. Deployment-owned local models use `MESHBOT_GATEWAY_URL`, `MESHBOT_GATEWAY_KEY`, and an exact `MESHBOT_GATEWAY_MODELS` list. Plugins use personal Composio sign-in and do not need a project API key.
+1. Copy `.env.example` to `.env` and set `BETTER_AUTH_SECRET` and `ENCRYPTION_KEY` to long random strings. MeshVault refuses placeholder or missing secrets outside `development` / `test` (or when `MESHVAULT_ALLOW_DEV_SECRETS=1` is set).
+2. Set `QWEN_API_KEY` or `DASHSCOPE_API_KEY` for the default Qwen path. Optional: `QWEN_BASE_URL` / `DASHSCOPE_BASE_URL` for a compatible OpenAI API. `OPENROUTER_API_KEY` still works. Deployment-owned local models use `MESHVAULT_GATEWAY_URL`, `MESHVAULT_GATEWAY_KEY`, and an exact `MESHVAULT_GATEWAY_MODELS` list. Plugins use personal Composio sign-in and do not need a project API key.
 3. Build the computer image: `pnpm sandbox:build` (Compose also builds it via the `computer` service).
 4. `docker compose -f infra/compose/docker-compose.yml up --build`
 5. Open the web origin (`http://127.0.0.1:5173` by default). The first registered user becomes the deployment owner.
 
-Compose runs Postgres, the sandbox supervisor (Docker socket), API, worker, and a Vite preview of the web app. Bot computers are sibling containers (`meshbot/computer:local`). The API process does not get an unrestricted Docker socket; the supervisor owns lifecycle.
+Compose runs Postgres, the sandbox supervisor (Docker socket), API, worker, and a Vite preview of the web app. Bot computers are sibling containers (`meshvault/computer:local`). The API process does not get an unrestricted Docker socket; the supervisor owns lifecycle.
 
 Postgres is published on **loopback only** (`127.0.0.1:5433` on the host). Do not expose that port on a public VPS. Change `POSTGRES_PASSWORD` and keep Postgres on an internal network when you deploy remotely.
 
@@ -44,9 +44,9 @@ SANDBOX_IDLE_MS=600000    # pause the bot computer after 10 minutes idle
 E2B_API_KEY=              # when SANDBOX_PROVIDER=e2b
 QWEN_API_KEY=             # or DASHSCOPE_API_KEY
 QWEN_BASE_URL=            # optional; default DashScope international compatible-mode
-MESHBOT_GATEWAY_URL=      # deployment-owned OpenAI-compatible model gateway
-MESHBOT_GATEWAY_KEY=
-MESHBOT_GATEWAY_MODELS=   # comma-separated model IDs actually served
+MESHVAULT_GATEWAY_URL=      # deployment-owned OpenAI-compatible model gateway
+MESHVAULT_GATEWAY_KEY=
+MESHVAULT_GATEWAY_MODELS=   # comma-separated model IDs actually served
 OPENROUTER_API_KEY=       # still supported
 ```
 
@@ -57,7 +57,7 @@ Do not commit `.env`. Never put Qwen / DashScope keys, OpenRouter keys, Composio
 The Electron desktop app is a client of the same API. Docker and E2B still apply. On first launch, Electron asks the deployment owner whether bots should keep using Docker or run on this Mac as you. `SANDBOX_PROVIDER=desktop` is a separate, explicit provider that always runs commands on the service host.
 
 - **Docker** is the default for local use and the quickest self-hosted setup. Each bot gets a container and persistent home. Keep the supervisor private, as the included Compose file does. A public single-machine Docker deployment still shares one Docker host between its bot containers.
-- **E2B** runs bot computers away from the Mesh Bot host and is the recommended choice for public or multi-user production deployments.
+- **E2B** runs bot computers away from the MeshVault host and is the recommended choice for public or multi-user production deployments.
 - **Desktop provider** / **This Mac** runs commands on the API/worker host. Docker stays the default. The Electron app asks once; if you choose This Mac, bots can use working directories under your home folder. Do not enable it on a public or shared service. macOS does not show its own permission dialog for this.
 - **Fake** is only an emulator for verification.
 
@@ -77,9 +77,9 @@ This dumps Postgres (`pg_dump`) and archives `data/` into `backups/<stamp>/`.
 
 ## Upgrade
 
-Pull the new source, run `pnpm --filter @meshbot/db migrate`, then restart API and worker. Product contracts stay compatible across cloud and self-hosted.
+Pull the new source, run `pnpm --filter @meshvault/db migrate`, then restart API and worker. Product contracts stay compatible across cloud and self-hosted.
 
-## What “Mesh Bot Cloud” still needs
+## What “MeshVault Cloud” still needs
 
 `apps/www` (Astro, `output: "static"`, `site: https://meshvault.ai`) can go live today on Vercel, Cloudflare Pages, or any static host. The waitlist link is `mailto:tanner@meshvault.ai`. That is the marketing site, not the product.
 
@@ -98,6 +98,6 @@ To run a hosted product (same codebase):
 9. Deploy `apps/www` to `meshvault.ai` and point `app.meshvault.ai` (or similar) at the product origin.
 10. Turn on `SIGNUP_ALLOWLIST` until you want open registration. There is no MeshVault-managed model billing in version 1 — users bring keys.
 
-Expo / desktop installers are clients of that origin (`EXPO_PUBLIC_API_URL`, `MESHBOT_WEB_URL`). They are not a Cloud control plane.
+Expo / desktop installers are clients of that origin (`EXPO_PUBLIC_API_URL`, `MESHVAULT_WEB_URL`). They are not a Cloud control plane.
 
 The iOS app can also point at a self-hosted origin at runtime. On the sign-in screen, tap **Use a custom server** and enter the same HTTPS origin as `WEB_ORIGIN` (for example `https://app.example.com`). Store builds still default to `EXPO_PUBLIC_API_URL`; the in-app setting is an override for people running their own API. Changing the server signs the device out of any previous session.

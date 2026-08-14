@@ -1,10 +1,10 @@
-# Mesh Bot
+# MeshVault
 
-Status: active build. Product-facing name: Mesh Bot. Company: MeshVault.
+Status: active build. Product-facing name: MeshVault. Company: MeshVault.
 
 ## Purpose
 
-Mesh Bot is a private agent work surface for running bots on computers the owner controls. It preserves MeshVault's Windows-authoritative runtime and native companion work.
+MeshVault is a private agent work surface for running bots on computers the owner controls. It preserves MeshVault's Windows-authoritative runtime and native companion work.
 
 ## Product contract
 
@@ -31,4 +31,4 @@ The complete product is accepted only when a real phone can start a bot task, th
 
 ## Current slice
 
-This branch establishes provenance, Mesh Bot identity, a buildable web package, a Docker context that excludes local secrets, and a bounded 3D Brain surface. It also implements owner-scoped personal Composio MCP OAuth plus separate native pairing and Meshnet states, and the fleet gateway model lane (`MESHBOT_GATEWAY_URL`, `MESHBOT_GATEWAY_KEY`, and `MESHBOT_GATEWAY_MODELS` register an OpenAI-compatible endpoint as a provider). Proven locally 2026-08-14: signup, gateway model connect, bot creation, gateway-generated interview, Docker computer provisioning, a file written by the bot, and a thread answer from Grok through the fleet LiteLLM gateway. The live SPKI-pinned Windows Brain reader, Windows WSL computers, native packaging, real Composio sign-in, physical phone pairing, and cross-device restart acceptance remain open.
+This branch establishes provenance, MeshVault identity, a buildable web package, a Docker context that excludes local secrets, and a bounded 3D Brain surface. It also implements owner-scoped personal Composio MCP OAuth plus separate native pairing and Meshnet states, and the fleet gateway model lane (`MESHVAULT_GATEWAY_URL`, `MESHVAULT_GATEWAY_KEY`, and `MESHVAULT_GATEWAY_MODELS` register an OpenAI-compatible endpoint as a provider). Proven locally 2026-08-14: signup, gateway model connect, bot creation, gateway-generated interview, Docker computer provisioning, a file written by the bot, and a thread answer from Grok through the fleet LiteLLM gateway. The live SPKI-pinned Windows Brain reader, Windows WSL computers, native packaging, real Composio sign-in, physical phone pairing, and cross-device restart acceptance remain open.

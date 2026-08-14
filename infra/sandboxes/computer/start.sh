@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -uo pipefail
 export DISPLAY="${DISPLAY:-:1}"
-export HOME="${HOME:-/home/meshbot}"
+export HOME="${HOME:-/home/meshvault}"
 AGENT_HOME="$HOME"
-mkdir -p "$AGENT_HOME" "$AGENT_HOME/.local/bin" "$AGENT_HOME/.config" /tmp/meshbot /tmp/.X11-unix /tmp/fluxbox-home
+mkdir -p "$AGENT_HOME" "$AGENT_HOME/.local/bin" "$AGENT_HOME/.config" /tmp/meshvault /tmp/.X11-unix /tmp/fluxbox-home
 export PATH="$AGENT_HOME/.local/bin:/usr/local/bin:$PATH"
 export NPM_CONFIG_PREFIX="$AGENT_HOME/.local"
 export PIP_USER=1
@@ -11,7 +11,7 @@ cd "$AGENT_HOME"
 
 rm -f /tmp/.X1-lock /tmp/.X11-unix/X1
 
-Xvfb :1 -screen 0 1280x800x24 -ac +extension RANDR +render -noreset >/tmp/meshbot/xvfb.log 2>&1 &
+Xvfb :1 -screen 0 1280x800x24 -ac +extension RANDR +render -noreset >/tmp/meshvault/xvfb.log 2>&1 &
 XVFB_PID=$!
 
 ready=0
@@ -24,7 +24,7 @@ for _ in $(seq 1 100); do
 done
 if [[ "$ready" -ne 1 ]]; then
   echo "Xvfb failed to start" >&2
-  cat /tmp/meshbot/xvfb.log >&2 || true
+  cat /tmp/meshvault/xvfb.log >&2 || true
   exit 1
 fi
 
@@ -34,18 +34,18 @@ fi
 
 xsetroot -solid "#111113" >/dev/null 2>&1 || true
 mkdir -p /tmp/fluxbox-home/.fluxbox
-cp /etc/meshbot/fluxbox/init /tmp/fluxbox-home/.fluxbox/init
-cp /etc/meshbot/fluxbox/apps /tmp/fluxbox-home/.fluxbox/apps 2>/dev/null || true
-cp /etc/meshbot/fluxbox/menu /tmp/fluxbox-home/.fluxbox/menu 2>/dev/null || true
+cp /etc/meshvault/fluxbox/init /tmp/fluxbox-home/.fluxbox/init
+cp /etc/meshvault/fluxbox/apps /tmp/fluxbox-home/.fluxbox/apps 2>/dev/null || true
+cp /etc/meshvault/fluxbox/menu /tmp/fluxbox-home/.fluxbox/menu 2>/dev/null || true
 cat > /tmp/fluxbox-home/.fluxbox/startup <<'EOF'
 #!/bin/sh
 xsetroot -solid "#111113"
 exec fluxbox -rc /tmp/fluxbox-home/.fluxbox/init
 EOF
 chmod +x /tmp/fluxbox-home/.fluxbox/startup
-HOME=/tmp/fluxbox-home /tmp/fluxbox-home/.fluxbox/startup >/tmp/meshbot/fluxbox.log 2>&1 &
+HOME=/tmp/fluxbox-home /tmp/fluxbox-home/.fluxbox/startup >/tmp/meshvault/fluxbox.log 2>&1 &
 
-HOME="$AGENT_HOME" meshbot-browser >/tmp/meshbot/browser.log 2>&1 &
+HOME="$AGENT_HOME" meshvault-browser >/tmp/meshvault/browser.log 2>&1 &
 browser_up=0
 for _ in $(seq 1 40); do
   if xdotool search --onlyvisible --class chromium >/dev/null 2>&1; then
@@ -60,11 +60,11 @@ for _ in $(seq 1 40); do
 done
 if [[ "$browser_up" -ne 1 ]]; then
   echo "browser failed to start" >&2
-  cat /tmp/meshbot/browser.log >&2 || true
-  xterm -geometry 100x28+48+48 -bg "#111113" -fg "#E8E8EA" -cr "#E8E8EA" -title "Terminal" >/tmp/meshbot/xterm.log 2>&1 &
+  cat /tmp/meshvault/browser.log >&2 || true
+  xterm -geometry 100x28+48+48 -bg "#111113" -fg "#E8E8EA" -cr "#E8E8EA" -title "Terminal" >/tmp/meshvault/xterm.log 2>&1 &
 fi
 
-x11vnc -display :1 -forever -shared -nopw -listen 127.0.0.1 -rfbport 5900 -xkb -ncache 0 >/tmp/meshbot/x11vnc.log 2>&1 &
+x11vnc -display :1 -forever -shared -nopw -listen 127.0.0.1 -rfbport 5900 -xkb -ncache 0 >/tmp/meshvault/x11vnc.log 2>&1 &
 
 NOVNC_ROOT=/usr/share/novnc
 if [[ ! -d "$NOVNC_ROOT" ]]; then
@@ -75,7 +75,7 @@ if [[ ! -f "$NOVNC_ROOT/embed.html" ]]; then
   echo "noVNC embed.html is missing from the computer image" >&2
   exit 1
 fi
-websockify --web="$NOVNC_ROOT" 0.0.0.0:6080 127.0.0.1:5900 >/tmp/meshbot/novnc.log 2>&1 &
+websockify --web="$NOVNC_ROOT" 0.0.0.0:6080 127.0.0.1:5900 >/tmp/meshvault/novnc.log 2>&1 &
 
 while kill -0 "$XVFB_PID" 2>/dev/null; do
   sleep 2

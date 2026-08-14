@@ -10,12 +10,12 @@ function showStatus(message, error = false) {
 }
 
 async function loadSettings() {
-  const settings = await window.meshbotDesktop.server.settings();
+  const settings = await window.meshvaultDesktop.server.settings();
   input.value = settings.currentOrigin ?? settings.savedOrigin ?? "";
   if (settings.error) showStatus(settings.error, true);
   if (settings.override) {
     hint.textContent =
-      "MESHBOT_WEB_URL controls startup while it is set. A server chosen here is still saved.";
+      "MESHVAULT_WEB_URL controls startup while it is set. A server chosen here is still saved.";
   }
 }
 
@@ -24,7 +24,7 @@ form.addEventListener("submit", async (event) => {
   button.disabled = true;
   showStatus("Connecting…");
   try {
-    await window.meshbotDesktop.server.connect(input.value);
+    await window.meshvaultDesktop.server.connect(input.value);
   } catch (error) {
     showStatus(error instanceof Error ? error.message : "Could not connect to that server.", true);
     button.disabled = false;

@@ -1,5 +1,5 @@
 ---
-import { BotAvatar } from "@meshbot/ui-web";
+import { BotAvatar } from "@meshvault/ui-web";
 import Button from "../components/Button.astro";
 import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
@@ -13,7 +13,7 @@ const stars = await fetchGithubStars();
 const starsLabel = stars === null ? "Star" : formatStarCount(stars);
 ---
 
-<BaseLayout title="Mesh Bot" description={SITE_DESCRIPTION}>
+<BaseLayout title="MeshVault" description={SITE_DESCRIPTION}>
   <div class="container">
     <Header starsLabel={starsLabel} />
 
@@ -87,7 +87,7 @@ const starsLabel = stars === null ? "Star" : formatStarCount(stars);
           <div class="eyebrow">Open source</div>
           <h2 class="section-heading">No pricing page. Just the repo.</h2>
           <p class="section-copy">
-            Mesh Bot is Apache-2.0 licensed and can run on your own machine with the model connections you choose.
+            MeshVault is Apache-2.0 licensed and can run on your own machine with the model connections you choose.
             The source and self-hosting setup are in the repo.
           </p>
         </div>

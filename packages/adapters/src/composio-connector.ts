@@ -5,8 +5,8 @@ import type {
   ConnectorEvent,
   ConnectorProvider,
   ConnectorTool,
-} from "@meshbot/adapter-kit";
-import type { Prisma, PrismaClient } from "@meshbot/db";
+} from "@meshvault/adapter-kit";
+import type { Prisma, PrismaClient } from "@meshvault/db";
 import {
   AuthorizationServerMismatchError,
   Client,
@@ -348,7 +348,7 @@ export class PersistentComposioOAuthProvider implements OAuthClientProvider {
 
   get clientMetadata(): OAuthClientMetadata {
     return {
-      client_name: "Mesh Bot",
+      client_name: "MeshVault",
       redirect_uris: [this.callbackUrl],
       grant_types: ["authorization_code", "refresh_token"],
       response_types: ["code"],
@@ -766,7 +766,7 @@ function createComposioMcpSession(
   provider: OAuthClientProvider,
   mode: "begin" | "callback" | "runtime",
 ): ComposioMcpSession {
-  const client = new Client({ name: "meshbot", version: "0.1.0" });
+  const client = new Client({ name: "meshvault", version: "0.1.0" });
   const transport = new StreamableHTTPClientTransport(COMPOSIO_MCP_URL, {
     authProvider: provider,
     onInsufficientScope: mode === "runtime" ? "throw" : "reauthorize",

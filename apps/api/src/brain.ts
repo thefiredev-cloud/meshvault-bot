@@ -1,4 +1,4 @@
-import type { BrainGraph } from "@meshbot/contracts";
+import type { BrainGraph } from "@meshvault/contracts";
 import * as z from "zod";
 
 const RawGraphSchema = z.object({

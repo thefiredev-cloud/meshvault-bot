@@ -1,4 +1,4 @@
-import type { ThreadMessage } from "@meshbot/contracts";
+import type { ThreadMessage } from "@meshvault/contracts";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { approvalAnswerInput, MessageView } from "./Shell.js";

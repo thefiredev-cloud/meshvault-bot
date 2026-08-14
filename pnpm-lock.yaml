@@ -36,30 +36,30 @@ importers:
       '@hono/node-server':
         specifier: ^1.19.1
         version: 1.19.17(hono@4.13.1)
+      '@meshvault/adapter-kit':
+        specifier: workspace:*
+        version: link:../../packages/adapter-kit
+      '@meshvault/adapters':
+        specifier: workspace:*
+        version: link:../../packages/adapters
+      '@meshvault/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@meshvault/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@meshvault/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@meshvault/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@meshvault/memory':
+        specifier: workspace:*
+        version: link:../../packages/memory
       '@orpc/server':
         specifier: ^1.15.0
         version: 1.15.0(@opentelemetry/api@1.9.0)(crossws@0.3.5)(ws@8.21.3)
-      '@meshbot/adapter-kit':
-        specifier: workspace:*
-        version: link:../../packages/adapter-kit
-      '@meshbot/adapters':
-        specifier: workspace:*
-        version: link:../../packages/adapters
-      '@meshbot/auth':
-        specifier: workspace:*
-        version: link:../../packages/auth
-      '@meshbot/contracts':
-        specifier: workspace:*
-        version: link:../../packages/contracts
-      '@meshbot/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@meshbot/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@meshbot/memory':
-        specifier: workspace:*
-        version: link:../../packages/memory
       dotenv:
         specifier: ^17.2.1
         version: 17.4.2
@@ -82,7 +82,7 @@ importers:
 
   apps/desktop:
     dependencies:
-      '@meshbot/contracts':
+      '@meshvault/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
     devDependencies:
@@ -104,18 +104,18 @@ importers:
       '@expo/vector-icons':
         specifier: ^14.1.0
         version: 14.1.0(expo-font@13.3.2(expo@53.0.27(@babel/core@7.29.7)(@expo/metro-runtime@5.0.5(react-native@0.79.5(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.0.0)))(react-native-webview@13.13.5(react-native@0.79.5(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.0.0))(react@19.0.0))(react-native@0.79.5(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.0.0))(react@19.0.0))(react@19.0.0))(react-native@0.79.5(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.0.0))(react@19.0.0)
+      '@meshvault/chat-ui':
+        specifier: workspace:*
+        version: link:../../packages/chat-ui
+      '@meshvault/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@meshvault/ui-tokens':
+        specifier: workspace:*
+        version: link:../../packages/ui-tokens
       '@orpc/client':
         specifier: ^1.15.0
         version: 1.15.0(@opentelemetry/api@1.9.0)
-      '@meshbot/chat-ui':
-        specifier: workspace:*
-        version: link:../../packages/chat-ui
-      '@meshbot/contracts':
-        specifier: workspace:*
-        version: link:../../packages/contracts
-      '@meshbot/ui-tokens':
-        specifier: workspace:*
-        version: link:../../packages/ui-tokens
       '@react-navigation/native':
         specifier: ^7.1.17
         version: 7.3.16(react-native@0.79.5(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.0.0))(react@19.0.0)
@@ -165,6 +165,21 @@ importers:
 
   apps/web:
     dependencies:
+      '@meshvault/chat-ui':
+        specifier: workspace:*
+        version: link:../../packages/chat-ui
+      '@meshvault/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@meshvault/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@meshvault/ui-tokens':
+        specifier: workspace:*
+        version: link:../../packages/ui-tokens
+      '@meshvault/ui-web':
+        specifier: workspace:*
+        version: link:../../packages/ui-web
       '@orpc/client':
         specifier: ^1.15.0
         version: 1.15.0(@opentelemetry/api@1.9.0)
@@ -174,21 +189,6 @@ importers:
       '@orpc/tanstack-query':
         specifier: ^1.15.0
         version: 1.15.0(@opentelemetry/api@1.9.0)(@orpc/client@1.15.0(@opentelemetry/api@1.9.0))(@tanstack/query-core@5.101.4)
-      '@meshbot/chat-ui':
-        specifier: workspace:*
-        version: link:../../packages/chat-ui
-      '@meshbot/contracts':
-        specifier: workspace:*
-        version: link:../../packages/contracts
-      '@meshbot/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@meshbot/ui-tokens':
-        specifier: workspace:*
-        version: link:../../packages/ui-tokens
-      '@meshbot/ui-web':
-        specifier: workspace:*
-        version: link:../../packages/ui-web
       '@tanstack/react-query':
         specifier: ^5.85.5
         version: 5.101.4(react@19.0.0)
@@ -244,22 +244,22 @@ importers:
 
   apps/worker:
     dependencies:
-      '@meshbot/adapter-kit':
+      '@meshvault/adapter-kit':
         specifier: workspace:*
         version: link:../../packages/adapter-kit
-      '@meshbot/adapters':
+      '@meshvault/adapters':
         specifier: workspace:*
         version: link:../../packages/adapters
-      '@meshbot/contracts':
+      '@meshvault/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@meshbot/core':
+      '@meshvault/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@meshbot/db':
+      '@meshvault/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@meshbot/memory':
+      '@meshvault/memory':
         specifier: workspace:*
         version: link:../../packages/memory
       dotenv:
@@ -284,7 +284,7 @@ importers:
       '@astrojs/react':
         specifier: ^6.0.2
         version: 6.0.2(@types/node@24.13.3)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(esbuild@0.28.2)(jiti@2.7.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(terser@5.50.0)(tsx@4.23.12)(yaml@2.9.0)
-      '@meshbot/ui-web':
+      '@meshvault/ui-web':
         specifier: workspace:*
         version: link:../../packages/ui-web
       astro:
@@ -324,7 +324,7 @@ importers:
       '@hono/node-server':
         specifier: ^1.19.1
         version: 1.19.17(hono@4.13.1)
-      '@meshbot/core':
+      '@meshvault/core':
         specifier: workspace:*
         version: link:../../../packages/core
       dockerode:
@@ -352,7 +352,7 @@ importers:
 
   packages/adapter-kit:
     dependencies:
-      '@meshbot/contracts':
+      '@meshvault/contracts':
         specifier: workspace:*
         version: link:../contracts
       zod:
@@ -375,23 +375,23 @@ importers:
         specifier: ^0.84.1
         version: 0.84.1(ws@8.21.3)(zod@4.4.3)
       '@earendil-works/pi-ai':
-        specifier: ^0.84.1
-        version: 0.84.1(ws@8.21.3)(zod@4.4.3)
+        specifier: ^0.84.2
+        version: 0.84.2(ws@8.21.3)(zod@4.4.3)
+      '@meshvault/adapter-kit':
+        specifier: workspace:*
+        version: link:../adapter-kit
+      '@meshvault/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@meshvault/core':
+        specifier: workspace:*
+        version: link:../core
+      '@meshvault/db':
+        specifier: workspace:*
+        version: link:../db
       '@modelcontextprotocol/client':
         specifier: 2.0.0
         version: 2.0.0
-      '@meshbot/adapter-kit':
-        specifier: workspace:*
-        version: link:../adapter-kit
-      '@meshbot/contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      '@meshbot/core':
-        specifier: workspace:*
-        version: link:../core
-      '@meshbot/db':
-        specifier: workspace:*
-        version: link:../db
       dockerode:
         specifier: ^4.0.7
         version: 4.0.12
@@ -426,13 +426,13 @@ importers:
 
   packages/auth:
     dependencies:
-      '@meshbot/contracts':
+      '@meshvault/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@meshbot/core':
+      '@meshvault/core':
         specifier: workspace:*
         version: link:../core
-      '@meshbot/db':
+      '@meshvault/db':
         specifier: workspace:*
         version: link:../db
       better-auth:
@@ -495,10 +495,10 @@ importers:
 
   packages/core:
     dependencies:
-      '@meshbot/adapter-kit':
+      '@meshvault/adapter-kit':
         specifier: workspace:*
         version: link:../adapter-kit
-      '@meshbot/contracts':
+      '@meshvault/contracts':
         specifier: workspace:*
         version: link:../contracts
       zod:
@@ -517,15 +517,15 @@ importers:
 
   packages/db:
     dependencies:
+      '@meshvault/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       '@prisma/adapter-pg':
         specifier: ^7.9.1
         version: 7.9.1
       '@prisma/client':
         specifier: ^7.9.1
         version: 7.9.1(prisma@7.9.1(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(magicast@0.5.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3))(typescript@5.9.3)
-      '@meshbot/contracts':
-        specifier: workspace:*
-        version: link:../contracts
       dotenv:
         specifier: ^17.2.1
         version: 17.4.2
@@ -551,13 +551,13 @@ importers:
 
   packages/memory:
     dependencies:
-      '@meshbot/adapter-kit':
+      '@meshvault/adapter-kit':
         specifier: workspace:*
         version: link:../adapter-kit
-      '@meshbot/contracts':
+      '@meshvault/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@meshbot/db':
+      '@meshvault/db':
         specifier: workspace:*
         version: link:../db
     devDependencies:
@@ -573,25 +573,25 @@ importers:
       '@hono/node-server':
         specifier: ^1.19.1
         version: 1.19.17(hono@4.13.1)
-      '@meshbot/adapter-kit':
+      '@meshvault/adapter-kit':
         specifier: workspace:*
         version: link:../adapter-kit
-      '@meshbot/adapters':
+      '@meshvault/adapters':
         specifier: workspace:*
         version: link:../adapters
-      '@meshbot/auth':
+      '@meshvault/auth':
         specifier: workspace:*
         version: link:../auth
-      '@meshbot/contracts':
+      '@meshvault/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@meshbot/core':
+      '@meshvault/core':
         specifier: workspace:*
         version: link:../core
-      '@meshbot/db':
+      '@meshvault/db':
         specifier: workspace:*
         version: link:../db
-      '@meshbot/memory':
+      '@meshvault/memory':
         specifier: workspace:*
         version: link:../memory
       '@testcontainers/postgresql':
@@ -625,6 +625,12 @@ importers:
 
   packages/ui-web:
     dependencies:
+      '@meshvault/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@meshvault/ui-tokens':
+        specifier: workspace:*
+        version: link:../ui-tokens
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.1.23(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -649,12 +655,6 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.2.8
         version: 1.2.16(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
-      '@meshbot/contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      '@meshbot/ui-tokens':
-        specifier: workspace:*
-        version: link:../ui-tokens
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1615,14 +1615,6 @@ packages:
     peerDependencies:
       '@bufbuild/protobuf': ^2.7.0
 
-  '@modelcontextprotocol/client@2.0.0':
-    resolution: {integrity: sha512-8f1OghQ2rjzIOfqgUCP+8GiUWqRs89njoWLNqAe8kWmDePv3s1fZXseej+QXemssEuuOvLLmLO/kqM3IQHtISw==}
-    engines: {node: '>=20'}
-
-  '@modelcontextprotocol/core@2.0.0':
-    resolution: {integrity: sha512-pJCEwGG7Lfr/+PQp9ZTwKXNeO5wzbfKL7H3MYpCorM4oFBoQrdjnBgEoqG+RjhsvS1FKrDbKux+M1HhlnGWqcA==}
-    engines: {node: '>=20'}
-
   '@e2b/desktop@2.3.1':
     resolution: {integrity: sha512-/WVgs4LpOk28PU9bzMkUWPdYVI0QBPVdclpXC99bsSeNTbG5QuWiS4tgznulzwW2HE0+etxzoOhkQ7fl0gagYw==}
     engines: {node: '>=20.18.1'}
@@ -1631,13 +1623,17 @@ packages:
     resolution: {integrity: sha512-evyzXYWCLQGmcaBYHlmSku02r8qoN4SGI60GZABo6iV+H+nqX+P9ud8fEZ4GmRq9mUSREvvfX+w9dA9ThF9C6w==}
     engines: {node: '>=22.19.0'}
 
-  '@earendil-works/pi-ai@0.84.1':
-    resolution: {integrity: sha512-wMsAdJMxuNri08vLqTyYVI201DQQezGhPSTkzYsHdw5dYX3rCNwEmSvpaAwhi7ELKI/2tE/CEgSWg/6iRxSgdQ==}
+  '@earendil-works/pi-ai@0.84.2':
+    resolution: {integrity: sha512-6MzsrYIYNVlE7SfpbL2yYb67Qo58p/7Q+xWG1RZvoX1P80aRCHSod2/13aFpxkow1lPO2LEh3c495J0Gwmyjig==}
     engines: {node: '>=22.19.0'}
     hasBin: true
 
   '@earendil-works/pi-telemetry@0.84.1':
     resolution: {integrity: sha512-180/xGJtsq7IoR3p9EKWjRd0e9M4DkxInhlo9xyD7prDC7Qrhqq+nhvwrW0lFjPfXcEI2FSHmGCSyvSJE9GsaQ==}
+    engines: {node: '>=22.19.0'}
+
+  '@earendil-works/pi-telemetry@0.84.2':
+    resolution: {integrity: sha512-wg5caea7uIv1BHRBm2Y116RvFG4oSAiP5qk9tA2463PDGIr4K8M1Ceyyg5DOpF/shUUl0gk826yQJAeAcHYB9g==}
     engines: {node: '>=22.19.0'}
 
   '@electric-sql/pglite-socket@0.1.3':
@@ -2246,13 +2242,13 @@ packages:
     resolution: {integrity: sha512-9QOtNffcOF/c1seMCDnjckb3R9WHcG34tky+FHpNKKCW0wc/scYLwMtO+ptyGUfMW0/b/n4qRiALlaFHc9Oj7Q==}
     engines: {node: '>= 10.0.0'}
 
-  '@mistralai/mistralai@2.2.6':
-    resolution: {integrity: sha512-W8pX7zHxjJvMIpw8JMxeJEleapXX0Q9NPszdNzqkM3MIEoIGPObdodujj+WHteXEvGfaP/AMwlNyRfEzSY6dQQ==}
-    peerDependencies:
-      '@opentelemetry/api': ^1.9.0
-    peerDependenciesMeta:
-      '@opentelemetry/api':
-        optional: true
+  '@modelcontextprotocol/client@2.0.0':
+    resolution: {integrity: sha512-8f1OghQ2rjzIOfqgUCP+8GiUWqRs89njoWLNqAe8kWmDePv3s1fZXseej+QXemssEuuOvLLmLO/kqM3IQHtISw==}
+    engines: {node: '>=20'}
+
+  '@modelcontextprotocol/core@2.0.0':
+    resolution: {integrity: sha512-pJCEwGG7Lfr/+PQp9ZTwKXNeO5wzbfKL7H3MYpCorM4oFBoQrdjnBgEoqG+RjhsvS1FKrDbKux+M1HhlnGWqcA==}
+    engines: {node: '>=20'}
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     resolution: {integrity: sha512-oTXEIha4SsuXdTA4Iyskj0kpdx2yVXdhd75c2v3xGrHFfVMsbhTPZU/nMPL4sWKo4pBHm3aucLaqGlF696dTyQ==}
@@ -6740,9 +6736,8 @@ packages:
     resolution: {integrity: sha512-7x81NCL719oNbsq/3mh+hVrAWmFuEYUqrq/Iw3kUzH8ReypT9QQ0BLoJS7/G9k6N81XjW4qHWtjWwe/9eLy1EQ==}
     engines: {node: '>=12'}
 
-  openai@6.26.0:
-    resolution: {integrity: sha512-zd23dbWTjiJ6sSAX6s0HrCZi41JwTA1bQVs0wLQPZ2/5o2gxOJA5wh7yOAUgwYybfhDXyhwlpeQf7Mlgx8EOCA==}
-    hasBin: true
+  openai@6.40.0:
+    resolution: {integrity: sha512-MWtTjd/gQt4jpbji61NTgFWJLoY/PdRJ6wG9/ZDRMYNMlBKrCrSlkLI+KgHP1vR1qT6LKSAyAqIxno6lcK9JiA==}
     peerDependencies:
       ws: ^8.18.0
       zod: ^3.25 || ^4.0
@@ -8756,11 +8751,6 @@ packages:
     resolution: {integrity: sha512-zK7YHHz4ZXpW89AHXUPbQVGKI7uvkd3hzusTdotCg1UxyaVtg0zFJSTfW/Dq5f7OBBVnq6cZIaC8Ti4hb6dtCA==}
     engines: {node: '>= 14'}
 
-  zod-to-json-schema@3.25.2:
-    resolution: {integrity: sha512-O/PgfnpT1xKSDeQYSCfRI5Gy3hPf91mKVDuYLUHZJMiDFptvP41MSnWofm8dnCm0256ZNfZIM7DSzuSMAFnjHA==}
-    peerDependencies:
-      zod: ^3.25.28 || ^4
-
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
@@ -8978,7 +8968,7 @@ snapshots:
       '@aws-sdk/types': 3.974.3
       '@smithy/core': 3.32.0
       '@smithy/fetch-http-handler': 5.7.0
-      '@smithy/node-http-handler': 4.7.3
+      '@smithy/node-http-handler': 4.10.0
       '@smithy/types': 4.17.0
       tslib: 2.8.1
 
@@ -9905,27 +9895,13 @@ snapshots:
     dependencies:
       '@bufbuild/protobuf': 2.13.0
 
-  '@modelcontextprotocol/client@2.0.0':
-    dependencies:
-      '@modelcontextprotocol/core': 2.0.0
-      cross-spawn: 7.0.6
-      eventsource: 3.0.7
-      eventsource-parser: 3.1.1
-      jose: 6.2.8
-      pkce-challenge: 5.0.1
-      zod: 4.4.3
-
-  '@modelcontextprotocol/core@2.0.0':
-    dependencies:
-      zod: 4.4.3
-
   '@e2b/desktop@2.3.1':
     dependencies:
       e2b: 2.38.3
 
   '@earendil-works/pi-agent-core@0.84.1(ws@8.21.3)(zod@4.4.3)':
     dependencies:
-      '@earendil-works/pi-ai': 0.84.1(ws@8.21.3)(zod@4.4.3)
+      '@earendil-works/pi-ai': 0.84.2(ws@8.21.3)(zod@4.4.3)
       '@earendil-works/pi-telemetry': 0.84.1
       diff: 8.0.4
       ignore: 7.0.5
@@ -9939,18 +9915,17 @@ snapshots:
       - ws
       - zod
 
-  '@earendil-works/pi-ai@0.84.1(ws@8.21.3)(zod@4.4.3)':
+  '@earendil-works/pi-ai@0.84.2(ws@8.21.3)(zod@4.4.3)':
     dependencies:
       '@anthropic-ai/sdk': 0.91.1(zod@4.4.3)
       '@aws-sdk/client-bedrock-runtime': 3.1048.0
-      '@earendil-works/pi-telemetry': 0.84.1
+      '@earendil-works/pi-telemetry': 0.84.2
       '@google/genai': 1.52.0
-      '@mistralai/mistralai': 2.2.6(@opentelemetry/api@1.9.0)
       '@opentelemetry/api': 1.9.0
       '@smithy/node-http-handler': 4.7.3
       http-proxy-agent: 7.0.2
       https-proxy-agent: 7.0.6
-      openai: 6.26.0(ws@8.21.3)(zod@4.4.3)
+      openai: 6.40.0(ws@8.21.3)(zod@4.4.3)
       partial-json: 0.1.7
       typebox: 1.3.7
     transitivePeerDependencies:
@@ -9962,6 +9937,8 @@ snapshots:
       - zod
 
   '@earendil-works/pi-telemetry@0.84.1': {}
+
+  '@earendil-works/pi-telemetry@0.84.2': {}
 
   '@electric-sql/pglite-socket@0.1.3(@electric-sql/pglite@0.4.3)':
     dependencies:
@@ -10745,17 +10722,19 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@mistralai/mistralai@2.2.6(@opentelemetry/api@1.9.0)':
+  '@modelcontextprotocol/client@2.0.0':
     dependencies:
-      '@opentelemetry/semantic-conventions': 1.43.0
-      ws: 8.21.3
+      '@modelcontextprotocol/core': 2.0.0
+      cross-spawn: 7.0.6
+      eventsource: 3.0.7
+      eventsource-parser: 3.1.1
+      jose: 6.2.8
+      pkce-challenge: 5.0.1
       zod: 4.4.3
-      zod-to-json-schema: 3.25.2(zod@4.4.3)
-    optionalDependencies:
-      '@opentelemetry/api': 1.9.0
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
+
+  '@modelcontextprotocol/core@2.0.0':
+    dependencies:
+      zod: 4.4.3
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true
@@ -16122,7 +16101,7 @@ snapshots:
       is-docker: 2.2.1
       is-wsl: 2.2.0
 
-  openai@6.26.0(ws@8.21.3)(zod@4.4.3):
+  openai@6.40.0(ws@8.21.3)(zod@4.4.3):
     optionalDependencies:
       ws: 8.21.3
       zod: 4.4.3
@@ -18205,10 +18184,6 @@ snapshots:
       archiver-utils: 5.0.2
       compress-commons: 6.0.2
       readable-stream: 4.7.0
-
-  zod-to-json-schema@3.25.2(zod@4.4.3):
-    dependencies:
-      zod: 4.4.3
 
   zod@4.4.3: {}
 

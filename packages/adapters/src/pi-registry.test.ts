@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { piModels, qwenProvider } from "./pi-registry.js";
 
-describe("Mesh Bot Pi providers", () => {
+describe("MeshVault Pi providers", () => {
   it("registers Qwen as a DashScope / OpenAI-compatible provider", () => {
     const qwen = qwenProvider();
     expect(qwen.id).toBe("qwen");

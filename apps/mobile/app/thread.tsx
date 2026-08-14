@@ -1,4 +1,4 @@
-import { ChatMarkdown } from "@meshbot/chat-ui/native";
+import { ChatMarkdown } from "@meshvault/chat-ui/native";
 import { Link, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";

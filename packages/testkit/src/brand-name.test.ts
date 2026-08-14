@@ -13,18 +13,22 @@ const productSurfaces = [
   "apps/www/src/components/Logo.astro",
 ];
 
-describe("Mesh Bot product name", () => {
-  it.each(productSurfaces)("uses Mesh Bot on %s", (file) => {
+// Brand decision (owner, 2026-08-14): the product ships under the MeshVault
+// name. The retired "Mesh Bot" brand and pre-rebrand names stay out of
+// product surfaces.
+describe("MeshVault product name", () => {
+  it.each(productSurfaces)("uses MeshVault on %s", (file) => {
     const source = readFileSync(path.resolve(file), "utf8");
     expect(source).not.toMatch(/\b(?:Rakazo|Razko|MeshVault Bot)\b/i);
-    expect(source).not.toMatch(/\bMeshVault\b/);
+    expect(source).not.toMatch(/\bMesh\s?Bot(?:'s|s)?\b/i);
+    expect(source).not.toMatch(/meshbot/i);
   });
 
   it("uses the current mobile origin scheme", () => {
     const source = ["apps/mobile/lib/api.ts", "apps/mobile/lib/endpoint.ts"]
       .map((file) => readFileSync(path.resolve(file), "utf8"))
       .join("\n");
-    expect(source).toContain('origin: "meshbot://"');
-    expect(source).not.toContain('origin: "meshvault://"');
+    expect(source).toContain('origin: "meshvault://"');
+    expect(source).not.toContain('origin: "meshbot://"');
   });
 });

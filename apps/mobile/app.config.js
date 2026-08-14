@@ -1,7 +1,7 @@
 const { readIosReleaseConfig } = require("./scripts/check-ios-release.cjs");
 
 module.exports = ({ config }) => {
-  if (process.env.MESHBOT_RELEASE_PROFILE !== "production") return config;
+  if (process.env.MESHVAULT_RELEASE_PROFILE !== "production") return config;
 
   const release = readIosReleaseConfig();
   return {

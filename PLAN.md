@@ -5,7 +5,7 @@ Front-load planning. If implementation fails, revise this file and retry. Do not
 
 ## Goal
 
-Add Mesh Bot agent rituals and a short planning template without mulch/seeds or new product features.
+Add MeshVault agent rituals and a short planning template without mulch/seeds or new product features.
 
 ## Decompose
 
@@ -91,15 +91,15 @@ Empty — first pass.
 ## macOS remote client subtask
 
 - [x] Replace the packaged `:5173` fallback with a bundled server connection screen.
-- [x] Validate and persist one same-origin Mesh Bot web endpoint; require HTTPS outside loopback.
-- [x] Keep `MESHBOT_WEB_URL` as the explicit startup override and allow failed/saved servers to be changed.
+- [x] Validate and persist one same-origin MeshVault web endpoint; require HTTPS outside loopback.
+- [x] Keep `MESHVAULT_WEB_URL` as the explicit startup override and allow failed/saved servers to be changed.
 - [x] Prove origin validation and persistence with one focused test.
 - [x] Pass desktop checks and produce an inspected unsigned ARM64 DMG without signing discovery.
 
 ## Product name truth subtask
 
-- [x] Use Mesh Bot on shipped UI, public docs, issue forms, runtime messages, and generated metadata.
-- [x] Make current mobile requests emit `meshbot://` while retaining inbound `meshvault://` compatibility.
+- [x] Use MeshVault on shipped UI, public docs, issue forms, runtime messages, and generated metadata.
+- [x] Make current mobile requests emit `meshvault://` while retaining inbound `meshvault://` compatibility.
 - [x] Preserve FireDev LLC dba MeshVault, canonical domains, repository paths, and upstream attribution.
 - [x] Add one focused brand regression and pass lint, all 19 checks, all 4 builds, and `verify:fast`.
 

@@ -8,8 +8,8 @@ import type {
   SandboxProvider,
   ScreenRequest,
   ScreenSession,
-} from "@meshbot/adapter-kit";
-import { resolveSupervisorToken } from "@meshbot/core";
+} from "@meshvault/adapter-kit";
+import { resolveSupervisorToken } from "@meshvault/core";
 
 export class DockerSandboxProvider implements SandboxProvider {
   private readonly supervisorToken: string;
@@ -43,8 +43,8 @@ export class DockerSandboxProvider implements SandboxProvider {
   private headers(context: AdapterContext, botId?: string) {
     return {
       authorization: `Bearer ${this.supervisorToken}`,
-      "x-meshbot-workspace-id": context.workspaceId,
-      ...(botId ? { "x-meshbot-bot-id": botId } : {}),
+      "x-meshvault-workspace-id": context.workspaceId,
+      ...(botId ? { "x-meshvault-bot-id": botId } : {}),
     };
   }
 
@@ -78,7 +78,7 @@ export class DockerSandboxProvider implements SandboxProvider {
     const res = await fetch(this.url(`/computers/${computer.id}/exec`), {
       method: "POST",
       headers: { ...this.headers(context, computer.botId), "content-type": "application/json" },
-      body: JSON.stringify({ ...request, cwd: request.cwd ?? "/home/meshbot" }),
+      body: JSON.stringify({ ...request, cwd: request.cwd ?? "/home/meshvault" }),
       signal: context.signal,
     });
     if (!res.ok) {

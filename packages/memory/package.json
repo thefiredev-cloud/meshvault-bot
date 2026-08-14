@@ -1,5 +1,5 @@
 {
-  "name": "@meshbot/memory",
+  "name": "@meshvault/memory",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "type": "module",
@@ -15,9 +15,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@meshbot/adapter-kit": "workspace:*",
-    "@meshbot/contracts": "workspace:*",
-    "@meshbot/db": "workspace:*"
+    "@meshvault/adapter-kit": "workspace:*",
+    "@meshvault/contracts": "workspace:*",
+    "@meshvault/db": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.2",

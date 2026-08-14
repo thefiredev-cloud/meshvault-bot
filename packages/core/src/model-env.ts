@@ -1,5 +1,5 @@
 export const DEFAULT_QWEN_BASE_URL = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
-export const DEFAULT_QWEN_MODEL = "qwen-plus";
+export const DEFAULT_QWEN_MODEL = "qwen3.8-max";
 export const DEFAULT_OPENROUTER_MODEL = "deepseek/deepseek-v4-flash-0731";
 
 function firstSet(source: NodeJS.ProcessEnv, keys: readonly string[]): string | undefined {
@@ -22,8 +22,9 @@ export function openRouterApiKey(source: NodeJS.ProcessEnv = process.env): strin
   return firstSet(source, ["OPENROUTER_API_KEY"]);
 }
 
-export function meshbotGatewayApiKey(source: NodeJS.ProcessEnv = process.env): string | undefined {
-  return firstSet(source, ["MESHBOT_GATEWAY_KEY", "LITELLM_MASTER_KEY"]);
+export function meshvaultGatewayApiKey(source: NodeJS.ProcessEnv = process.env): string | undefined {
+  // MESHBOT_GATEWAY_KEY kept as a legacy alias for deployments created before the 2026-08-14 rebrand.
+  return firstSet(source, ["MESHVAULT_GATEWAY_KEY", "MESHBOT_GATEWAY_KEY", "LITELLM_MASTER_KEY"]);
 }
 
 export function defaultPiProvider(source: NodeJS.ProcessEnv = process.env): string {
@@ -47,7 +48,7 @@ export function fallbackApiKey(
 ): string | undefined {
   if (provider === "qwen") return qwenApiKey(source);
   if (provider === "openrouter") return openRouterApiKey(source);
-  if (provider === "meshbot-gateway") return meshbotGatewayApiKey(source);
+  if (provider === "meshvault-gateway") return meshvaultGatewayApiKey(source);
   return undefined;
 }
 
@@ -56,7 +57,7 @@ export function deploymentModelKey(source: NodeJS.ProcessEnv = process.env): str
 }
 
 export function modelSecretsToRedact(source: NodeJS.ProcessEnv = process.env): string[] {
-  return [qwenApiKey(source), openRouterApiKey(source), meshbotGatewayApiKey(source)].filter(
+  return [qwenApiKey(source), openRouterApiKey(source), meshvaultGatewayApiKey(source)].filter(
     (value): value is string => Boolean(value),
   );
 }
@@ -65,7 +66,7 @@ export function hasDeploymentModelKey(source: NodeJS.ProcessEnv = process.env): 
   return Boolean(
     qwenApiKey(source) ||
       openRouterApiKey(source) ||
-      meshbotGatewayApiKey(source) ||
-      firstSet(source, ["MESHBOT_GATEWAY_URL"]),
+      meshvaultGatewayApiKey(source) ||
+      firstSet(source, ["MESHVAULT_GATEWAY_URL", "MESHBOT_GATEWAY_URL"]),
   );
 }

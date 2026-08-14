@@ -1,4 +1,4 @@
-import type { RunStatus } from "@meshbot/contracts";
+import type { RunStatus } from "@meshvault/contracts";
 
 const ACTIVE: RunStatus[] = ["queued", "leased", "running", "waiting_input", "waiting_takeover"];
 const TERMINAL: RunStatus[] = ["completed", "failed", "cancelled"];

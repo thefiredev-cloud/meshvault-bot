@@ -1,4 +1,4 @@
-export interface MeshBotDesktop {
+export interface MeshVaultDesktop {
   platform: string;
   window: {
     close: () => Promise<void>;
@@ -10,15 +10,15 @@ export interface MeshBotDesktop {
 
 declare global {
   interface Window {
-    meshbotDesktop?: MeshBotDesktop;
+    meshvaultDesktop?: MeshVaultDesktop;
   }
 }
 
-export function desktopBridge(): MeshBotDesktop | undefined {
-  return typeof window === "undefined" ? undefined : window.meshbotDesktop;
+export function desktopBridge(): MeshVaultDesktop | undefined {
+  return typeof window === "undefined" ? undefined : window.meshvaultDesktop;
 }
 
-export function windowChromeKind(desktop?: MeshBotDesktop): "spacer" | "darwin" | "controls" {
+export function windowChromeKind(desktop?: MeshVaultDesktop): "spacer" | "darwin" | "controls" {
   if (!desktop) return "spacer";
   if (desktop.platform === "darwin") return "darwin";
   return "controls";

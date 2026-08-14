@@ -7,7 +7,7 @@ import {
   deploymentModelKey as resolveDeploymentModelKey,
   resolveEncryptionKey,
   resolveSupervisorToken,
-} from "@meshbot/core";
+} from "@meshvault/core";
 
 export interface AppEnv {
   nodeEnv: string;

@@ -16,7 +16,7 @@ export function WelcomePage() {
             <img src="/favicon.svg" alt="" className="h-full w-full" />
           </div>
           <div className="text-[48px] leading-none tracking-[-0.03em] text-white sm:text-[76px]">
-            Mesh Bot
+            MeshVault
           </div>
         </div>
         <p className="max-w-[600px] text-center text-[22px] leading-[1.4] text-[#E4E4E6] sm:text-[27px]">

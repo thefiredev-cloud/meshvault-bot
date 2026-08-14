@@ -1,6 +1,6 @@
-# Contributing to Mesh Bot
+# Contributing to MeshVault
 
-Thanks for helping improve Mesh Bot. Keep changes focused and testable.
+Thanks for helping improve MeshVault. Keep changes focused and testable.
 
 Keep the product architecture: Electron desktop, Expo iOS, Pi runtime, and Docker/E2B computers. See [`UPSTREAM.md`](UPSTREAM.md) and [`NOTICE`](NOTICE) for required provenance.
 
@@ -39,9 +39,9 @@ CI runs `pnpm lint`, `pnpm check`, and `pnpm verify:fast` on every PR.
 - **Never** paste API keys, tokens, or passwords in issues or PRs.
 - Use placeholders in examples (`your-qwen-key`, `your-openrouter-key`, etc.).
 
-The product path is **Pi + Docker + Graphile**. Default models are **Qwen** (DashScope / compatible OpenAI API); deployment-owned local models use the explicit Mesh Bot gateway. Emulator settings (`AGENT_RUNTIME=scripted`, `SANDBOX_PROVIDER=fake`, `WAKEUP_DRIVER=memory`) are for tests only.
+The product path is **Pi + Docker + Graphile**. Default models are **Qwen** (DashScope / compatible OpenAI API); deployment-owned local models use the explicit MeshVault gateway. Emulator settings (`AGENT_RUNTIME=scripted`, `SANDBOX_PROVIDER=fake`, `WAKEUP_DRIVER=memory`) are for tests only.
 
-**Plugins** integrate through personal Composio OAuth at its fixed remote MCP endpoint. Mesh Bot does not ship a Git- or MCP-based plugin marketplace.
+**Plugins** integrate through personal Composio OAuth at its fixed remote MCP endpoint. MeshVault does not ship a Git- or MCP-based plugin marketplace.
 
 ## Pull requests
 

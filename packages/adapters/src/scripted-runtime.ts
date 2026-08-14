@@ -3,7 +3,7 @@ import type {
   AgentRunRequest,
   AgentRuntime,
   AgentRuntimeEvent,
-} from "@meshbot/adapter-kit";
+} from "@meshvault/adapter-kit";
 
 // Modified by FireDev LLC dba MeshVault on 2026-08-13.
 
@@ -181,7 +181,7 @@ export function inferScript(
         toolCalls: [
           {
             name: "destination.write",
-            args: { collection: "notes", title: "Mesh Bot result", body: prompt },
+            args: { collection: "notes", title: "MeshVault result", body: prompt },
           },
         ],
         complete: true,

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { loadEnv } from "./env.js";
 
 const base = {
-  DATABASE_URL: "postgres://meshbot:meshbot@127.0.0.1:5433/meshbot",
+  DATABASE_URL: "postgres://meshvault:meshvault@127.0.0.1:5433/meshvault",
   NODE_ENV: "test",
 };
 
@@ -13,7 +13,7 @@ describe("loadEnv", () => {
     expect(env.sandboxProvider).toBe("docker");
     expect(env.wakeupDriver).toBe("graphile");
     expect(env.defaultProvider).toBe("qwen");
-    expect(env.defaultModel).toBe("qwen-plus");
+    expect(env.defaultModel).toBe("qwen3.8-max");
   });
 
   it("wires Qwen / DashScope keys the same way as OpenRouter", () => {

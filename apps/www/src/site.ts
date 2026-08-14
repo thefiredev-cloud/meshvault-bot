@@ -1,4 +1,4 @@
-export const SITE_NAME = "Mesh Bot";
+export const SITE_NAME = "MeshVault";
 export const SITE_URL = "https://meshvault.ai";
 export const SITE_DESCRIPTION =
   "Open-source Grok Bot alternative. Electron desktop, Expo iOS, bring your own model. Your keys, your machine.";

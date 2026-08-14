@@ -4,6 +4,6 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 STAMP="${1:-$(date +%Y%m%d-%H%M%S)}"
 OUT="${ROOT}/backups/${STAMP}"
 mkdir -p "$OUT"
-docker compose -f "$ROOT/infra/compose/docker-compose.yml" exec -T postgres pg_dump -U meshbot meshbot > "$OUT/meshbot.sql"
+docker compose -f "$ROOT/infra/compose/docker-compose.yml" exec -T postgres pg_dump -U meshvault meshvault > "$OUT/meshvault.sql"
 tar -czf "$OUT/homes.tgz" -C "$ROOT" data 2>/dev/null || tar -czf "$OUT/homes.tgz" --files-from /dev/null
 echo "Backup written to $OUT"

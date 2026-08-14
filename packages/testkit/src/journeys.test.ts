@@ -5,7 +5,7 @@ import {
   DesktopSandboxProvider,
   FakeSandboxProvider,
   ManagedSandboxEmulator,
-} from "@meshbot/adapters";
+} from "@meshvault/adapters";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };
@@ -49,7 +49,7 @@ describeJourneys("required product journeys", () => {
     ReturnType<typeof import("../../../apps/api/src/app.ts").createApp>
   >["wakeup"];
   const stamp = Date.now();
-  const dataDir = mkdtempSync(path.join(tmpdir(), "meshbot-journey-"));
+  const dataDir = mkdtempSync(path.join(tmpdir(), "meshvault-journey-"));
 
   beforeAll(async () => {
     const { createApp } = await import("../../../apps/api/src/app.ts");
@@ -72,8 +72,8 @@ describeJourneys("required product journeys", () => {
   });
 
   it("1+2: two users are isolated and two bots keep separate homes", async () => {
-    const ada = await signup(app, `ada-j-${stamp}@meshbot.test`, "Ada Journey");
-    const bob = await signup(app, `bob-j-${stamp}@meshbot.test`, "Bob Journey");
+    const ada = await signup(app, `ada-j-${stamp}@meshvault.test`, "Ada Journey");
+    const bob = await signup(app, `bob-j-${stamp}@meshvault.test`, "Bob Journey");
 
     const adaMe = await rpc<Me>(app, ada, "me");
     const bobMe = await rpc<Me>(app, bob, "me");
@@ -129,7 +129,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("3: disconnect and reconnect from a cursor reconstructs the thread", async () => {
-    const cookie = await signup(app, `cursor-j-${stamp}@meshbot.test`, "Cursor");
+    const cookie = await signup(app, `cursor-j-${stamp}@meshvault.test`, "Cursor");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
       title: "",
@@ -153,7 +153,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("4: takeover login then resume without exposing credentials", async () => {
-    const cookie = await signup(app, `takeover-j-${stamp}@meshbot.test`, "Takeover");
+    const cookie = await signup(app, `takeover-j-${stamp}@meshvault.test`, "Takeover");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
       title: "",
@@ -201,7 +201,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("5: a routine wakes the bot and posts into the existing thread", async () => {
-    const cookie = await signup(app, `routine-j-${stamp}@meshbot.test`, "Routine");
+    const cookie = await signup(app, `routine-j-${stamp}@meshvault.test`, "Routine");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
       title: "",
@@ -258,8 +258,8 @@ describeJourneys("required product journeys", () => {
   });
 
   it("7: owner approval is isolated, single-use, and inline", async () => {
-    const cookie = await signup(app, `dest-j-${stamp}@meshbot.test`, "Dest");
-    const outsider = await signup(app, `dest-outside-j-${stamp}@meshbot.test`, "Outside");
+    const cookie = await signup(app, `dest-j-${stamp}@meshvault.test`, "Dest");
+    const outsider = await signup(app, `dest-outside-j-${stamp}@meshvault.test`, "Outside");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
       title: "",
@@ -419,7 +419,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("8: uncertain protected effects never retry and completed effects do not duplicate", async () => {
-    const cookie = await signup(app, `crash-j-${stamp}@meshbot.test`, "Crash");
+    const cookie = await signup(app, `crash-j-${stamp}@meshvault.test`, "Crash");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
       title: "",
@@ -522,7 +522,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("9: export includes memory and files but not secrets or browser sessions", async () => {
-    const cookie = await signup(app, `export-j-${stamp}@meshbot.test`, "Export");
+    const cookie = await signup(app, `export-j-${stamp}@meshvault.test`, "Export");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
       title: "",
@@ -558,8 +558,8 @@ describeJourneys("required product journeys", () => {
   });
 
   it("10: deleting a bot removes it, its home, and is isolated", async () => {
-    const ada = await signup(app, `delete-j-${stamp}@meshbot.test`, "Delete Ada");
-    const bob = await signup(app, `delete-bob-j-${stamp}@meshbot.test`, "Delete Bob");
+    const ada = await signup(app, `delete-j-${stamp}@meshvault.test`, "Delete Ada");
+    const bob = await signup(app, `delete-bob-j-${stamp}@meshvault.test`, "Delete Bob");
     const keep = await rpc<Bot>(app, ada, "bots/create", {
       name: "Keep",
       title: "",
@@ -597,7 +597,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("12: a bot can spawn a regular bot and must confirm the name to delete it", async () => {
-    const cookie = await signup(app, `spawn-j-${stamp}@meshbot.test`, "Spawn");
+    const cookie = await signup(app, `spawn-j-${stamp}@meshvault.test`, "Spawn");
     const parent = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
       title: "",
@@ -651,7 +651,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("13: a subagent shows up in the parent thread without creating a bot", async () => {
-    const cookie = await signup(app, `subagent-j-${stamp}@meshbot.test`, "Subagent");
+    const cookie = await signup(app, `subagent-j-${stamp}@meshvault.test`, "Subagent");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
       title: "",
@@ -676,7 +676,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("14: this-mac is refused unless the sandbox is docker", async () => {
-    const cookie = await signup(app, `host-j-${stamp}@meshbot.test`, "Host");
+    const cookie = await signup(app, `host-j-${stamp}@meshvault.test`, "Host");
     const me = await rpc<Me>(app, cookie, "me");
     expect(me.canChooseHostComputer).toBe(false);
     await prisma.deploymentSettings.update({
@@ -690,7 +690,7 @@ describeJourneys("required product journeys", () => {
   });
 
   it("15: model credentials stay scoped and two bots dispatch different providers", async () => {
-    const cookie = await signup(app, `models-j-${stamp}@meshbot.test`, "Models");
+    const cookie = await signup(app, `models-j-${stamp}@meshvault.test`, "Models");
     const me = await rpc<Me>(app, cookie, "me");
     const catalog = await rpc<
       Array<{ provider: string; id: string; auth?: "api-key" | "oauth" | "both" }>

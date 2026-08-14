@@ -35,8 +35,8 @@ async function main() {
   process.env.SIGNUPS_ENABLED = "true";
   process.env.CI = "1";
 
-  execSync("pnpm --filter @meshbot/db generate", { stdio: "inherit", env: process.env });
-  execSync("pnpm --filter @meshbot/db exec prisma migrate deploy", {
+  execSync("pnpm --filter @meshvault/db generate", { stdio: "inherit", env: process.env });
+  execSync("pnpm --filter @meshvault/db exec prisma migrate deploy", {
     stdio: "inherit",
     env: process.env,
     cwd: path.resolve("packages/db"),
@@ -51,7 +51,7 @@ async function main() {
   await waitForHealth(`http://127.0.0.1:${apiPort}/health`, 15_000);
 
   try {
-    await run("pnpm", ["--filter", "@meshbot/web", "exec", "playwright", "test"], {
+    await run("pnpm", ["--filter", "@meshvault/web", "exec", "playwright", "test"], {
       ...process.env,
       CI: "1",
     });

@@ -5,7 +5,7 @@ import path from "node:path";
 import { loadEnvFile } from "node:process";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
-import { resolveSupervisorToken } from "@meshbot/core";
+import { resolveSupervisorToken } from "@meshvault/core";
 import Docker from "dockerode";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -22,7 +22,7 @@ loadRootEnv();
 
 const docker = new Docker({ socketPath: process.env.DOCKER_SOCKET ?? "/var/run/docker.sock" });
 const computerContext =
-  process.env.MESHBOT_COMPUTER_CONTEXT ??
+  process.env.MESHVAULT_COMPUTER_CONTEXT ??
   path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../computer");
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const dataDir = path.resolve(repositoryRoot, process.env.DATA_DIR ?? "./data");
@@ -58,8 +58,8 @@ app.post("/computers", async (c) => {
     .parse(await c.req.json());
   try {
     assertRequestIdentity(
-      c.req.header("x-meshbot-bot-id"),
-      c.req.header("x-meshbot-workspace-id"),
+      c.req.header("x-meshvault-bot-id"),
+      c.req.header("x-meshvault-workspace-id"),
       {
         botId: body.botId,
         workspaceId: body.workspaceId,
@@ -115,8 +115,8 @@ app.get("/computers/:id", async (c) => {
   try {
     const { container, info } = await managedContainer(
       id,
-      c.req.header("x-meshbot-bot-id"),
-      c.req.header("x-meshbot-workspace-id"),
+      c.req.header("x-meshvault-bot-id"),
+      c.req.header("x-meshvault-workspace-id"),
     );
     const screenUrl = await publishedScreenUrl(container, info);
     return c.json({
@@ -143,19 +143,19 @@ app.post("/computers/:id/exec", async (c) => {
   try {
     const { container } = await managedContainer(
       id,
-      c.req.header("x-meshbot-bot-id"),
-      c.req.header("x-meshbot-workspace-id"),
+      c.req.header("x-meshvault-bot-id"),
+      c.req.header("x-meshvault-workspace-id"),
     );
     const exec = await container.exec({
       Cmd: body.argv.length ? body.argv : ["/bin/echo", "ready"],
       AttachStdout: true,
       AttachStderr: true,
-      WorkingDir: body.cwd ?? "/home/meshbot",
+      WorkingDir: body.cwd ?? "/home/meshvault",
       Env: [
         "DISPLAY=:1",
-        "HOME=/home/meshbot",
-        "PATH=/home/meshbot/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-        "NPM_CONFIG_PREFIX=/home/meshbot/.local",
+        "HOME=/home/meshvault",
+        "PATH=/home/meshvault/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "NPM_CONFIG_PREFIX=/home/meshvault/.local",
         "PIP_USER=1",
         ...Object.entries(body.env ?? {}).map(([k, v]) => `${k}=${v}`),
       ],
@@ -184,8 +184,8 @@ app.get("/computers/:id/screen", async (c) => {
   try {
     const { container, info } = await managedContainer(
       id,
-      c.req.header("x-meshbot-bot-id"),
-      c.req.header("x-meshbot-workspace-id"),
+      c.req.header("x-meshvault-bot-id"),
+      c.req.header("x-meshvault-workspace-id"),
     );
     const screenUrl = await publishedScreenUrl(container, info);
     return c.redirect(screenUrl);
@@ -215,14 +215,14 @@ app.post("/computers/:id/input", async (c) => {
   try {
     const { container } = await managedContainer(
       id,
-      c.req.header("x-meshbot-bot-id"),
-      c.req.header("x-meshbot-workspace-id"),
+      c.req.header("x-meshvault-bot-id"),
+      c.req.header("x-meshvault-workspace-id"),
     );
     const exec = await container.exec({
       Cmd: ["env", "DISPLAY=:1", ...xdotoolCommand(input)],
       AttachStdout: true,
       AttachStderr: true,
-      WorkingDir: "/home/meshbot",
+      WorkingDir: "/home/meshvault",
     });
     const stream = await exec.start({ hijack: true, stdin: false });
     await new Promise<void>((resolve, reject) => {
@@ -245,8 +245,8 @@ app.post("/computers/:id/stop", async (c) => {
   try {
     const { container } = await managedContainer(
       c.req.param("id"),
-      c.req.header("x-meshbot-bot-id"),
-      c.req.header("x-meshbot-workspace-id"),
+      c.req.header("x-meshvault-bot-id"),
+      c.req.header("x-meshvault-workspace-id"),
     );
     await container.stop().catch(() => undefined);
     return c.json({ ok: true });
@@ -260,8 +260,8 @@ app.delete("/computers/:id", async (c) => {
   try {
     const { container } = await managedContainer(
       id,
-      c.req.header("x-meshbot-bot-id"),
-      c.req.header("x-meshbot-workspace-id"),
+      c.req.header("x-meshvault-bot-id"),
+      c.req.header("x-meshvault-workspace-id"),
     );
     await container.remove({ force: true }).catch(() => undefined);
     boxes.delete(id);
@@ -298,7 +298,7 @@ async function ensureComputerImage() {
           src: [
             "Dockerfile",
             "start.sh",
-            "meshbot-browser",
+            "meshvault-browser",
             "embed.html",
             "fluxbox.init",
             "fluxbox.apps",
@@ -319,12 +319,12 @@ async function ensureComputerImage() {
 async function findBotContainer(botId: string, workspaceId: string) {
   const listed = await docker.listContainers({
     all: true,
-    filters: { label: [`meshbot.botId=${botId}`, `meshbot.workspaceId=${workspaceId}`] },
+    filters: { label: [`meshvault.botId=${botId}`, `meshvault.workspaceId=${workspaceId}`] },
   });
   for (const item of listed) {
     const container = docker.getContainer(item.Id);
     const info = await container.inspect();
-    if (isMeshBotContainer(info, botId, workspaceId)) return container;
+    if (isMeshVaultContainer(info, botId, workspaceId)) return container;
   }
   return undefined;
 }
@@ -333,15 +333,15 @@ async function managedContainer(id: string, botId?: string, workspaceId?: string
   if (!botId || !workspaceId) throw new Error("missing computer identity");
   const container = docker.getContainer(id);
   const info = await container.inspect();
-  if (!isMeshBotContainer(info, botId, workspaceId)) throw new Error("computer identity mismatch");
+  if (!isMeshVaultContainer(info, botId, workspaceId)) throw new Error("computer identity mismatch");
   return { container, info };
 }
 
-function isMeshBotContainer(info: Docker.ContainerInspectInfo, botId: string, workspaceId: string) {
+function isMeshVaultContainer(info: Docker.ContainerInspectInfo, botId: string, workspaceId: string) {
   const labels = info.Config.Labels ?? {};
-  const managed = labels["meshbot.managed"] === "true" || info.Config.Image === COMPUTER_IMAGE;
+  const managed = labels["meshvault.managed"] === "true" || info.Config.Image === COMPUTER_IMAGE;
   return (
-    managed && labels["meshbot.botId"] === botId && labels["meshbot.workspaceId"] === workspaceId
+    managed && labels["meshvault.botId"] === botId && labels["meshvault.workspaceId"] === workspaceId
   );
 }
 

@@ -10,8 +10,8 @@
     "cssVariables": true
   },
   "aliases": {
-    "components": "@meshbot/ui-web",
-    "utils": "@meshbot/ui-web",
-    "ui": "@meshbot/ui-web"
+    "components": "@meshvault/ui-web",
+    "utils": "@meshvault/ui-web",
+    "ui": "@meshvault/ui-web"
   }
 }

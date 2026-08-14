@@ -6,7 +6,7 @@ import type {
   ArtifactStore,
   NotificationMessage,
   NotificationProvider,
-} from "@meshbot/adapter-kit";
+} from "@meshvault/adapter-kit";
 
 export class LocalArtifactStore implements ArtifactStore {
   constructor(private readonly root: string) {}

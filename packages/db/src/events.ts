@@ -1,4 +1,4 @@
-import type { ProductEvent } from "@meshbot/contracts";
+import type { ProductEvent } from "@meshvault/contracts";
 import type { Notification, Pool, PoolClient } from "pg";
 import type { Prisma, PrismaClient } from "./client.js";
 
@@ -32,7 +32,7 @@ export async function appendEvent(
       },
     });
   });
-  await prisma.$executeRaw`SELECT pg_notify('meshbot_events', ${JSON.stringify({
+  await prisma.$executeRaw`SELECT pg_notify('meshvault_events', ${JSON.stringify({
     workspaceId: event.workspaceId,
     threadId: event.threadId,
     botId: event.botId,
@@ -68,7 +68,7 @@ export async function* followThreadEvents(
   let seq = cursor;
   const client = pool ? await pool.connect() : undefined;
   try {
-    if (client) await client.query("LISTEN meshbot_events");
+    if (client) await client.query("LISTEN meshvault_events");
     while (!signal?.aborted) {
       const events = await eventsAfter(prisma, threadId, seq);
       for (const event of events) {
@@ -81,7 +81,7 @@ export async function* followThreadEvents(
     }
   } finally {
     if (client) {
-      await client.query("UNLISTEN meshbot_events").catch(() => undefined);
+      await client.query("UNLISTEN meshvault_events").catch(() => undefined);
       client.release();
     }
   }
@@ -95,7 +95,7 @@ function waitForThreadNotify(
 ) {
   return new Promise<void>((resolve) => {
     const onNotify = (msg: Notification) => {
-      if (msg.channel !== "meshbot_events") return;
+      if (msg.channel !== "meshvault_events") return;
       try {
         const data = JSON.parse(msg.payload ?? "{}") as { threadId?: string };
         if (data.threadId === threadId) {

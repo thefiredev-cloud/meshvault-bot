@@ -2,15 +2,15 @@ services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: meshbot
-      POSTGRES_PASSWORD: meshbot
-      POSTGRES_DB: meshbot
+      POSTGRES_USER: meshvault
+      POSTGRES_PASSWORD: meshvault
+      POSTGRES_DB: meshvault
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U meshbot"]
+      test: ["CMD-SHELL", "pg_isready -U meshvault"]
       interval: 3s
       timeout: 5s
       retries: 20
@@ -26,7 +26,7 @@ services:
       SUPERVISOR_HOST: "0.0.0.0"
       SUPERVISOR_PORT: "7091"
       DOCKER_SOCKET: /var/run/docker.sock
-      MESHBOT_COMPUTER_IMAGE: meshbot/computer:local
+      MESHVAULT_COMPUTER_IMAGE: meshvault/computer:local
       SANDBOX_SCREEN_NETWORK: internal
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -36,7 +36,7 @@ services:
         condition: service_completed_successfully
 
   computer:
-    image: meshbot/computer:local
+    image: meshvault/computer:local
     build:
       context: ../sandboxes/computer
     command: ["true"]
@@ -46,11 +46,11 @@ services:
     build:
       context: ../..
       dockerfile: infra/compose/Dockerfile
-    command: ["bash", "-lc", "pnpm --filter @meshbot/db generate && pnpm --filter @meshbot/db exec prisma migrate deploy && pnpm --filter @meshbot/api start"]
+    command: ["bash", "-lc", "pnpm --filter @meshvault/db generate && pnpm --filter @meshvault/db exec prisma migrate deploy && pnpm --filter @meshvault/api start"]
     env_file:
       - ../../.env
     environment:
-      DATABASE_URL: postgres://meshbot:meshbot@postgres:5432/meshbot
+      DATABASE_URL: postgres://meshvault:meshvault@postgres:5432/meshvault
       DATA_DIR: /data
       SANDBOX_SUPERVISOR_URL: http://supervisor:7091
       WAKEUP_DRIVER: graphile
@@ -68,11 +68,11 @@ services:
     build:
       context: ../..
       dockerfile: infra/compose/Dockerfile
-    command: ["pnpm", "--filter", "@meshbot/worker", "start"]
+    command: ["pnpm", "--filter", "@meshvault/worker", "start"]
     env_file:
       - ../../.env
     environment:
-      DATABASE_URL: postgres://meshbot:meshbot@postgres:5432/meshbot
+      DATABASE_URL: postgres://meshvault:meshvault@postgres:5432/meshvault
       DATA_DIR: /data
       SANDBOX_SUPERVISOR_URL: http://supervisor:7091
       WAKEUP_DRIVER: graphile
@@ -88,7 +88,7 @@ services:
     build:
       context: ../..
       dockerfile: infra/compose/Dockerfile
-    command: ["pnpm", "--filter", "@meshbot/web", "preview", "--host", "0.0.0.0", "--port", "5173"]
+    command: ["pnpm", "--filter", "@meshvault/web", "preview", "--host", "0.0.0.0", "--port", "5173"]
     environment:
       API_PROXY_TARGET: http://api:3100
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}

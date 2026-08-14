@@ -9,14 +9,14 @@ import type {
   SandboxProvider,
   ScreenRequest,
   ScreenSession,
-} from "@meshbot/adapter-kit";
+} from "@meshvault/adapter-kit";
 import { sandboxIdleMs } from "./computer-idle.js";
 
 export function e2bCreateOptions(botId: string, apiKey: string) {
   return {
     apiKey,
     timeoutMs: sandboxIdleMs(),
-    metadata: { botId, meshbot: "computer" },
+    metadata: { botId, meshvault: "computer" },
     resolution: [1280, 800] as [number, number],
     lifecycle: { onTimeout: "pause" as const, autoResume: false },
   };
@@ -110,7 +110,7 @@ export class E2BSandboxProvider implements SandboxProvider {
       }
     }
     const desktop = await Sandbox.create(e2bCreateOptions(request.botId, this.apiKey));
-    await desktop.files.makeDir("/home/user/meshbot-home").catch(() => undefined);
+    await desktop.files.makeDir("/home/user/meshvault-home").catch(() => undefined);
     await this.startStream(desktop);
     await openDesktopBrowser(desktop);
     this.boxes.set(desktop.sandboxId, desktop);

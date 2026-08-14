@@ -1,5 +1,5 @@
-import type { ConnectionCatalogItem } from "@meshbot/contracts";
-import { Button } from "@meshbot/ui-web";
+import type { ConnectionCatalogItem } from "@meshvault/contracts";
+import { Button } from "@meshvault/ui-web";
 import { useEffect, useRef, useState } from "react";
 import { rpc } from "../lib/rpc";
 
@@ -48,9 +48,9 @@ export function PluginsOverlay({ onClose }: { onClose: () => void }) {
   async function connect(item: ConnectionCatalogItem) {
     setError(null);
     setPending(item.slug);
-    const popup = window.open("about:blank", "meshbot-composio", "popup,width=720,height=800");
+    const popup = window.open("about:blank", "meshvault-composio", "popup,width=720,height=800");
     if (!popup) {
-      setError("Allow popups for Mesh Bot, then try Connect again.");
+      setError("Allow popups for MeshVault, then try Connect again.");
       setPending(null);
       return;
     }

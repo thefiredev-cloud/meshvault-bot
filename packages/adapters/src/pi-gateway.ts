@@ -1,14 +1,17 @@
 // Modified by FireDev LLC dba MeshVault on 2026-08-14.
 //
-// Mesh Bot fleet gateway provider. The site promises "point a bot at Claude,
+// MeshVault fleet gateway provider. The site promises "point a bot at Claude,
 // GPT, Grok, or a local model"; this is the local-model lane. Any
 // OpenAI-completions-compatible endpoint works: LiteLLM, Ollama, LM Studio,
 // vLLM. Configured by env so a deployment owner never pastes a key into a
 // browser to use their own cluster:
 //
-//   MESHBOT_GATEWAY_URL     base URL, e.g. http://127.0.0.1:4000
-//   MESHBOT_GATEWAY_KEY     API key (LITELLM_MASTER_KEY also accepted)
-//   MESHBOT_GATEWAY_MODELS  comma-separated model ids the endpoint serves
+//   MESHVAULT_GATEWAY_URL     base URL, e.g. http://127.0.0.1:4000
+//   MESHVAULT_GATEWAY_KEY     API key (LITELLM_MASTER_KEY also accepted)
+//   MESHVAULT_GATEWAY_MODELS  comma-separated model ids the endpoint serves
+//
+// Legacy MESHBOT_GATEWAY_* names from before the 2026-08-14 rebrand are still
+// accepted so existing deployments do not break.
 //
 // Unset URL means unconfigured: nothing registers, nothing shows in the
 // catalog, and no code path can stream to a half-configured endpoint.
@@ -16,7 +19,7 @@
 import { createProvider, envApiKeyAuth, type MutableModels } from "@earendil-works/pi-ai";
 import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
 
-export const GATEWAY_PROVIDER_ID = "meshbot-gateway";
+export const GATEWAY_PROVIDER_ID = "meshvault-gateway";
 
 export type GatewayConfig = {
   baseUrl: string;
@@ -26,9 +29,13 @@ export type GatewayConfig = {
 export function gatewayConfigFromEnv(
   source: Record<string, string | undefined> = process.env,
 ): GatewayConfig | null {
-  const baseUrl = source.MESHBOT_GATEWAY_URL?.trim().replace(/\/+$/, "");
+  const baseUrl = (source.MESHVAULT_GATEWAY_URL ?? source.MESHBOT_GATEWAY_URL)
+    ?.trim()
+    .replace(/\/+$/, "");
   if (!baseUrl) return null;
-  const modelIds = (source.MESHBOT_GATEWAY_MODELS ?? "local-deepseek-flash")
+  const modelIds = (source.MESHVAULT_GATEWAY_MODELS ??
+    source.MESHBOT_GATEWAY_MODELS ??
+    "local-deepseek-flash")
     .split(",")
     .map((id) => id.trim())
     .filter(Boolean);
@@ -37,13 +44,14 @@ export function gatewayConfigFromEnv(
 }
 
 export function gatewayProvider(config: GatewayConfig) {
-  const apiKeyAuth = envApiKeyAuth("Mesh Bot gateway key", [
+  const apiKeyAuth = envApiKeyAuth("MeshVault gateway key", [
+    "MESHVAULT_GATEWAY_KEY",
     "MESHBOT_GATEWAY_KEY",
     "LITELLM_MASTER_KEY",
   ]);
   return createProvider({
     id: GATEWAY_PROVIDER_ID,
-    name: "Mesh Bot Gateway",
+    name: "MeshVault Gateway",
     baseUrl: config.baseUrl,
     auth: {
       apiKey: {
@@ -51,7 +59,7 @@ export function gatewayProvider(config: GatewayConfig) {
         resolve: async (input) =>
           (await apiKeyAuth.resolve(input)) ?? {
             auth: {},
-            source: "configured Mesh Bot gateway",
+            source: "configured MeshVault gateway",
           },
       },
     },

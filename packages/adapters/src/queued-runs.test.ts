@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@meshbot/db";
+import type { PrismaClient } from "@meshvault/db";
 import { describe, expect, it, vi } from "vitest";
 import { enqueueQueuedRuns } from "./queued-runs.js";
 

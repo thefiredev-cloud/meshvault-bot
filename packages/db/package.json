@@ -1,5 +1,5 @@
 {
-  "name": "@meshbot/db",
+  "name": "@meshvault/db",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "type": "module",
@@ -20,7 +20,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
-    "@meshbot/contracts": "workspace:*",
+    "@meshvault/contracts": "workspace:*",
     "pg": "^8.16.3",
     "dotenv": "^17.2.1",
     "zod": "^4.1.5"

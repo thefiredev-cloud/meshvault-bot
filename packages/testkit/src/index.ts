@@ -1,1 +1,1 @@
-export { DestinationEmulator, McpEmulator } from "@meshbot/adapters";
+export { DestinationEmulator, McpEmulator } from "@meshvault/adapters";

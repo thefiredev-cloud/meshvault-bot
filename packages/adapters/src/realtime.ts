@@ -1,4 +1,4 @@
-import type { RealtimeFanout } from "@meshbot/adapter-kit";
+import type { RealtimeFanout } from "@meshvault/adapter-kit";
 import type { Pool } from "pg";
 
 export class PostgresRealtimeFanout implements RealtimeFanout {

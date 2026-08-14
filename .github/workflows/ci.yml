@@ -27,9 +27,9 @@ jobs:
       - run: pnpm install
       - run: pnpm db:generate
         env:
-          DATABASE_URL: postgres://meshbot:meshbot@127.0.0.1:5433/meshbot
+          DATABASE_URL: postgres://meshvault:meshvault@127.0.0.1:5433/meshvault
       - run: pnpm check
-      # Mesh Bot change: keep the production bundle in the required gate.
+      # MeshVault change: keep the production bundle in the required gate.
       - run: pnpm build
 
   verify-fast:
@@ -44,5 +44,5 @@ jobs:
       - run: pnpm install
       - run: pnpm db:generate
         env:
-          DATABASE_URL: postgres://meshbot:meshbot@127.0.0.1:5433/meshbot
+          DATABASE_URL: postgres://meshvault:meshvault@127.0.0.1:5433/meshvault
       - run: pnpm verify:fast

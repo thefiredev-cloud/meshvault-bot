@@ -1,4 +1,4 @@
-import type { ConnectorTool } from "@meshbot/adapter-kit";
+import type { ConnectorTool } from "@meshvault/adapter-kit";
 
 export const DELEGATION_TOOL_NAMES = new Set(["run_subagent", "spawn_bot", "delete_bot"]);
 

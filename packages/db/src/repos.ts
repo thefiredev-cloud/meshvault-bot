@@ -1,4 +1,4 @@
-import { type Actor, BOT_COLORS, type Bot } from "@meshbot/contracts";
+import { type Actor, BOT_COLORS, type Bot } from "@meshvault/contracts";
 import type { PrismaClient } from "./client.js";
 import { IsolationError } from "./scope.js";
 

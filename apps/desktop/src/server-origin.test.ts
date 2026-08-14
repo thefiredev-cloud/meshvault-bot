@@ -16,7 +16,7 @@ describe("desktop server selection", () => {
     expect(() => normalizeServerOrigin("http://bot.example.test")).toThrow("HTTPS is required");
     expect(() => normalizeServerOrigin("https://bot.example.test/login")).toThrow("without a path");
 
-    const directory = await mkdtemp(path.join(os.tmpdir(), "meshbot-desktop-"));
+    const directory = await mkdtemp(path.join(os.tmpdir(), "meshvault-desktop-"));
     const file = path.join(directory, "server.json");
     try {
       await saveServerOrigin(file, "https://saved.example.test/");

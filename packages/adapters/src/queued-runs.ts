@@ -1,5 +1,5 @@
-import type { WakeupDriver } from "@meshbot/adapter-kit";
-import type { PrismaClient } from "@meshbot/db";
+import type { WakeupDriver } from "@meshvault/adapter-kit";
+import type { PrismaClient } from "@meshvault/db";
 
 const RECOVERY_BATCH_SIZE = 100;
 

@@ -1,4 +1,4 @@
-export const COMPUTER_IMAGE = process.env.MESHBOT_COMPUTER_IMAGE ?? "meshbot/computer:local";
+export const COMPUTER_IMAGE = process.env.MESHVAULT_COMPUTER_IMAGE ?? "meshvault/computer:local";
 export const SCREEN_HOST = process.env.SANDBOX_SCREEN_HOST ?? "127.0.0.1";
 
 export interface ComputerCreateInput {
@@ -30,19 +30,19 @@ export function containerCreateOptions(input: ComputerCreateInput) {
     Tty: true,
     Env: [
       "DISPLAY=:1",
-      "HOME=/home/meshbot",
-      "PATH=/home/meshbot/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-      "NPM_CONFIG_PREFIX=/home/meshbot/.local",
+      "HOME=/home/meshvault",
+      "PATH=/home/meshvault/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "NPM_CONFIG_PREFIX=/home/meshvault/.local",
       "PIP_USER=1",
     ],
     Labels: {
-      "meshbot.managed": "true",
-      "meshbot.botId": input.botId,
-      "meshbot.workspaceId": input.workspaceId,
+      "meshvault.managed": "true",
+      "meshvault.botId": input.botId,
+      "meshvault.workspaceId": input.workspaceId,
     },
     ExposedPorts: { "6080/tcp": {} },
     HostConfig: {
-      Binds: [`${input.homePath}:/home/meshbot`],
+      Binds: [`${input.homePath}:/home/meshvault`],
       PortBindings: {
         "6080/tcp": [{ HostIp: "127.0.0.1", HostPort: "0" }],
       },
@@ -51,13 +51,13 @@ export function containerCreateOptions(input: ComputerCreateInput) {
       AutoRemove: false,
       NetworkMode: input.networkMode ?? "bridge",
     },
-    WorkingDir: "/home/meshbot",
+    WorkingDir: "/home/meshvault",
   };
 }
 
 export function containerNameFor(botId: string) {
   const safe = botId.replace(/[^a-zA-Z0-9_.-]/g, "").slice(0, 40);
-  return `meshbot-bot-${safe || "box"}`;
+  return `meshvault-bot-${safe || "box"}`;
 }
 
 export function screenUrlFor(hostPort: string, host = SCREEN_HOST) {

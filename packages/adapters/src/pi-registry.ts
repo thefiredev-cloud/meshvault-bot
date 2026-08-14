@@ -6,7 +6,7 @@ import {
 } from "@earendil-works/pi-ai";
 import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";
-import { qwenBaseUrl } from "@meshbot/core";
+import { qwenBaseUrl } from "@meshvault/core";
 
 const QWEN_COMPAT = {
   thinkingFormat: "qwen" as const,

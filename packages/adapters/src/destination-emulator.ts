@@ -5,7 +5,7 @@ import type {
   ConnectorEvent,
   ConnectorProvider,
   ConnectorTool,
-} from "@meshbot/adapter-kit";
+} from "@meshvault/adapter-kit";
 
 export interface DestinationRecord {
   id: string;

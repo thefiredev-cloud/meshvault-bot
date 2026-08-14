@@ -5,7 +5,7 @@ export async function fetchGithubStars(): Promise<number | null> {
     const response = await fetch(GITHUB_API_REPO, {
       headers: {
         Accept: "application/vnd.github+json",
-        "User-Agent": "meshbot-www",
+        "User-Agent": "meshvault-www",
       },
     });
     if (!response.ok) {

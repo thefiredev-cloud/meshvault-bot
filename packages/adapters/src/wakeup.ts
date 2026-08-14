@@ -1,4 +1,4 @@
-import type { AdapterContext, WakeupDriver, WakeupJob } from "@meshbot/adapter-kit";
+import type { AdapterContext, WakeupDriver, WakeupJob } from "@meshvault/adapter-kit";
 import { quickAddJob, run } from "graphile-worker";
 
 export class GraphileWakeupDriver implements WakeupDriver {

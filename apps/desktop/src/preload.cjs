@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
-contextBridge.exposeInMainWorld("meshbotDesktop", {
+contextBridge.exposeInMainWorld("meshvaultDesktop", {
   platform: process.platform,
   server: {
     settings: () => ipcRenderer.invoke("desktop.server.settings"),

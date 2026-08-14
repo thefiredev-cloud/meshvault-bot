@@ -12,7 +12,7 @@ import type {
   SandboxProvider,
   ScreenRequest,
   ScreenSession,
-} from "@meshbot/adapter-kit";
+} from "@meshvault/adapter-kit";
 
 interface DesktopBox {
   ref: ComputerRef;
@@ -155,7 +155,7 @@ export class DesktopSandboxProvider implements SandboxProvider {
 }
 
 function resolveExecuteCwd(requestCwd: string | undefined, home: string) {
-  if (!requestCwd || requestCwd === "/home/meshbot" || requestCwd === "/home/user") return home;
+  if (!requestCwd || requestCwd === "/home/meshvault" || requestCwd === "/home/user") return home;
   return path.resolve(home, requestCwd);
 }
 

@@ -2,9 +2,9 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { type MeshBotDesktop, windowChromeKind } from "./desktop.js";
+import { type MeshVaultDesktop, windowChromeKind } from "./desktop.js";
 
-function desktop(platform: string): MeshBotDesktop {
+function desktop(platform: string): MeshVaultDesktop {
   return {
     platform,
     window: {

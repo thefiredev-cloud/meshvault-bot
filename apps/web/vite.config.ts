@@ -1,7 +1,7 @@
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
-import { resolveAuthSecret } from "@meshbot/core";
+import { resolveAuthSecret } from "@meshvault/core";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv, type PreviewServer, type ViteDevServer } from "vite";
@@ -120,7 +120,7 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       {
-        name: "meshbot-novnc-proxy",
+        name: "meshvault-novnc-proxy",
         configureServer: (server) => attachNovncProxy(server, screenProxySecret()),
         configurePreviewServer: (server) => attachNovncProxy(server, screenProxySecret()),
       },

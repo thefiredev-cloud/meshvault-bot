@@ -8,7 +8,7 @@ import type {
   SandboxProvider,
   ScreenRequest,
   ScreenSession,
-} from "@meshbot/adapter-kit";
+} from "@meshvault/adapter-kit";
 
 export interface FakeBox {
   ref: ComputerRef;

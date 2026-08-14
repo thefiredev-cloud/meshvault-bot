@@ -1,5 +1,5 @@
 {
-  "name": "@meshbot/worker",
+  "name": "@meshvault/worker",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "type": "module",
@@ -10,12 +10,12 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@meshbot/adapter-kit": "workspace:*",
-    "@meshbot/adapters": "workspace:*",
-    "@meshbot/contracts": "workspace:*",
-    "@meshbot/core": "workspace:*",
-    "@meshbot/db": "workspace:*",
-    "@meshbot/memory": "workspace:*",
+    "@meshvault/adapter-kit": "workspace:*",
+    "@meshvault/adapters": "workspace:*",
+    "@meshvault/contracts": "workspace:*",
+    "@meshvault/core": "workspace:*",
+    "@meshvault/db": "workspace:*",
+    "@meshvault/memory": "workspace:*",
     "graphile-worker": "^0.17.3",
     "pino": "^9.9.0",
     "dotenv": "^17.2.1"

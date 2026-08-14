@@ -51,7 +51,7 @@
         "apps/api/src/router.ts",
         "packages/testkit/src/journeys.test.ts"
       ],
-      "worked": "Executor preflight now rejects incomplete or unknown exact provider/model pairs and fails the run when neither a scoped credential nor the selected Pi provider's own ambient auth resolves. A configured Mesh Bot gateway explicitly supports its documented keyless local mode. Credential rotation without modelId preserves the existing provider model and default state; a new provider requires an explicit model. Full verification applied four migrations, passed 181 tests, and passed two Chromium journeys.",
+      "worked": "Executor preflight now rejects incomplete or unknown exact provider/model pairs and fails the run when neither a scoped credential nor the selected Pi provider's own ambient auth resolves. A configured MeshVault gateway explicitly supports its documented keyless local mode. Credential rotation without modelId preserves the existing provider model and default state; a new provider requires an explicit model. Full verification applied four migrations, passed 181 tests, and passed two Chromium journeys.",
       "failed": null
     },
     {
@@ -151,7 +151,7 @@
         ".agents/context.json"
       ],
       "worked": "Dynamic Expo config preserves app.json unchanged for development. The production EAS profile selects store distribution plus the production variable environment and requires owner-supplied bundle id, positive build number, Expo owner, and UUID project id. Shared preflight reports exact missing or malformed fields before build. Default and fixture-production Expo config resolved, mobile TypeScript passed, focused config tests passed 4 of 4, iOS export bundled 1193 modules to one 3.61 MB Hermes bundle, targeted Biome passed, and verify:fast passed 184 tests with 19 expected skips.",
-      "failed": "The first verify:fast run lacked the ignored generated Prisma client; pnpm --filter @meshbot/db generate restored it, then the unchanged gate passed."
+      "failed": "The first verify:fast run lacked the ignored generated Prisma client; pnpm --filter @meshvault/db generate restored it, then the unchanged gate passed."
     },
     {
       "at": "2026-08-14",
@@ -167,7 +167,7 @@
         "PLAN.md",
         ".agents/context.json"
       ],
-      "worked": "Packaged Electron no longer defaults to development port 5173. It loads an explicit MESHBOT_WEB_URL, a persisted owner-selected origin, or the bundled connection screen in that order; only HTTPS and loopback HTTP are accepted. Connection IPC is restricted to the local screen, the choice is atomically stored mode 0600, macOS exposes Change Server, sandbox plus contextIsolation remain enabled, and the README now separates development from packaged startup. The real desktop test command passed 2 files and 3 tests; verify:fast passed 45 files and 181 tests with 3 files and 19 live/DB tests skipped; lint checked 215 files; all 19 checks and 4 builds passed. An unsigned ARM64 DMG built with signing discovery disabled, verified with SHA-256 504e8f252e408bbd1b4c7205e926a63ac93483e40ed375037426b3d262a16336, contained the connection assets, launched sandboxed, connected to a loopback runtime, and restored it after relaunch.",
+      "worked": "Packaged Electron no longer defaults to development port 5173. It loads an explicit MESHVAULT_WEB_URL, a persisted owner-selected origin, or the bundled connection screen in that order; only HTTPS and loopback HTTP are accepted. Connection IPC is restricted to the local screen, the choice is atomically stored mode 0600, macOS exposes Change Server, sandbox plus contextIsolation remain enabled, and the README now separates development from packaged startup. The real desktop test command passed 2 files and 3 tests; verify:fast passed 45 files and 181 tests with 3 files and 19 live/DB tests skipped; lint checked 215 files; all 19 checks and 4 builds passed. An unsigned ARM64 DMG built with signing discovery disabled, verified with SHA-256 504e8f252e408bbd1b4c7205e926a63ac93483e40ed375037426b3d262a16336, contained the connection assets, launched sandboxed, connected to a loopback runtime, and restored it after relaunch.",
       "failed": "The first verify:fast run lacked the ignored generated Prisma client; pnpm db:generate restored it. Gatekeeper assessment was disabled on the build Mac, so code-sign verification and xcrun stapler were used instead: the bundle has no complete Developer ID signature and no notarization ticket."
     },
     {
@@ -185,7 +185,7 @@
         "PLAN.md",
         ".agents/context.json"
       ],
-      "worked": "Product-facing and generated identifiers now use Mesh Bot across issue forms, API logs, current mobile origins, Brain errors, plugin popup state, the public lockup, Cloud docs, site demo data, and test fixtures. The server still accepts meshvault:// only as inbound compatibility; current clients emit meshbot://. Legal FireDev LLC dba MeshVault text, meshvault.ai, the meshvault-bot repository address, and required Rakazo attribution remain. Focused tests passed 18 of 18; verify:fast passed 194 tests with 19 expected skips; lint checked 220 files; all 19 checks and all 4 builds passed.",
+      "worked": "Product-facing and generated identifiers now use MeshVault across issue forms, API logs, current mobile origins, Brain errors, plugin popup state, the public lockup, Cloud docs, site demo data, and test fixtures. The server still accepts meshvault:// only as inbound compatibility; current clients emit meshvault://. Legal FireDev LLC dba MeshVault text, meshvault.ai, the meshvault-bot repository address, and required Rakazo attribution remain. Focused tests passed 18 of 18; verify:fast passed 194 tests with 19 expected skips; lint checked 220 files; all 19 checks and all 4 builds passed.",
       "failed": null
     },
     {

@@ -1,4 +1,4 @@
-import type { AppContract } from "@meshbot/contracts";
+import type { AppContract } from "@meshvault/contracts";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { ContractRouterClient } from "@orpc/contract";

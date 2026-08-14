@@ -7,8 +7,8 @@ import {
   type AgentRuntimeEvent,
   type ConnectorTool,
   isOwnerApprovalRequired,
-} from "@meshbot/adapter-kit";
-import { defaultPiModel, defaultPiProvider, fallbackApiKey } from "@meshbot/core";
+} from "@meshvault/adapter-kit";
+import { defaultPiModel, defaultPiProvider, fallbackApiKey } from "@meshvault/core";
 import { builtinAgentTools, DELEGATION_TOOL_NAMES } from "./builtin-tools.js";
 import { registerGateway } from "./pi-gateway.js";
 import { piModels } from "./pi-registry.js";
@@ -19,7 +19,7 @@ const running = new Map<string, AbortController>();
 const models = piModels();
 // Registered lazily: tsx evaluates this module before the worker's dotenv
 // loadRootEnv() runs, so a top-level call here always saw an empty env and
-// the worker answered "Unknown model meshbot-gateway/..." while the API
+// the worker answered "Unknown model meshvault-gateway/..." while the API
 // (which registers at request time in pi-models) listed it fine.
 function ensureGateway() {
   registerGateway(models);
@@ -82,7 +82,7 @@ export class PiAgentRuntime implements AgentRuntime {
           initialState: {
             systemPrompt:
               request.instructions ||
-              "You are a Mesh Bot agent with a real computer. Use write_file, shell, remember, and request_takeover when they are the right tools. Be concise.",
+              "You are a MeshVault agent with a real computer. Use write_file, shell, remember, and request_takeover when they are the right tools. Be concise.",
             model,
             thinkingLevel: "off",
             tools,
@@ -202,7 +202,7 @@ function toAgentTool(tool: ConnectorTool, host: ToolHost): AgentTool {
       if (tool.name === "destination.write") {
         return {
           collection: String(raw.collection ?? "notes"),
-          title: String(raw.title ?? "Mesh Bot result"),
+          title: String(raw.title ?? "MeshVault result"),
           body: String(raw.body ?? ""),
         };
       }
@@ -218,7 +218,7 @@ function toAgentTool(tool: ConnectorTool, host: ToolHost): AgentTool {
       if (tool.name === "shell") {
         return {
           command: String(raw.command ?? ""),
-          cwd: raw.cwd ? String(raw.cwd) : "/home/meshbot",
+          cwd: raw.cwd ? String(raw.cwd) : "/home/meshvault",
         };
       }
       if (tool.name === "run_subagent") {
@@ -324,7 +324,7 @@ async function executeSubagent(host: ToolHost, executionId: string, args: Record
     getApiKey: async () => host.apiKey,
     initialState: {
       systemPrompt: [
-        `You are a Mesh Bot subagent named "${name}".`,
+        `You are a MeshVault subagent named "${name}".`,
         "You run inside the parent bot's turn — you are not a separate bot chat.",
         "Complete the task and return a concise result. Do not spawn bots or further subagents.",
         extra,

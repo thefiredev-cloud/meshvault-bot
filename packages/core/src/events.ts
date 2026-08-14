@@ -1,4 +1,4 @@
-import type { MessageBlock, ThreadMessage } from "@meshbot/contracts";
+import type { MessageBlock, ThreadMessage } from "@meshvault/contracts";
 
 export function projectMessages(
   events: Array<{

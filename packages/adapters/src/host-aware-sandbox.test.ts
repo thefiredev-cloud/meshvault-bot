@@ -15,7 +15,7 @@ const ctx = {
 };
 
 describe("host-aware sandbox", () => {
-  const hostRoot = mkdtempSync(path.join(tmpdir(), "meshbot-host-root-"));
+  const hostRoot = mkdtempSync(path.join(tmpdir(), "meshvault-host-root-"));
 
   afterAll(() => {
     rmSync(hostRoot, { recursive: true, force: true });
@@ -78,7 +78,7 @@ describe("host-aware sandbox", () => {
     let code = 1;
     for await (const event of desktop.execute(
       computer,
-      { argv: ["echo", "ok"], cwd: "/home/meshbot" },
+      { argv: ["echo", "ok"], cwd: "/home/meshvault" },
       ctx,
     )) {
       if (event.type === "exit") code = event.code;

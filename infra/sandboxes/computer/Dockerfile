@@ -18,19 +18,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-dejavu-core \
     dbus-x11 \
   && rm -rf /var/lib/apt/lists/* \
-  && mkdir -p /etc/meshbot/fluxbox \
+  && mkdir -p /etc/meshvault/fluxbox \
   && printf '%s\n' '#!/bin/sh' 'exec xsetroot -solid "#111113" "$@"' > /usr/bin/fbsetbg \
   && chmod +x /usr/bin/fbsetbg \
   && ln -sfn /bin/true /usr/bin/xmessage
 ENV DISPLAY=:1
-ENV HOME=/home/meshbot
-WORKDIR /home/meshbot
-COPY start.sh /usr/local/bin/meshbot-computer
-COPY meshbot-browser /usr/local/bin/meshbot-browser
-COPY fluxbox.init /etc/meshbot/fluxbox/init
-COPY fluxbox.apps /etc/meshbot/fluxbox/apps
-COPY fluxbox.menu /etc/meshbot/fluxbox/menu
+ENV HOME=/home/meshvault
+WORKDIR /home/meshvault
+COPY start.sh /usr/local/bin/meshvault-computer
+COPY meshvault-browser /usr/local/bin/meshvault-browser
+COPY fluxbox.init /etc/meshvault/fluxbox/init
+COPY fluxbox.apps /etc/meshvault/fluxbox/apps
+COPY fluxbox.menu /etc/meshvault/fluxbox/menu
 COPY embed.html /usr/share/novnc/embed.html
-RUN chmod +x /usr/local/bin/meshbot-computer /usr/local/bin/meshbot-browser
+RUN chmod +x /usr/local/bin/meshvault-computer /usr/local/bin/meshvault-browser
 EXPOSE 6080
-CMD ["/usr/local/bin/meshbot-computer"]
+CMD ["/usr/local/bin/meshvault-computer"]

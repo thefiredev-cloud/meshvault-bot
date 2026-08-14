@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
-import type { AdapterContext, SecretRecord, SecretStore } from "@meshbot/adapter-kit";
+import type { AdapterContext, SecretRecord, SecretStore } from "@meshvault/adapter-kit";
 
 function keyFrom(secret: string): Buffer {
   return createHash("sha256").update(secret).digest();

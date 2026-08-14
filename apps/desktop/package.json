@@ -1,5 +1,5 @@
 {
-  "name": "@meshbot/desktop",
+  "name": "@meshvault/desktop",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "type": "module",
@@ -16,7 +16,7 @@
     "test": "vitest run --root ../.. apps/desktop/src"
   },
   "dependencies": {
-    "@meshbot/contracts": "workspace:*"
+    "@meshvault/contracts": "workspace:*"
   },
   "devDependencies": {
     "electron": "^37.3.1",
@@ -25,8 +25,8 @@
     "vitest": "^4.1.10"
   },
   "build": {
-    "appId": "ai.meshbot.desktop",
-    "productName": "Mesh Bot",
+    "appId": "ai.meshvault.desktop",
+    "productName": "MeshVault",
     "directories": {
       "output": "out",
       "buildResources": "assets"

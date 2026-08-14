@@ -1,5 +1,5 @@
 {
-  "name": "@meshbot/testkit",
+  "name": "@meshvault/testkit",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "type": "module",
@@ -11,13 +11,13 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@meshbot/adapter-kit": "workspace:*",
-    "@meshbot/adapters": "workspace:*",
-    "@meshbot/auth": "workspace:*",
-    "@meshbot/contracts": "workspace:*",
-    "@meshbot/core": "workspace:*",
-    "@meshbot/db": "workspace:*",
-    "@meshbot/memory": "workspace:*",
+    "@meshvault/adapter-kit": "workspace:*",
+    "@meshvault/adapters": "workspace:*",
+    "@meshvault/auth": "workspace:*",
+    "@meshvault/contracts": "workspace:*",
+    "@meshvault/core": "workspace:*",
+    "@meshvault/db": "workspace:*",
+    "@meshvault/memory": "workspace:*",
     "@hono/node-server": "^1.19.1",
     "@testcontainers/postgresql": "^11.5.1",
     "fast-check": "^4.3.0",

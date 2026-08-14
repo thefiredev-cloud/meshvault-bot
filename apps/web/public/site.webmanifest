@@ -1,6 +1,6 @@
 {
-  "name": "Mesh Bot",
-  "short_name": "Mesh Bot",
+  "name": "MeshVault",
+  "short_name": "MeshVault",
   "description": "Private bots on computers you control.",
   "start_url": "/",
   "display": "standalone",

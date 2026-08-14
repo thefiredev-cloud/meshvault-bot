@@ -1,4 +1,4 @@
-import type { SandboxKind } from "@meshbot/contracts";
+import type { SandboxKind } from "@meshvault/contracts";
 
 export interface AdapterContext {
   operationId: string;

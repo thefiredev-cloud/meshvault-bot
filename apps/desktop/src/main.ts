@@ -12,7 +12,7 @@ import { browserWindowOptions } from "./window-options.js";
 
 const CONNECTION_PAGE = path.join(import.meta.dirname, "connect.html");
 const CONNECTION_PAGE_URL = pathToFileURL(CONNECTION_PAGE).href;
-const WEB_URL_OVERRIDE = process.env.MESHBOT_WEB_URL;
+const WEB_URL_OVERRIDE = process.env.MESHVAULT_WEB_URL;
 let savedOrigin: string | undefined;
 let currentOrigin: string | undefined;
 let connectionError: string | undefined;
@@ -153,9 +153,9 @@ app.whenReady().then(() => {
   });
   ipcMain.handle("desktop.server.connect", async (event, value: unknown) => {
     assertConnectionPage(event);
-    if (typeof value !== "string") throw new Error("Enter the Mesh Bot server address.");
+    if (typeof value !== "string") throw new Error("Enter the MeshVault server address.");
     const win = windowFrom(event);
-    if (!win) throw new Error("The Mesh Bot window is unavailable.");
+    if (!win) throw new Error("The MeshVault window is unavailable.");
     savedOrigin = await saveServerOrigin(path.join(app.getPath("userData"), "server.json"), value);
     await loadServer(win, savedOrigin);
     return { origin: savedOrigin };

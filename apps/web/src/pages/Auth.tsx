@@ -11,7 +11,7 @@ export function AuthPage({ mode }: { mode: "in" | "up" }) {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const title = mode === "in" ? "Sign in to Mesh Bot" : "Create your Mesh Bot account";
+  const title = mode === "in" ? "Sign in to MeshVault" : "Create your MeshVault account";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

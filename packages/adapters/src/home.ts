@@ -1,7 +1,7 @@
 import { constants } from "node:fs";
 import { mkdir, open, readdir, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { AdapterContext, AgentHomeStore, PortableFile } from "@meshbot/adapter-kit";
+import type { AdapterContext, AgentHomeStore, PortableFile } from "@meshvault/adapter-kit";
 
 export class LocalAgentHomeStore implements AgentHomeStore {
   constructor(private readonly root: string) {}

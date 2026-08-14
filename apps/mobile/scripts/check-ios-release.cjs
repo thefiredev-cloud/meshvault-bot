@@ -1,8 +1,8 @@
 const RELEASE_FIELDS = {
-  MESHBOT_IOS_BUNDLE_IDENTIFIER: "bundleIdentifier",
-  MESHBOT_IOS_BUILD_NUMBER: "buildNumber",
-  MESHBOT_EXPO_OWNER: "owner",
-  MESHBOT_EXPO_PROJECT_ID: "projectId",
+  MESHVAULT_IOS_BUNDLE_IDENTIFIER: "bundleIdentifier",
+  MESHVAULT_IOS_BUILD_NUMBER: "buildNumber",
+  MESHVAULT_EXPO_OWNER: "owner",
+  MESHVAULT_EXPO_PROJECT_ID: "projectId",
 };
 
 function readIosReleaseConfig(env = process.env) {
@@ -20,17 +20,17 @@ function readIosReleaseConfig(env = process.env) {
       values.bundleIdentifier,
     )
   ) {
-    invalid.push("MESHBOT_IOS_BUNDLE_IDENTIFIER must be a reverse-DNS identifier.");
+    invalid.push("MESHVAULT_IOS_BUNDLE_IDENTIFIER must be a reverse-DNS identifier.");
   }
   if (!/^[1-9]\d*$/.test(values.buildNumber)) {
-    invalid.push("MESHBOT_IOS_BUILD_NUMBER must be a positive decimal integer.");
+    invalid.push("MESHVAULT_IOS_BUILD_NUMBER must be a positive decimal integer.");
   }
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
       values.projectId,
     )
   ) {
-    invalid.push("MESHBOT_EXPO_PROJECT_ID must be a UUID.");
+    invalid.push("MESHVAULT_EXPO_PROJECT_ID must be a UUID.");
   }
   if (invalid.length) throw new Error(`Invalid iOS release configuration:\n${invalid.join("\n")}`);
 

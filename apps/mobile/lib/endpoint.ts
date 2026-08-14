@@ -60,7 +60,7 @@ export async function probeApiBase(
   try {
     const res = await fetchImpl(`${parsed.url}/rpc/health`, {
       method: "POST",
-      headers: { "content-type": "application/json", origin: "meshbot://" },
+      headers: { "content-type": "application/json", origin: "meshvault://" },
       body: JSON.stringify({ json: {} }),
       signal: controller.signal,
     });
@@ -69,7 +69,7 @@ export async function probeApiBase(
       error?: { message?: string };
     };
     if (!res.ok || body.error || body.json?.ok !== true) {
-      return { ok: false, error: "That URL did not look like a Mesh Bot server" };
+      return { ok: false, error: "That URL did not look like a MeshVault server" };
     }
     return parsed;
   } catch {

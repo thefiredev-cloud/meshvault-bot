@@ -1,4 +1,4 @@
-import type { Actor } from "@meshbot/contracts";
+import type { Actor } from "@meshvault/contracts";
 import type { PrismaClient } from "./client.js";
 
 export class IsolationError extends Error {

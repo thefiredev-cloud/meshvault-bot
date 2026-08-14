@@ -9,11 +9,11 @@ test("two users are isolated and a bot completes durable work", async ({ browser
   const pageB = await b.newPage();
 
   const stamp = Date.now();
-  await signup(pageA, `ada-${stamp}@meshbot.test`, "password12", "Ada");
+  await signup(pageA, `ada-${stamp}@meshvault.test`, "password12", "Ada");
   await completeOnboarding(pageA, ["A bit of everything", "Clear and tight"]);
   await expect(pageA.getByText("Chief").first()).toBeVisible();
 
-  await signup(pageB, `bob-${stamp}@meshbot.test`, "password12", "Bob");
+  await signup(pageB, `bob-${stamp}@meshvault.test`, "password12", "Bob");
   await completeOnboarding(pageB, ["Coding & repos", "Clear and tight"]);
   await expect(pageB.getByText("Chief").first()).toBeVisible();
   await expect(pageB.getByText("Ada")).toHaveCount(0);
@@ -36,7 +36,7 @@ test("two users are isolated and a bot completes durable work", async ({ browser
 
 test("takeover, routine, plugins, and export are reachable", async ({ page }) => {
   const stamp = Date.now();
-  await signup(page, `flow-${stamp}@meshbot.test`, "password12", "Flow");
+  await signup(page, `flow-${stamp}@meshvault.test`, "password12", "Flow");
   await completeOnboarding(page, ["A bit of everything", "Clear and tight"]);
 
   const composer = page.getByPlaceholder(/Message/);
@@ -111,7 +111,7 @@ async function completeOnboarding(page: Page, answers: string[]) {
     for (const answer of answers) {
       await page.getByText(answer, { exact: true }).click();
     }
-    await page.getByRole("button", { name: "Open Mesh Bot" }).click();
+    await page.getByRole("button", { name: "Open MeshVault" }).click();
   }
   await page.waitForURL(/\/app/);
   await expect(page.getByText("Chief").first()).toBeVisible();

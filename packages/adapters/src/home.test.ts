@@ -18,7 +18,7 @@ afterEach(async () => {
 });
 
 async function fixture() {
-  const root = await mkdtemp(path.join(tmpdir(), "meshbot-home-"));
+  const root = await mkdtemp(path.join(tmpdir(), "meshvault-home-"));
   dirs.push(root);
   const store = new LocalAgentHomeStore(root);
   const home = store.pathFor("bot-1");

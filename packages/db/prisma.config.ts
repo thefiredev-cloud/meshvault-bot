@@ -15,6 +15,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env.DATABASE_URL ?? "postgres://meshbot:meshbot@127.0.0.1:5433/meshbot",
+    url: process.env.DATABASE_URL ?? "postgres://meshvault:meshvault@127.0.0.1:5433/meshvault",
   },
 });
