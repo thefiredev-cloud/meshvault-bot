@@ -1,4 +1,12 @@
-import { resolveAuthSecret, resolveEncryptionKey, resolveSupervisorToken } from "@rakazo/core";
+import {
+  defaultPiModel,
+  defaultPiProvider,
+  openRouterApiKey,
+  qwenApiKey,
+  resolveAuthSecret,
+  resolveEncryptionKey,
+  resolveSupervisorToken,
+} from "@rakazo/core";
 
 export interface AppEnv {
   databaseUrl: string;
@@ -15,6 +23,8 @@ export interface AppEnv {
   sandboxProvider: string;
   agentRuntime: string;
   openRouterKey: string | undefined;
+  qwenKey: string | undefined;
+  deploymentModelKey: string | undefined;
   e2bApiKey: string | undefined;
   composioApiKey: string | undefined;
   defaultProvider: string;
@@ -25,6 +35,8 @@ export interface AppEnv {
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
   const authSecret = resolveAuthSecret(source);
+  const qwenKey = qwenApiKey(source);
+  const openRouterKey = openRouterApiKey(source);
   return {
     databaseUrl: required(source, "DATABASE_URL"),
     authSecret,
@@ -39,11 +51,13 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     sandboxSupervisorToken: resolveSupervisorToken(source),
     sandboxProvider: source.SANDBOX_PROVIDER ?? "docker",
     agentRuntime: source.AGENT_RUNTIME ?? "pi",
-    openRouterKey: source.OPENROUTER_API_KEY,
+    openRouterKey,
+    qwenKey,
+    deploymentModelKey: qwenKey ?? openRouterKey,
     e2bApiKey: source.E2B_API_KEY,
     composioApiKey: source.COMPOSIO_API_KEY,
-    defaultProvider: source.PI_DEFAULT_PROVIDER ?? "openrouter",
-    defaultModel: source.PI_DEFAULT_MODEL ?? "deepseek/deepseek-v4-flash-0731",
+    defaultProvider: defaultPiProvider(source),
+    defaultModel: defaultPiModel(source),
     wakeupDriver: source.WAKEUP_DRIVER ?? "graphile",
     port: Number(source.API_PORT ?? 3100),
   };

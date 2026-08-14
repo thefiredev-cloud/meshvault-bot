@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Rakazo",
-    "slug": "rakazo",
-    "scheme": "rakazo",
+    "name": "MeshVault",
+    "slug": "meshvault",
+    "scheme": "meshvault",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",

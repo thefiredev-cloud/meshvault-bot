@@ -1,5 +1,5 @@
 ---
-import { CHANGELOG_URL, DOCS_URL, GITHUB_URL, INBOX_ZERO_URL } from "../site";
+import { CHANGELOG_URL, DOCS_URL, GITHUB_URL, INBOX_ZERO_URL, RAKAZO_UPSTREAM_URL } from "../site";
 import Logo from "./Logo.astro";
 ---
 
@@ -7,9 +7,10 @@ import Logo from "./Logo.astro";
   <div class="site-footer__brand">
     <Logo />
     <span class="site-footer__legal">
-      © 2026 ·
+      © 2026 Tanner Osterkamp · Apache-2.0 · fork of
+      <a href={RAKAZO_UPSTREAM_URL} target="_blank" rel="noreferrer">Rakazo</a>
+      by
       <a href={INBOX_ZERO_URL} target="_blank" rel="noreferrer">Inbox Zero Inc.</a>
-      · Apache-2.0
     </span>
   </div>
   <nav class="site-footer__links" aria-label="Footer">

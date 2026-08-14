@@ -28,7 +28,7 @@ export default function Layout() {
           contentStyle: { backgroundColor: "#000" },
         }}
       >
-        <Stack.Screen name="index" options={{ headerShown: false, title: "Rakazo" }} />
+        <Stack.Screen name="index" options={{ headerShown: false, title: "MeshVault" }} />
         <Stack.Screen name="sign-in" options={{ headerShown: false }} />
         <Stack.Screen
           name="new"

@@ -1,9 +1,5 @@
-import { builtinModels } from "@earendil-works/pi-ai/providers/all";
-import {
-  DEVICE_CODE_PROVIDERS,
-  DEVICE_CODE_SIGN_IN,
-  isDeviceCodeProvider,
-} from "./pi-oauth.js";
+import { DEVICE_CODE_PROVIDERS, DEVICE_CODE_SIGN_IN, isDeviceCodeProvider } from "./pi-oauth.js";
+import { piModels } from "./pi-registry.js";
 
 export type PiCatalogAuth = "api-key" | "oauth" | "both";
 export type PiCatalogSignIn = typeof DEVICE_CODE_SIGN_IN;
@@ -28,9 +24,10 @@ export function listPiCatalog(): PiCatalogEntry[] {
 let cachedCatalog: PiCatalogEntry[] | undefined;
 
 function buildPiCatalog(): PiCatalogEntry[] {
-  const models = builtinModels();
+  const models = piModels();
   const entries: PiCatalogEntry[] = [];
-  for (const provider of models.getProviders()) {
+  const providers = [...models.getProviders()].sort(byPreferredProvider);
+  for (const provider of providers) {
     const apiKey = Boolean(provider.auth.apiKey);
     const oauth = Boolean(provider.auth.oauth);
     const auth: PiCatalogAuth = apiKey && oauth ? "both" : oauth ? "oauth" : "api-key";
@@ -60,20 +57,37 @@ function buildPiCatalog(): PiCatalogEntry[] {
   return entries;
 }
 
+const PREFERRED_PROVIDERS = ["qwen", "spark-gx10", "openrouter"];
+
+function byPreferredProvider(a: { id: string }, b: { id: string }) {
+  const ai = PREFERRED_PROVIDERS.indexOf(a.id);
+  const bi = PREFERRED_PROVIDERS.indexOf(b.id);
+  if (ai === -1 && bi === -1) return 0;
+  if (ai === -1) return 1;
+  if (bi === -1) return -1;
+  return ai - bi;
+}
+
 function catalogBilling(
   providerId: string,
   name: string,
   opts: { apiKey: boolean; oauth: boolean },
 ) {
+  if (providerId === "qwen") {
+    return "Uses your Qwen / DashScope API key (QWEN_API_KEY or DASHSCOPE_API_KEY). MeshVault does not pay for model usage.";
+  }
+  if (providerId === "spark-gx10") {
+    return "Local Spark+GX10 inference plane (DeepSeek V4 Flash). Set SPARK_GX10_BASE_URL when the box is up. MeshVault does not pay for model usage.";
+  }
   const device = DEVICE_CODE_PROVIDERS[providerId];
   if (device) return device.billing;
   if (opts.oauth && !opts.apiKey) {
-    return `${name} subscription login is not in the Rakazo UI yet. Skip if this deployment already has credentials.`;
+    return `${name} subscription login is not in the MeshVault UI yet. Skip if this deployment already has credentials.`;
   }
   if (opts.apiKey) {
-    return `Uses your ${name} API key. Rakazo does not pay for model usage.`;
+    return `Uses your ${name} API key. MeshVault does not pay for model usage.`;
   }
-  return `Uses your ${name} key. Rakazo does not pay for model usage.`;
+  return `Uses your ${name} key. MeshVault does not pay for model usage.`;
 }
 
 export const scriptedCatalogEntry: PiCatalogEntry = {

@@ -59,6 +59,7 @@ export async function createApp(
     signupAllowlist: env.signupAllowlist,
     extraOrigins: [
       "rakazo://",
+      "meshvault://",
       "exp://",
       "exp://*",
       "http://localhost:8081",
@@ -97,9 +98,9 @@ export async function createApp(
     memory,
     home,
     connector: stack.connector,
-    secrets: [env.openRouterKey ?? "", env.composioApiKey ?? ""].filter(Boolean),
+    secrets: [env.openRouterKey ?? "", env.qwenKey ?? "", env.composioApiKey ?? ""].filter(Boolean),
     secretStore: secrets,
-    deploymentModelKey: env.openRouterKey,
+    deploymentModelKey: env.deploymentModelKey,
     dataDir: env.dataDir,
     notifications,
     wakeup,
@@ -135,6 +136,8 @@ export async function createApp(
       defaultProvider: env.defaultProvider,
       defaultModel: env.defaultModel,
       openRouterKey: env.openRouterKey,
+      qwenKey: env.qwenKey,
+      deploymentModelKey: env.deploymentModelKey,
       webOrigin: env.webOrigin,
       screenProxySecret: env.authSecret,
       sandboxProvider: env.sandboxProvider,
@@ -202,7 +205,12 @@ export async function createApp(
 export function isTrustedOrigin(origin: string, env: AppEnv) {
   if (!origin) return true;
   if (origin === env.webOrigin || origin === env.apiUrl || origin === env.authUrl) return true;
-  if (origin.startsWith("rakazo://") || origin.startsWith("exp://")) return true;
+  if (
+    origin.startsWith("rakazo://") ||
+    origin.startsWith("meshvault://") ||
+    origin.startsWith("exp://")
+  )
+    return true;
   try {
     const host = new URL(origin).hostname;
     return host === "localhost" || host === "127.0.0.1";

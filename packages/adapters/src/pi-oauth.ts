@@ -5,7 +5,7 @@ import type {
   OAuthAuth,
   OAuthCredential,
 } from "@earendil-works/pi-ai";
-import { builtinModels } from "@earendil-works/pi-ai/providers/all";
+import { piModels } from "./pi-registry.js";
 
 export const CHATGPT_OAUTH_PROVIDER = "openai-codex";
 export const COPILOT_OAUTH_PROVIDER = "github-copilot";
@@ -20,19 +20,18 @@ export const DEVICE_CODE_PROVIDERS: Record<
     loginLabel: "Sign in with ChatGPT Plus/Pro",
     hint: "ChatGPT Plus/Pro",
     billing:
-      "Sign in with ChatGPT Plus or Pro. Uses your OpenAI subscription. Rakazo does not pay.",
+      "Sign in with ChatGPT Plus or Pro. Uses your OpenAI subscription. MeshVault does not pay.",
   },
   [COPILOT_OAUTH_PROVIDER]: {
     loginLabel: "Sign in with GitHub Copilot",
     hint: "Copilot",
-    billing:
-      "Sign in with GitHub Copilot. Uses your Copilot subscription. Rakazo does not pay.",
+    billing: "Sign in with GitHub Copilot. Uses your Copilot subscription. MeshVault does not pay.",
   },
   [XAI_OAUTH_PROVIDER]: {
     loginLabel: "Sign in with SuperGrok or X Premium",
     hint: "SuperGrok / key",
     billing:
-      "Sign in with SuperGrok or X Premium, or paste an xAI API key. Rakazo does not pay.",
+      "Sign in with SuperGrok or X Premium, or paste an xAI API key. MeshVault does not pay.",
   },
 };
 
@@ -118,7 +117,7 @@ export function secretValuesToRedact(secret: StoredModelSecret): string[] {
 }
 
 export function loadProviderOAuth(providerId: string): OAuthAuth | undefined {
-  return builtinModels().getProvider(providerId)?.auth.oauth;
+  return piModels().getProvider(providerId)?.auth.oauth;
 }
 
 export async function resolveModelApiKey(
@@ -298,7 +297,7 @@ function defaultLogin(
   type: "oauth",
   interaction: AuthInteraction,
 ): Promise<Credential> {
-  return builtinModels().login(providerId, type, interaction);
+  return piModels().login(providerId, type, interaction);
 }
 
 function deferred<T>() {

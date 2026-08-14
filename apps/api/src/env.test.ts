@@ -12,6 +12,19 @@ describe("loadEnv", () => {
     expect(env.agentRuntime).toBe("pi");
     expect(env.sandboxProvider).toBe("docker");
     expect(env.wakeupDriver).toBe("graphile");
+    expect(env.defaultProvider).toBe("qwen");
+    expect(env.defaultModel).toBe("qwen-plus");
+  });
+
+  it("wires Qwen / DashScope keys the same way as OpenRouter", () => {
+    const env = loadEnv({
+      ...base,
+      QWEN_API_KEY: "qwen-test-key",
+      OPENROUTER_API_KEY: "or-test-key",
+    });
+    expect(env.qwenKey).toBe("qwen-test-key");
+    expect(env.openRouterKey).toBe("or-test-key");
+    expect(env.deploymentModelKey).toBe("qwen-test-key");
   });
 
   it("keeps explicit emulator settings for pnpm verify:fast", () => {

@@ -1,7 +1,7 @@
 {
-  "name": "Rakazo",
-  "short_name": "Rakazo",
-  "description": "Open-source home for persistent AI bots that can do real work.",
+  "name": "MeshVault",
+  "short_name": "MeshVault",
+  "description": "Open-source Grok Bot alternative. Your keys, your model, your machine.",
   "start_url": "/",
   "display": "browser",
   "background_color": "#FDFDFD",

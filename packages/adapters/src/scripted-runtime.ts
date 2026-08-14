@@ -179,7 +179,7 @@ export function inferScript(
         toolCalls: [
           {
             name: "destination.write",
-            args: { collection: "notes", title: "Rakazo result", body: prompt },
+            args: { collection: "notes", title: "MeshVault result", body: prompt },
           },
         ],
         complete: true,
