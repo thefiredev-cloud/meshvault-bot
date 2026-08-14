@@ -212,6 +212,21 @@
       ],
       "worked": "Release-only macOS output now targets apps/desktop/out/release, while ordinary unsigned packages remain in apps/desktop/out. The documented codesign, stapler, and DMG checks search only the release directory. The release config built into out/release/mac-arm64 and failed at code signing when identity discovery was disabled; no unsigned DMG appeared in the ordinary output root. The self-check passed 8 assertions, desktop tests passed 3 of 3, lint checked 222 files, all 19 checks and 4 builds passed, and verify:fast passed 194 tests with 19 expected skips.",
       "failed": "The first isolated-config diagnostic ran from the repository root before building desktop output, so electron-builder could not resolve the package-local build correctly. Running from apps/desktop after pnpm build proved the intended output and signing failure boundary."
+    },
+    {
+      "at": "2026-08-14",
+      "paths": [
+        "packages/contracts/src/commerce.ts",
+        "apps/web/src/pages/CommerceOverlay.tsx",
+        "apps/web/src/pages/Onboarding.tsx",
+        "apps/web/src/pages/Shell.tsx",
+        "apps/mobile/app/commerce.tsx",
+        "apps/www/src/pages/index.astro",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "POST https://meshvault.ai/api/create-checkout?offer=meshvault-skill-pack-starter returns {brand,kind,url,offer}; url is HTTPS buy.stripe.com or checkout.stripe.com. Browser CORS allowlists only meshvault.ai, so startSkillPackCheckout falls back to GET navigation of that same API (303), never a reconstructed Stripe URL. POST /api/install-lead wants name+email (+ optional company/notes); live mailer_not_configured returns contact@meshvault.ai. First-run onboarding, web/Electron Skills pack sidebar, and Expo commerce screen can start checkout or submit a lead. Mac/iPhone clients stay in-development, not released. verify:fast passed 205 tests with 19 expected skips.",
+      "failed": null
     }
   ]
 }
