@@ -42,3 +42,10 @@ Empty — first pass.
 - [x] Give Pi explicit post-takeover continuation context through the existing checkpoint.
 - [x] Prove API, journey, and browser behavior cannot complete before release.
 - [x] Pass focused tests, lint, check, build, and the full verification gate.
+
+## Effect lifecycle subtask
+
+- [x] Record tool effects as completed only after execution succeeds.
+- [x] Retry failed effects under the same idempotency key and fail closed on ambiguous intent.
+- [x] Prove a failed write retries once and a completed write never duplicates.
+- [x] Pass focused tests, lint, check, build, and the full verification gate.

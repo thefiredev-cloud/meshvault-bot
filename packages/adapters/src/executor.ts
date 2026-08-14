@@ -287,13 +287,11 @@ export function createRunExecutor(deps: ExecutorDeps) {
         ? inferScript(task.prompt, resumeFromTakeover ? "takeover" : undefined)
         : undefined;
 
-      const applyTool = async (
+      const executeTool = async (
         name: string,
         args: Record<string, unknown>,
         executionId: string,
       ) => {
-        const applied = await recordEffect(deps, run, name, executionId, args);
-        if (applied.duplicate) return applied.effect.result ?? { duplicate: true };
         if (name === "write_file") {
           const filePath = String(args.path ?? "notes/result.txt");
           const content = String(args.content ?? "");
@@ -358,7 +356,6 @@ export function createRunExecutor(deps: ExecutorDeps) {
             type: "bot.spawned",
             payload: { childBotId: spawned.botId, name: spawned.name },
           });
-          await completeEffect(deps, applied.effect.id, spawned);
           return spawned;
         }
         if (name === "delete_bot") {
@@ -394,7 +391,6 @@ export function createRunExecutor(deps: ExecutorDeps) {
             type: "bot.deleted",
             payload: { childBotId: removed.botId, name: removed.name },
           });
-          await completeEffect(deps, applied.effect.id, removed);
           return removed;
         }
         if (deps.connector) {
@@ -423,6 +419,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
         }
         return { error: `unknown tool ${name}` };
       };
+      const applyTool = withEffectLifecycle(deps, run, executeTool);
 
       const pluginLine =
         connectedPlugins.length > 0
@@ -764,7 +761,24 @@ async function recordEffect(
       runId: run.id,
       payload: { executionId, kind },
     });
-    return { duplicate: true, effect: existing };
+    if (existing.status === "completed") {
+      return { duplicate: true, ambiguous: false, effect: existing };
+    }
+    if (existing.status !== "failed") {
+      const effect =
+        existing.status === "ambiguous"
+          ? existing
+          : await deps.prisma.externalEffect.update({
+              where: { id: existing.id },
+              data: { status: "ambiguous" },
+            });
+      return { duplicate: false, ambiguous: true, effect };
+    }
+    const effect = await deps.prisma.externalEffect.update({
+      where: { id: existing.id },
+      data: { status: "intended" },
+    });
+    return { duplicate: false, ambiguous: false, effect };
   }
   const effect = await deps.prisma.externalEffect.create({
     data: {
@@ -776,18 +790,52 @@ async function recordEffect(
       request: request as never,
     },
   });
-  await deps.prisma.externalEffect.update({
-    where: { id: effect.id },
-    data: { status: "completed", result: { ok: true } },
-  });
-  return { duplicate: false, effect };
+  return { duplicate: false, ambiguous: false, effect };
 }
 
 async function completeEffect(deps: ExecutorDeps, effectId: string, result: unknown) {
   await deps.prisma.externalEffect.update({
     where: { id: effectId },
-    data: { result: result as never },
+    data: { status: "completed", result: result as never },
   });
+}
+
+async function failEffect(deps: ExecutorDeps, effectId: string, error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  await deps.prisma.externalEffect.update({
+    where: { id: effectId },
+    data: { status: "failed", result: { error: message } },
+  });
+}
+
+function withEffectLifecycle(
+  deps: ExecutorDeps,
+  run: { id: string; workspaceId: string },
+  execute: (name: string, args: Record<string, unknown>, executionId: string) => Promise<unknown>,
+) {
+  return async (name: string, args: Record<string, unknown>, executionId: string) => {
+    const applied = await recordEffect(deps, run, name, executionId, args);
+    if (applied.ambiguous) {
+      return { error: "effect outcome is ambiguous; review before retrying", executionId };
+    }
+    if (applied.duplicate) return applied.effect.result ?? { duplicate: true };
+    let result: unknown;
+    try {
+      result = await execute(name, args, executionId);
+    } catch (error) {
+      await failEffect(deps, applied.effect.id, error);
+      throw error;
+    }
+    const error = effectError(result);
+    if (error) await failEffect(deps, applied.effect.id, error);
+    else await completeEffect(deps, applied.effect.id, result);
+    return result;
+  };
+}
+
+function effectError(result: unknown): string | undefined {
+  if (!result || typeof result !== "object" || !("error" in result)) return undefined;
+  return String((result as { error: unknown }).error || "tool returned an error");
 }
 
 async function ensureComputer(

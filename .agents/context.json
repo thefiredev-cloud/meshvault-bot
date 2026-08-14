@@ -70,6 +70,12 @@
       ],
       "worked": "Takeover binds the exact waiting run without enqueueing. Release CAS-verifies scoped owner control and the bound waiting run, atomically clears control and queues it, then uses one deterministic wakeup job. The checkpoint gives Pi explicit post-handoff context. Concurrent release journey, 183 tests, and two Chromium journeys passed.",
       "failed": "Testcontainers needed the verified OrbStack DOCKER_HOST. The first browser rerun found two visible Release buttons; scoping to the full-screen button fixed the test without changing product behavior."
+    },
+    {
+      "at": "2026-08-14",
+      "paths": ["packages/adapters/src/executor.ts", "packages/testkit/src/journeys.test.ts"],
+      "worked": "ExternalEffect settlement now wraps the unchanged tool dispatcher: completed returns its stored receipt, failed alone retries under the same executionId, observed intended state persists as ambiguous and fails closed, execution errors persist failed, and actual results persist completed only after execution. After rebasing onto the takeover fix, the DB-backed regression proved failure, ambiguous no-op, exact retry, and completed no-duplication; lint, 19 checks, build, all 5 migrations, 183 tests, and 2 Chromium journeys passed.",
+      "failed": "Running check and build concurrently raced Prisma generation; remove only the ignored generated client, regenerate once, and run those gates sequentially."
     }
   ]
 }
