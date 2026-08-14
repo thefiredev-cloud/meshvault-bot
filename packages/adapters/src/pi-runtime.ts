@@ -19,7 +19,7 @@ const running = new Map<string, AbortController>();
 const models = piModels();
 // Registered lazily: tsx evaluates this module before the worker's dotenv
 // loadRootEnv() runs, so a top-level call here always saw an empty env and
-// the worker answered "Unknown model meshvault-gateway/..." while the API
+// the worker answered "Unknown model meshbot-gateway/..." while the API
 // (which registers at request time in pi-models) listed it fine.
 function ensureGateway() {
   registerGateway(models);

@@ -29,7 +29,7 @@ jobs:
         env:
           DATABASE_URL: postgres://meshbot:meshbot@127.0.0.1:5433/meshbot
       - run: pnpm check
-      # MeshVault change: keep the production bundle in the required gate.
+      # Mesh Bot change: keep the production bundle in the required gate.
       - run: pnpm build
 
   verify-fast:

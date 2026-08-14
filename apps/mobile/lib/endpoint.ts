@@ -60,7 +60,7 @@ export async function probeApiBase(
   try {
     const res = await fetchImpl(`${parsed.url}/rpc/health`, {
       method: "POST",
-      headers: { "content-type": "application/json", origin: "meshvault://" },
+      headers: { "content-type": "application/json", origin: "meshbot://" },
       body: JSON.stringify({ json: {} }),
       signal: controller.signal,
     });

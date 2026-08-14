@@ -169,6 +169,24 @@
       ],
       "worked": "Packaged Electron no longer defaults to development port 5173. It loads an explicit MESHBOT_WEB_URL, a persisted owner-selected origin, or the bundled connection screen in that order; only HTTPS and loopback HTTP are accepted. Connection IPC is restricted to the local screen, the choice is atomically stored mode 0600, macOS exposes Change Server, sandbox plus contextIsolation remain enabled, and the README now separates development from packaged startup. The real desktop test command passed 2 files and 3 tests; verify:fast passed 45 files and 181 tests with 3 files and 19 live/DB tests skipped; lint checked 215 files; all 19 checks and 4 builds passed. An unsigned ARM64 DMG built with signing discovery disabled, verified with SHA-256 504e8f252e408bbd1b4c7205e926a63ac93483e40ed375037426b3d262a16336, contained the connection assets, launched sandboxed, connected to a loopback runtime, and restored it after relaunch.",
       "failed": "The first verify:fast run lacked the ignored generated Prisma client; pnpm db:generate restored it. Gatekeeper assessment was disabled on the build Mac, so code-sign verification and xcrun stapler were used instead: the bundle has no complete Developer ID signature and no notarization ticket."
+    },
+    {
+      "at": "2026-08-14",
+      "paths": [
+        ".github/ISSUE_TEMPLATE",
+        "CHANGELOG.md",
+        "apps/api/src/index.ts",
+        "apps/mobile/lib",
+        "apps/web/src/pages",
+        "apps/www/src",
+        "docs/self-host.md",
+        "packages/adapters/src",
+        "packages/testkit/src/brand-name.test.ts",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Product-facing and generated identifiers now use Mesh Bot across issue forms, API logs, current mobile origins, Brain errors, plugin popup state, the public lockup, Cloud docs, site demo data, and test fixtures. The server still accepts meshvault:// only as inbound compatibility; current clients emit meshbot://. Legal FireDev LLC dba MeshVault text, meshvault.ai, the meshvault-bot repository address, and required Rakazo attribution remain. Focused tests passed 18 of 18; verify:fast passed 194 tests with 19 expected skips; lint checked 220 files; all 19 checks and all 4 builds passed.",
+      "failed": null
     }
   ]
 }

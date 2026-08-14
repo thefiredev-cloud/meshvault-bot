@@ -63,7 +63,7 @@ describe("display and warnings", () => {
 });
 
 describe("probeApiBase", () => {
-  it("accepts a MeshVault /rpc/health response", async () => {
+  it("accepts a Mesh Bot /rpc/health response", async () => {
     const fetchImpl = vi.fn(
       async () =>
         new Response(JSON.stringify({ json: { ok: true, version: "0.1.0" } }), { status: 200 }),
@@ -74,11 +74,14 @@ describe("probeApiBase", () => {
     });
     expect(fetchImpl).toHaveBeenCalledWith(
       "https://app.example.com/rpc/health",
-      expect.objectContaining({ method: "POST" }),
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({ origin: "meshbot://" }),
+      }),
     );
   });
 
-  it("rejects a host that is up but is not MeshVault", async () => {
+  it("rejects a host that is up but is not Mesh Bot", async () => {
     const fetchImpl = vi.fn(
       async () => new Response("ok", { status: 200 }),
     ) as unknown as typeof fetch;
