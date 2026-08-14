@@ -510,9 +510,28 @@ export function createRouter(deps: RouterDeps) {
       takeover: authed.computer.takeover.handler(async ({ context, input }) => {
         const bot = await repos.getBot(context.actor, input.botId);
         const leaseId = `lease-${bot.id}`;
-        await deps.prisma.computer.update({
-          where: { botId: bot.id },
-          data: { controlHolder: "user", controlLeaseId: leaseId, state: "running" },
+        const waiting = await deps.prisma.$transaction(async (tx) => {
+          const run = await tx.run.findFirst({
+            where: {
+              botId: bot.id,
+              workspaceId: context.actor.workspaceId,
+              userId: context.actor.userId,
+              threadId: bot.thread?.id,
+              status: "waiting_takeover",
+            },
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            select: { id: true },
+          });
+          await tx.computer.update({
+            where: { botId: bot.id },
+            data: {
+              controlHolder: "user",
+              controlLeaseId: leaseId,
+              controlRunId: run?.id ?? null,
+              state: "running",
+            },
+          });
+          return run;
         });
         if (bot.thread) {
           await appendEvent(deps.prisma, {
@@ -520,24 +539,72 @@ export function createRouter(deps: RouterDeps) {
             threadId: bot.thread.id,
             botId: bot.id,
             type: "computer.takeover.granted",
-            payload: { leaseId },
+            payload: { leaseId, runId: waiting?.id ?? null },
           });
         }
-        const waiting = await deps.prisma.run.findFirst({
-          where: { botId: bot.id, status: "waiting_takeover" },
-          orderBy: { createdAt: "desc" },
-        });
-        if (waiting)
-          await deps.wakeup.enqueue({ name: "run.continue", payload: { runId: waiting.id } });
         scheduleComputerSleep(deps.wakeup, bot.id);
         return { leaseId, expiresAt: new Date(Date.now() + 15 * 60_000).toISOString() };
       }),
       release: authed.computer.release.handler(async ({ context, input }) => {
         const bot = await repos.getBot(context.actor, input.botId);
-        await deps.prisma.computer.update({
-          where: { botId: bot.id },
-          data: { controlHolder: "bot", controlLeaseId: null },
+        const resumeRunId = await deps.prisma.$transaction(async (tx) => {
+          const computer = await tx.computer.findFirst({
+            where: {
+              botId: bot.id,
+              workspaceId: context.actor.workspaceId,
+              userId: context.actor.userId,
+              controlHolder: "user",
+              controlLeaseId: { not: null },
+            },
+            select: { id: true, controlLeaseId: true, controlRunId: true },
+          });
+          if (!computer) {
+            throw new ORPCError("BAD_REQUEST", {
+              message: "You do not currently control this computer.",
+            });
+          }
+
+          const released = await tx.computer.updateMany({
+            where: {
+              id: computer.id,
+              controlHolder: "user",
+              controlLeaseId: computer.controlLeaseId,
+              controlRunId: computer.controlRunId,
+            },
+            data: { controlHolder: "bot", controlLeaseId: null, controlRunId: null },
+          });
+          if (released.count !== 1) {
+            throw new ORPCError("BAD_REQUEST", {
+              message: "Computer control changed before it could be released.",
+            });
+          }
+
+          if (!computer.controlRunId) return null;
+          const queued = await tx.run.updateMany({
+            where: {
+              id: computer.controlRunId,
+              botId: bot.id,
+              workspaceId: context.actor.workspaceId,
+              userId: context.actor.userId,
+              threadId: bot.thread?.id,
+              status: "waiting_takeover",
+            },
+            data: { status: "queued", checkpoint: "takeover" },
+          });
+          if (queued.count !== 1) {
+            throw new ORPCError("BAD_REQUEST", {
+              message: "The takeover run is no longer waiting.",
+            });
+          }
+          return computer.controlRunId;
         });
+        if (resumeRunId) {
+          await deps.wakeup.enqueue({
+            name: "run.continue",
+            payload: { runId: resumeRunId },
+            jobKey: `run.continue:${resumeRunId}`,
+          });
+        }
         scheduleComputerSleep(deps.wakeup, bot.id);
         return { ok: true as const };
       }),

@@ -53,6 +53,23 @@
       ],
       "worked": "Executor preflight now rejects incomplete or unknown exact provider/model pairs and fails the run when neither a scoped credential nor the selected Pi provider's own ambient auth resolves. A configured Mesh Bot gateway explicitly supports its documented keyless local mode. Credential rotation without modelId preserves the existing provider model and default state; a new provider requires an explicit model. Full verification applied four migrations, passed 181 tests, and passed two Chromium journeys.",
       "failed": null
+    },
+    {
+      "at": "2026-08-14",
+      "paths": [
+        "packages/db/prisma/schema.prisma",
+        "packages/db/prisma/migrations/0005_takeover_run_binding/migration.sql",
+        "apps/api/src/router.ts",
+        "packages/adapters/src/executor.ts",
+        "packages/adapters/src/pi-runtime.ts",
+        "packages/adapters/src/index.test.ts",
+        "packages/testkit/src/journeys.test.ts",
+        "apps/web/e2e/golden.spec.ts",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Takeover binds the exact waiting run without enqueueing. Release CAS-verifies scoped owner control and the bound waiting run, atomically clears control and queues it, then uses one deterministic wakeup job. The checkpoint gives Pi explicit post-handoff context. Concurrent release journey, 183 tests, and two Chromium journeys passed.",
+      "failed": "Testcontainers needed the verified OrbStack DOCKER_HOST. The first browser rerun found two visible Release buttons; scoping to the full-screen button fixed the test without changing product behavior."
     }
   ]
 }
