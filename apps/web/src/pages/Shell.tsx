@@ -27,6 +27,10 @@ import { WindowChrome } from "./WindowChrome";
 
 type Panel = "computer" | "settings" | "routine" | "create" | null;
 
+export function approvalAnswerInput(botId: string, runId: string | undefined, actionId: string) {
+  return runId ? { botId, runId, answer: actionId } : null;
+}
+
 export function ShellPage({ view = "chat" }: { view?: "chat" | "brain" }) {
   const { botId } = useParams();
   const navigate = useNavigate();
@@ -431,10 +435,18 @@ export function ShellPage({ view = "chat" }: { view?: "chat" | "brain" }) {
               key={message.id}
               message={message}
               onOpenBot={(id) => navigate(`/app/${id}`)}
-              onAnswer={(text) =>
-                active &&
-                rpc.threads.answer({ botId: active.id, runId: message.runId ?? "", answer: text })
+              canAnswer={
+                Boolean(message.runId) &&
+                snapshot?.run?.status === "waiting_input" &&
+                snapshot.run.id === message.runId
               }
+              onAnswer={async (actionId) => {
+                if (!active) return;
+                const input = approvalAnswerInput(active.id, message.runId, actionId);
+                if (!input) return;
+                await rpc.threads.answer(input);
+                await refreshThread(active.id).catch(() => undefined);
+              }}
             />
           ))}
           {snapshot?.run && ["running", "queued", "leased"].includes(snapshot.run.status) ? (
@@ -904,15 +916,29 @@ function replacedSubagent(message: ThreadMessage, blocks: ThreadMessage["blocks"
   return message.blocks.some((block) => block.kind === "subagent" && agentIds.has(block.agentId));
 }
 
-function MessageView({
+export function MessageView({
   message,
   onAnswer,
   onOpenBot,
+  canAnswer,
 }: {
   message: ThreadMessage;
-  onAnswer: (text: string) => void;
+  onAnswer: (actionId: string) => Promise<void>;
   onOpenBot: (botId: string) => void;
+  canAnswer: boolean;
 }) {
+  const [decision, setDecision] = useState<{ id: string } | null>(null);
+
+  async function answer(actionId: string) {
+    if (!canAnswer || decision) return;
+    setDecision({ id: actionId });
+    try {
+      await onAnswer(actionId);
+    } catch {
+      setDecision(null);
+    }
+  }
+
   return (
     <>
       {message.blocks.map((block, i) => {
@@ -1050,21 +1076,26 @@ function MessageView({
                   {block.detail}
                 </pre>
               ) : null}
-              <div className="mt-3.5 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => onAnswer("approved")}
-                  className="rounded-[11px] bg-[#F1F1EF] px-[17px] py-2 text-[14.5px] font-medium text-[#17171A]"
-                >
-                  Send it
-                </button>
-                <button
-                  type="button"
-                  className="rounded-[11px] border border-[#26262A] px-[17px] py-2 text-[14.5px] text-[#C9C9CE]"
-                >
-                  Edit first
-                </button>
-              </div>
+              {block.actions?.length ? (
+                <div className="mt-3.5 flex gap-2">
+                  {block.actions.map((action, actionIndex) => (
+                    <button
+                      key={`${action.id}:${actionIndex}`}
+                      type="button"
+                      disabled={!canAnswer || decision !== null}
+                      aria-pressed={decision?.id === action.id}
+                      onClick={() => void answer(action.id)}
+                      className={
+                        actionIndex === 0
+                          ? "rounded-[11px] bg-[#F1F1EF] px-[17px] py-2 text-[14.5px] font-medium text-[#17171A] disabled:cursor-not-allowed disabled:opacity-50"
+                          : "rounded-[11px] border border-[#26262A] px-[17px] py-2 text-[14.5px] text-[#C9C9CE] disabled:cursor-not-allowed disabled:opacity-50"
+                      }
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
           );
         }

@@ -76,6 +76,67 @@
       "paths": ["packages/adapters/src/executor.ts", "packages/testkit/src/journeys.test.ts"],
       "worked": "ExternalEffect settlement now wraps the unchanged tool dispatcher: completed returns its stored receipt, failed alone retries under the same executionId, observed intended state persists as ambiguous and fails closed, execution errors persist failed, and actual results persist completed only after execution. After rebasing onto the takeover fix, the DB-backed regression proved failure, ambiguous no-op, exact retry, and completed no-duplication; lint, 19 checks, build, all 5 migrations, 183 tests, and 2 Chromium journeys passed.",
       "failed": "Running check and build concurrently raced Prisma generation; remove only the ignored generated client, regenerate once, and run those gates sequentially."
+    },
+    {
+      "at": "2026-08-14",
+      "paths": ["apps/web/src/pages/Shell.tsx", "apps/web/src/pages/approval-actions.test.tsx"],
+      "worked": "Web ask cards render only supplied MessageBlock.actions, submit the selected action id through threads.answer with the message's exact runId, require that exact run to be waiting_input, and disable stale, in-flight, or accepted decisions. Refresh failure after an accepted answer cannot re-enable controls. Focused 2 tests, all 13 web tests, web TypeScript, and production build passed.",
+      "failed": "The first TypeScript check rejected optional-chain narrowing; checking waiting_input before comparing run ids proved the run exists and passed without changing behavior."
+    },
+    {
+      "at": "2026-08-14",
+      "paths": [
+        "apps/mobile/lib/api.ts",
+        "apps/mobile/lib/approval.ts",
+        "apps/mobile/lib/approval.test.ts",
+        "apps/mobile/app/thread.tsx",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Mobile snapshots and live events retain ask detail/actions plus message and active run ids. Same-thread accessible actions use supplied ids or Approve/Deny defaults, bind to the exact waiting_input run, guard rapid double taps, and stay disabled while pending or after the run becomes stale. Four focused approval tests, all 32 mobile tests, mobile TypeScript, targeted Biome, and verify:fast with 175 tests passed.",
+      "failed": "The package-local mobile test script resolved root include globs from apps/mobile and found no files; running vitest from repository root covered all five mobile test files. verify:fast initially lacked the ignored generated Prisma client; db:generate restored the normal gate."
+    },
+    {
+      "at": "2026-08-14",
+      "paths": ["apps/www/src/pages/index.astro", "PLAN.md", ".agents/context.json"],
+      "worked": "Public copy now distinguishes a self-hosted runtime from chosen cloud model and SaaS connections, describes structured scheduled routines and inline protected-action decisions, uses the existing bot form instead of promising an interview, and avoids claiming unlimited capacity. The Apache-2.0 Grok Bot alternative wording and layout remain. Astro check reported 0 diagnostics, the static build produced 2 pages, and the old-claim/name scan was clean.",
+      "failed": null
+    },
+    {
+      "at": "2026-08-14",
+      "paths": [
+        "apps/api/src/router.ts",
+        "packages/adapter-kit/src/types.ts",
+        "packages/adapters/src/executor.ts",
+        "packages/adapters/src/pi-runtime.ts",
+        "packages/contracts/src/ids.ts",
+        "packages/core/src/run-state.ts",
+        "packages/db/prisma/migrations/0006_owner_approval/migration.sql",
+        "packages/testkit/src/journeys.test.ts",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Protected deletes, destination writes, and named Composio write surfaces now persist exact run-scoped effects and pause with redacted inline Approve and Deny actions before dispatch. Answer CAS binds the current user, workspace, bot, thread, waiting run, and pending effect; approval dispatches only stored arguments through the existing at-most-once lifecycle, denial dispatches nothing, and decided resumes cannot open a replacement approval. All six migrations applied in fresh PostgreSQL and all 14 DB-backed journeys passed; focused unit tests passed 8 of 8 and targeted type and Biome checks passed.",
+      "failed": "OrbStack initially reported Running while Docker did not answer. After a graceful service restart, the focused temporary-container gate passed and the container stopped cleanly. The integrated full gate remains for the root task."
+    },
+    {
+      "at": "2026-08-14",
+      "paths": [
+        "apps/api/src/router.ts",
+        "apps/mobile/app/thread.tsx",
+        "apps/mobile/lib/approval.ts",
+        "apps/web/src/pages/Shell.tsx",
+        "apps/worker/src/index.ts",
+        "packages/adapters/src/executor.ts",
+        "packages/adapters/src/queued-runs.ts",
+        "packages/core/src/run-state.ts",
+        "packages/db/prisma/migrations/0006_owner_approval/migration.sql",
+        "packages/testkit/src/journeys.test.ts",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Owner approvals are inline and run-scoped across web and mobile. Shell, delete, destination writes, and named Composio write surfaces pause before dispatch with bounded secret-redacted details. Waiting states must queue before leasing; exact owner/fence CAS blocks stale completion. Approved protected calls use stored arguments once, uncertain outcomes become ambiguous with no automatic retry, and effect settlement plus one receipt is atomic. Committed queued Run rows are a durable outbox recovered at worker startup and every five seconds with deterministic job keys. Actionless mobile asks remain ordinary questions. The integrated gate applied six migrations, passed 194 tests with 5 expected skips, and passed 2 Chromium journeys.",
+      "failed": "The first green gate missed fast-decision, post-dispatch ambiguity, and commit-before-enqueue races. Independent read-only review exposed them; root fixes and deterministic checks closed them before merge."
     }
   ]
 }

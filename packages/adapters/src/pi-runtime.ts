@@ -1,11 +1,12 @@
 import { Agent, type AgentTool } from "@earendil-works/pi-agent-core";
 import { Type } from "@earendil-works/pi-ai";
-import type {
-  AdapterContext,
-  AgentRunRequest,
-  AgentRuntime,
-  AgentRuntimeEvent,
-  ConnectorTool,
+import {
+  type AdapterContext,
+  type AgentRunRequest,
+  type AgentRuntime,
+  type AgentRuntimeEvent,
+  type ConnectorTool,
+  isOwnerApprovalRequired,
 } from "@meshbot/adapter-kit";
 import { defaultPiModel, defaultPiProvider, fallbackApiKey } from "@meshbot/core";
 import { builtinAgentTools, DELEGATION_TOOL_NAMES } from "./builtin-tools.js";
@@ -245,7 +246,7 @@ function toAgentTool(tool: ConnectorTool, host: ToolHost): AgentTool {
     },
     execute: async (toolCallId, params) => {
       const args = (params ?? {}) as Record<string, unknown>;
-      const executionId = toolCallId || `${host.request.runId}:${tool.name}`;
+      const executionId = runScopedToolExecutionId(host.request.runId, toolCallId, tool.name);
       host.queue.push({ type: "tool", name: tool.name, args, executionId });
       if (tool.name === "request_takeover") {
         host.queue.push({
@@ -267,6 +268,13 @@ function toAgentTool(tool: ConnectorTool, host: ToolHost): AgentTool {
       }
       if (host.request.executeTool) {
         const result = await host.request.executeTool(tool.name, args, executionId);
+        if (isOwnerApprovalRequired(result)) {
+          return {
+            content: [{ type: "text", text: "Waiting for owner approval." }],
+            details: result,
+            terminate: true,
+          };
+        }
         return {
           content: [{ type: "text", text: summarizeToolResult(result) }],
           details: result,
@@ -278,6 +286,14 @@ function toAgentTool(tool: ConnectorTool, host: ToolHost): AgentTool {
       };
     },
   };
+}
+
+export function runScopedToolExecutionId(
+  runId: string,
+  toolCallId: string | undefined,
+  toolName: string,
+): string {
+  return `${runId}:${toolCallId || toolName}`;
 }
 
 async function executeSubagent(host: ToolHost, executionId: string, args: Record<string, unknown>) {

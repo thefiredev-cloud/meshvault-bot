@@ -27,6 +27,7 @@ import {
   createRunSandbox,
   EncryptedSecretStore,
   ExpoPushProvider,
+  enqueueQueuedRuns,
   GraphileWakeupDriver,
   InMemoryWakeupDriver,
   LocalAgentHomeStore,
@@ -38,6 +39,8 @@ import {
 import { deploymentModelKey, modelSecretsToRedact, resolveEncryptionKey } from "@meshbot/core";
 import { createDb } from "@meshbot/db";
 import { MarkdownMemoryStore } from "@meshbot/memory";
+
+const QUEUED_RUN_RECOVERY_MS = 5_000;
 
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -94,6 +97,13 @@ async function main() {
       await sleepComputerIfIdle({ prisma, sandbox, wakeup }, String(payload.botId));
     },
   });
+
+  await enqueueQueuedRuns(prisma, wakeup);
+  setInterval(() => {
+    void enqueueQueuedRuns(prisma, wakeup).catch((error) =>
+      console.error("queued run recovery failed", error),
+    );
+  }, QUEUED_RUN_RECOVERY_MS).unref();
 
   console.log("meshbot worker ready");
 }

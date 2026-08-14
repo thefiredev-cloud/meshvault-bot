@@ -26,9 +26,16 @@ import {
   type BrainGraph,
   type ComputerStatus,
   type Me,
+  type MessageBlock,
   type ThreadSnapshot,
 } from "@meshbot/contracts";
-import { nextCronDate, projectMessages } from "@meshbot/core";
+import {
+  isOwnerApprovalDecision,
+  nextCronDate,
+  ownerApprovalCheckpoint,
+  parseOwnerApprovalCheckpoint,
+  projectMessages,
+} from "@meshbot/core";
 import {
   appendEvent,
   createRepos,
@@ -432,16 +439,148 @@ export function createRouter(deps: RouterDeps) {
         return { ok: true as const };
       }),
       answer: authed.threads.answer.handler(async ({ context, input }) => {
-        await repos.getBot(context.actor, input.botId);
-        await deps.prisma.run.update({
-          where: { id: input.runId, workspaceId: context.actor.workspaceId },
-          data: { status: "queued" },
+        const bot = await repos.getBot(context.actor, input.botId);
+        if (!bot.thread) throw new IsolationError();
+        const thread = bot.thread;
+
+        const answered = await deps.prisma.$transaction(async (tx) => {
+          const run = await tx.run.findFirst({
+            where: {
+              id: input.runId,
+              workspaceId: context.actor.workspaceId,
+              userId: context.actor.userId,
+              botId: bot.id,
+              threadId: thread.id,
+              status: "waiting_input",
+            },
+          });
+          if (!run) {
+            throw new ORPCError("BAD_REQUEST", {
+              message: "This run is no longer waiting for an answer.",
+            });
+          }
+
+          const approval = parseOwnerApprovalCheckpoint(run.checkpoint);
+          let effect: { id: string; kind: string } | null = null;
+          let blocks: MessageBlock[];
+          if (approval) {
+            if (!isOwnerApprovalDecision(input.answer)) {
+              throw new ORPCError("BAD_REQUEST", {
+                message: "Choose Approve or Deny for this action.",
+              });
+            }
+            effect = await tx.externalEffect.findFirst({
+              where: {
+                id: approval.effectId,
+                runId: run.id,
+                workspaceId: context.actor.workspaceId,
+                status: "awaiting_approval",
+              },
+              select: { id: true, kind: true },
+            });
+            if (!effect || approval.decision) {
+              throw new ORPCError("BAD_REQUEST", {
+                message: "This approval is no longer pending.",
+              });
+            }
+            const decided = await tx.externalEffect.updateMany({
+              where: {
+                id: effect.id,
+                runId: run.id,
+                workspaceId: context.actor.workspaceId,
+                status: "awaiting_approval",
+              },
+              data: { status: input.answer === "approve" ? "approved" : "denied" },
+            });
+            if (decided.count !== 1) {
+              throw new ORPCError("BAD_REQUEST", {
+                message: "This approval was already decided.",
+              });
+            }
+            blocks = [
+              {
+                kind: "meta",
+                text: `${input.answer === "approve" ? "Approved" : "Denied"} ${effect.kind}.`,
+              },
+            ];
+          } else {
+            if (run.checkpoint?.startsWith("approval:")) {
+              throw new ORPCError("BAD_REQUEST", {
+                message: "This approval checkpoint is invalid.",
+              });
+            }
+            blocks = [{ kind: "text", text: input.answer }];
+          }
+
+          const queued = await tx.run.updateMany({
+            where: {
+              id: run.id,
+              workspaceId: context.actor.workspaceId,
+              userId: context.actor.userId,
+              botId: bot.id,
+              threadId: thread.id,
+              status: "waiting_input",
+              checkpoint: run.checkpoint,
+            },
+            data: {
+              status: "queued",
+              checkpoint:
+                effect && isOwnerApprovalDecision(input.answer)
+                  ? ownerApprovalCheckpoint(effect.id, input.answer)
+                  : run.checkpoint,
+            },
+          });
+          if (queued.count !== 1) {
+            throw new ORPCError("BAD_REQUEST", {
+              message: "This run changed before the answer was accepted.",
+            });
+          }
+
+          const last = await tx.message.findFirst({
+            where: { threadId: thread.id },
+            orderBy: { seq: "desc" },
+            select: { seq: true },
+          });
+          const message = await tx.message.create({
+            data: {
+              threadId: thread.id,
+              seq: (last?.seq ?? -1) + 1,
+              role: "user",
+              runId: run.id,
+              blocks: blocks as never,
+            },
+          });
+          return { messageId: message.id, blocks, effect };
         });
-        await deps.prisma.task.updateMany({
-          where: { runs: { some: { id: input.runId } } },
-          data: { prompt: input.answer },
+
+        await appendEvent(deps.prisma, {
+          workspaceId: context.actor.workspaceId,
+          threadId: thread.id,
+          botId: bot.id,
+          type: "thread.message.created",
+          runId: input.runId,
+          payload: { messageId: answered.messageId, role: "user", blocks: answered.blocks },
+        }).catch(() => undefined);
+        if (answered.effect) {
+          await appendEvent(deps.prisma, {
+            workspaceId: context.actor.workspaceId,
+            threadId: thread.id,
+            botId: bot.id,
+            type: "effect.recorded",
+            runId: input.runId,
+            payload: {
+              effectId: answered.effect.id,
+              tool: answered.effect.kind,
+              decision: input.answer,
+              userId: context.actor.userId,
+            },
+          }).catch(() => undefined);
+        }
+        await deps.wakeup.enqueue({
+          name: "run.continue",
+          payload: { runId: input.runId },
+          jobKey: `run.continue:${input.runId}`,
         });
-        await deps.wakeup.enqueue({ name: "run.continue", payload: { runId: input.runId } });
         return { ok: true as const };
       }),
     },

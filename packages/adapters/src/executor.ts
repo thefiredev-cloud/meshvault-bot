@@ -1,17 +1,29 @@
 import { mkdir } from "node:fs/promises";
-import type {
-  AgentHomeStore,
-  AgentRuntime,
-  ComputerRef,
-  ConnectorProvider,
-  MemoryStore,
-  NotificationMessage,
-  NotificationProvider,
-  SandboxProvider,
-  WakeupDriver,
+import {
+  type AgentHomeStore,
+  type AgentRuntime,
+  type ComputerRef,
+  type ConnectorProvider,
+  isOwnerApprovalRequired,
+  type MemoryStore,
+  type NotificationMessage,
+  type NotificationProvider,
+  type OwnerApprovalRequired,
+  type SandboxProvider,
+  type WakeupDriver,
 } from "@meshbot/adapter-kit";
 import type { Actor, MessageBlock, RunStatus } from "@meshbot/contracts";
-import { assertTransition, containsSecret, nextCronDate, redactSecrets } from "@meshbot/core";
+import {
+  assertTransition,
+  canAcquireRunLease,
+  containsSecret,
+  nextCronDate,
+  nextFence,
+  ownerApprovalCheckpoint,
+  parseOwnerApprovalCheckpoint,
+  redactSecrets,
+  shouldYieldToOwnerApproval,
+} from "@meshbot/core";
 import { appendEvent, type PrismaClient } from "@meshbot/db";
 import { builtinAgentTools } from "./builtin-tools.js";
 import { deleteSpawnedBot, spawnBot } from "./child-bots.js";
@@ -47,6 +59,25 @@ type StoredModelSelection = {
   modelProvider: string | null;
   modelId: string | null;
 };
+
+const OWNER_APPROVAL_TOOLS = new Set([
+  "shell",
+  "delete_bot",
+  "destination.write",
+  "COMPOSIO_MULTI_EXECUTE_TOOL",
+  "COMPOSIO_MANAGE_CONNECTIONS",
+  "COMPOSIO_REMOTE_WORKBENCH",
+  "COMPOSIO_REMOTE_BASH_TOOL",
+]);
+
+const OWNER_APPROVAL_ACTIONS = [
+  { id: "approve", label: "Approve" },
+  { id: "deny", label: "Deny" },
+];
+
+export function requiresOwnerApproval(name: string): boolean {
+  return OWNER_APPROVAL_TOOLS.has(name);
+}
 
 export function resolveBotModelSelection(
   run: StoredModelSelection,
@@ -151,13 +182,25 @@ export function createRunExecutor(deps: ExecutorDeps) {
       const run = await deps.prisma.run.findUnique({ where: { id: runId } });
       if (!run) return;
       if (["completed", "failed", "cancelled"].includes(run.status)) return;
+      const approvalCheckpoint = parseOwnerApprovalCheckpoint(run.checkpoint);
+      if (run.status === "waiting_input" && approvalCheckpoint && !approvalCheckpoint.decision) {
+        return;
+      }
       const resumeFromTakeover = run.status === "waiting_takeover" || run.checkpoint === "takeover";
 
-      const fence = run.leaseFence + 1;
+      const leaseStartedAt = new Date();
+      if (!canAcquireRunLease(run.status as RunStatus, run.leaseExpiresAt, leaseStartedAt)) {
+        return;
+      }
+      const fence = nextFence(run.leaseFence);
       const leased = await deps.prisma.run.updateMany({
         where: {
           id: runId,
-          status: { in: ["queued", "waiting_input", "waiting_takeover", "leased"] },
+          status: run.status,
+          leaseFence: run.leaseFence,
+          ...(run.status === "leased" || run.status === "running"
+            ? { leaseExpiresAt: { lte: leaseStartedAt } }
+            : {}),
         },
         data: {
           status: "leased",
@@ -166,23 +209,14 @@ export function createRunExecutor(deps: ExecutorDeps) {
           leaseExpiresAt: new Date(Date.now() + 5 * 60_000),
         },
       });
-      if (leased.count !== 1 && run.status !== "running") {
-        return;
-      }
+      if (leased.count !== 1) return;
 
-      const current = await deps.prisma.run.findUniqueOrThrow({ where: { id: runId } });
-      if (
-        current.status === "queued" ||
-        current.status === "leased" ||
-        current.status === "waiting_input" ||
-        current.status === "waiting_takeover"
-      ) {
-        assertTransition(current.status as RunStatus, "running");
-      }
-      await deps.prisma.run.update({
-        where: { id: runId },
-        data: { status: "running", startedAt: current.startedAt ?? new Date() },
+      assertTransition("leased", "running");
+      const running = await deps.prisma.run.updateMany({
+        where: { id: runId, status: "leased", leaseOwner: workerId, leaseFence: fence },
+        data: { status: "running", startedAt: run.startedAt ?? new Date() },
       });
+      if (running.count !== 1) return;
       await deps.prisma.attempt.create({
         data: { runId, fence, status: "running" },
       });
@@ -261,7 +295,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
             runSecrets: [...deps.secrets, ...resolved.redact],
           };
         } catch (error) {
-          await failRun(deps, run, bot, error);
+          await failRun(deps, run, bot, workerId, fence, error);
           return null;
         }
       })();
@@ -284,7 +318,17 @@ export function createRunExecutor(deps: ExecutorDeps) {
       let assembled = "";
       let lastProgressAt = 0;
       const script = scripted
-        ? inferScript(task.prompt, resumeFromTakeover ? "takeover" : undefined)
+        ? approvalCheckpoint?.decision
+          ? [
+              {
+                assistant:
+                  approvalCheckpoint.decision === "approve"
+                    ? "The approved action finished."
+                    : "The action was denied and was not run.",
+                complete: true,
+              },
+            ]
+          : inferScript(task.prompt, resumeFromTakeover ? "takeover" : undefined)
         : undefined;
 
       const executeTool = async (
@@ -419,7 +463,16 @@ export function createRunExecutor(deps: ExecutorDeps) {
         }
         return { error: `unknown tool ${name}` };
       };
-      const applyTool = withEffectLifecycle(deps, run, executeTool);
+      const executeWithEffect = withEffectLifecycle(deps, run, executeTool);
+      const applyTool = withOwnerApproval(
+        deps,
+        run,
+        { name: bot.name, notifyOnFinish: bot.notifyOnFinish },
+        runSecrets,
+        approvalCheckpoint,
+        { owner: workerId, fence },
+        executeWithEffect,
+      );
 
       const pluginLine =
         connectedPlugins.length > 0
@@ -427,6 +480,9 @@ export function createRunExecutor(deps: ExecutorDeps) {
           : "No plugins are connected yet.";
 
       try {
+        const approvalInstruction = approvalCheckpoint?.decision
+          ? await resumeOwnerApproval(deps, run, approvalCheckpoint, executeTool)
+          : "";
         for await (const event of deps.runtime.run(
           {
             botId: bot.id,
@@ -441,8 +497,11 @@ export function createRunExecutor(deps: ExecutorDeps) {
               "run_subagent is a short helper inside this turn only. It is not a bot, has no thread, and does not show in the list. Use it for parallel work you will summarize here.",
               "delete_bot permanently destroys a bot this bot created, and only that bot. Only delete when the user asked or that bot is finished and unused. confirm_name must exactly match its name.",
               pluginLine,
+              approvalInstruction,
               "Never print API keys, access tokens, or secret values. Prefer tools over claiming you already did the work.",
-            ].join("\n\n"),
+            ]
+              .filter(Boolean)
+              .join("\n\n"),
             history,
             tools,
             model: {
@@ -457,7 +516,14 @@ export function createRunExecutor(deps: ExecutorDeps) {
           context,
         )) {
           const still = await deps.prisma.run.findUnique({ where: { id: runId } });
-          if (!still || still.status === "cancelled") return;
+          if (
+            still?.status !== "running" ||
+            still.leaseOwner !== workerId ||
+            still.leaseFence !== fence ||
+            shouldYieldToOwnerApproval(run.checkpoint, still.checkpoint)
+          ) {
+            return;
+          }
 
           if (event.type === "text") {
             assembled += event.text;
@@ -488,7 +554,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
             ]);
             await deps.prisma.run.update({
               where: { id: runId },
-              data: { status: "waiting_input" },
+              data: { status: "waiting_input", checkpoint: null },
             });
             await notifyRun(deps, run, {
               kind: "help",
@@ -534,7 +600,10 @@ export function createRunExecutor(deps: ExecutorDeps) {
             });
             return;
           } else if (event.type === "tool") {
-            if (scripted) await applyTool(event.name, event.args, event.executionId);
+            if (scripted) {
+              const result = await applyTool(event.name, event.args, event.executionId);
+              if (isOwnerApprovalRequired(result)) return;
+            }
           } else if (event.type === "subagent") {
             await appendEvent(deps.prisma, {
               workspaceId: run.workspaceId,
@@ -592,6 +661,16 @@ export function createRunExecutor(deps: ExecutorDeps) {
           }
         }
 
+        const afterRuntime = await deps.prisma.run.findUnique({ where: { id: runId } });
+        if (
+          afterRuntime?.status !== "running" ||
+          afterRuntime.leaseOwner !== workerId ||
+          afterRuntime.leaseFence !== fence ||
+          shouldYieldToOwnerApproval(run.checkpoint, afterRuntime.checkpoint)
+        ) {
+          return;
+        }
+
         for (const turn of script ?? []) {
           for (const file of turn.files ?? []) {
             await deps.home.writeFile(bot.id, file.path, file.content, context);
@@ -623,16 +702,47 @@ export function createRunExecutor(deps: ExecutorDeps) {
         if (containsSecret(text, runSecrets)) {
           throw new Error("refusing to persist a secret in the thread");
         }
-        await publishMessage(deps, actor, thread.id, bot.id, runId, "bot", [
-          { kind: "text", text },
-        ]);
-        await deps.prisma.run.update({
-          where: { id: runId },
-          data: { status: "completed", checkpoint: null, completedAt: new Date() },
+        const blocks: MessageBlock[] = [{ kind: "text", text }];
+        const completion = await deps.prisma.$transaction(async (tx) => {
+          const completed = await tx.run.updateMany({
+            where: {
+              id: runId,
+              status: "running",
+              leaseOwner: workerId,
+              leaseFence: fence,
+            },
+            data: { status: "completed", checkpoint: null, completedAt: new Date() },
+          });
+          if (completed.count !== 1) return null;
+
+          const last = await tx.message.findFirst({
+            where: { threadId: thread.id },
+            orderBy: { seq: "desc" },
+            select: { seq: true },
+          });
+          const message = await tx.message.create({
+            data: {
+              threadId: thread.id,
+              seq: (last?.seq ?? -1) + 1,
+              role: "bot",
+              runId,
+              blocks: blocks as never,
+            },
+          });
+          await tx.task.update({
+            where: { id: run.taskId },
+            data: { status: "completed" },
+          });
+          return message;
         });
-        await deps.prisma.task.update({
-          where: { id: run.taskId },
-          data: { status: "completed" },
+        if (!completion) return;
+        await appendEvent(deps.prisma, {
+          workspaceId: run.workspaceId,
+          threadId: thread.id,
+          botId: bot.id,
+          type: "thread.message.created",
+          runId,
+          payload: { messageId: completion.id, role: "bot", blocks },
         });
         await appendEvent(deps.prisma, {
           workspaceId: run.workspaceId,
@@ -653,7 +763,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
           });
         }
       } catch (error) {
-        await failRun(deps, run, bot, error);
+        await failRun(deps, run, bot, workerId, fence, error);
       }
     },
   };
@@ -669,13 +779,21 @@ async function failRun(
     threadId: string;
   },
   bot: { id: string; name: string; notifyOnFinish: boolean },
+  workerId: string,
+  fence: number,
   error: unknown,
 ) {
   const message = error instanceof Error ? error.message : String(error);
-  await deps.prisma.run.update({
-    where: { id: run.id },
+  const failed = await deps.prisma.run.updateMany({
+    where: {
+      id: run.id,
+      status: "running",
+      leaseOwner: workerId,
+      leaseFence: fence,
+    },
     data: { status: "failed", error: message, completedAt: new Date() },
   });
+  if (failed.count !== 1) return;
   await appendEvent(deps.prisma, {
     workspaceId: run.workspaceId,
     threadId: run.threadId,
@@ -742,6 +860,467 @@ async function publishMessage(
   return message;
 }
 
+type ApprovalRun = {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  botId: string;
+  threadId: string;
+};
+
+type RunLease = { owner: string; fence: number };
+
+function withOwnerApproval(
+  deps: ExecutorDeps,
+  run: ApprovalRun,
+  bot: { name: string; notifyOnFinish: boolean },
+  runSecrets: string[],
+  checkpoint: { effectId: string; decision?: "approve" | "deny" } | null,
+  lease: RunLease,
+  execute: (name: string, args: Record<string, unknown>, executionId: string) => Promise<unknown>,
+) {
+  return async (name: string, args: Record<string, unknown>, executionId: string) => {
+    if (!requiresOwnerApproval(name)) return execute(name, args, executionId);
+
+    const existing = await deps.prisma.externalEffect.findUnique({
+      where: { idempotencyKey: executionId },
+    });
+    if (existing) {
+      if (
+        existing.runId !== run.id ||
+        existing.workspaceId !== run.workspaceId ||
+        existing.kind !== name
+      ) {
+        return { error: "effect identity does not match this run", executionId };
+      }
+      if (existing.status === "awaiting_approval") {
+        return ownerApprovalRequired(existing.id);
+      }
+      if (existing.status === "denied") {
+        return { error: "owner denied this action", executionId };
+      }
+      if (existing.status === "completed") return existing.result ?? { duplicate: true };
+      return {
+        error: "protected effect outcome is not safely dispatchable; review before retrying",
+        executionId,
+      };
+    }
+
+    if (checkpoint?.decision) {
+      return {
+        error:
+          "the owner decision covers only the stored action; start a new request for another protected action",
+        executionId,
+      };
+    }
+
+    return requestOwnerApproval(deps, run, bot, runSecrets, lease, name, args, executionId);
+  };
+}
+
+async function requestOwnerApproval(
+  deps: ExecutorDeps,
+  run: ApprovalRun,
+  bot: { name: string; notifyOnFinish: boolean },
+  runSecrets: string[],
+  lease: RunLease,
+  name: string,
+  args: Record<string, unknown>,
+  executionId: string,
+): Promise<OwnerApprovalRequired | { error: string; executionId: string }> {
+  const blocks: MessageBlock[] = [
+    {
+      kind: "ask",
+      text: `Approve ${approvalActionName(name)}?`,
+      detail: approvalActionDetail(name, args, runSecrets),
+      actions: OWNER_APPROVAL_ACTIONS,
+    },
+  ];
+
+  try {
+    const outcome = await deps.prisma.$transaction(async (tx) => {
+      const current = await tx.run.findFirst({
+        where: {
+          id: run.id,
+          workspaceId: run.workspaceId,
+          userId: run.userId,
+          botId: run.botId,
+          threadId: run.threadId,
+          status: "running",
+          leaseOwner: lease.owner,
+          leaseFence: lease.fence,
+        },
+        select: { id: true },
+      });
+      if (!current) return { state: "stale" as const };
+
+      const pending = await tx.externalEffect.findFirst({
+        where: { runId: run.id, workspaceId: run.workspaceId, status: "awaiting_approval" },
+        select: { id: true },
+      });
+      if (pending) return { state: "existing" as const, effectId: pending.id };
+
+      const effect = await tx.externalEffect.create({
+        data: {
+          workspaceId: run.workspaceId,
+          runId: run.id,
+          kind: name,
+          idempotencyKey: executionId,
+          status: "awaiting_approval",
+          request: args as never,
+        },
+      });
+      const waiting = await tx.run.updateMany({
+        where: {
+          id: run.id,
+          workspaceId: run.workspaceId,
+          userId: run.userId,
+          botId: run.botId,
+          threadId: run.threadId,
+          status: "running",
+          leaseOwner: lease.owner,
+          leaseFence: lease.fence,
+        },
+        data: { status: "waiting_input", checkpoint: ownerApprovalCheckpoint(effect.id) },
+      });
+      if (waiting.count !== 1) throw new Error("approval run changed before it could pause");
+
+      const last = await tx.message.findFirst({
+        where: { threadId: run.threadId },
+        orderBy: { seq: "desc" },
+        select: { seq: true },
+      });
+      const message = await tx.message.create({
+        data: {
+          threadId: run.threadId,
+          seq: (last?.seq ?? -1) + 1,
+          role: "bot",
+          runId: run.id,
+          blocks: blocks as never,
+        },
+      });
+      return { state: "created" as const, effectId: effect.id, messageId: message.id };
+    });
+
+    if (outcome.state === "stale") {
+      return { error: "run is no longer waiting for this action", executionId };
+    }
+    if (outcome.state === "created") {
+      await appendEvent(deps.prisma, {
+        workspaceId: run.workspaceId,
+        threadId: run.threadId,
+        botId: run.botId,
+        type: "thread.message.created",
+        runId: run.id,
+        payload: { messageId: outcome.messageId, role: "bot", blocks },
+      }).catch(() => undefined);
+      await notifyRun(deps, run, {
+        kind: "help",
+        title: `${bot.name} needs approval`,
+        body: blocks[0]?.kind === "ask" ? blocks[0].text : "Approval needed",
+        botId: run.botId,
+        threadId: run.threadId,
+      });
+    }
+    return ownerApprovalRequired(outcome.effectId);
+  } catch (error) {
+    if (!isUniqueConstraintError(error)) throw error;
+    const pending = await deps.prisma.externalEffect.findFirst({
+      where: { runId: run.id, workspaceId: run.workspaceId, status: "awaiting_approval" },
+      select: { id: true },
+    });
+    if (!pending) throw error;
+    return ownerApprovalRequired(pending.id);
+  }
+}
+
+async function resumeOwnerApproval(
+  deps: ExecutorDeps,
+  run: ApprovalRun,
+  checkpoint: { effectId: string; decision?: "approve" | "deny" },
+  execute: (name: string, args: Record<string, unknown>, executionId: string) => Promise<unknown>,
+): Promise<string> {
+  const effect = await deps.prisma.externalEffect.findFirst({
+    where: {
+      id: checkpoint.effectId,
+      runId: run.id,
+      workspaceId: run.workspaceId,
+    },
+  });
+  if (!effect || !checkpoint.decision) throw new Error("approval checkpoint is not valid");
+
+  if (checkpoint.decision === "deny") {
+    if (effect.status !== "denied") throw new Error("denied approval is no longer pending");
+    return `The owner denied ${effect.kind}. It was not dispatched. Do not retry it unless the owner explicitly asks for a new action. Continue the original task or explain the limit.`;
+  }
+
+  if (effect.status === "completed") {
+    return approvedEffectInstruction(effect.kind, effect.id);
+  }
+  if (effect.status !== "approved") {
+    await deps.prisma.externalEffect.updateMany({
+      where: { id: effect.id, status: { in: ["failed", "intended"] } },
+      data: { status: "ambiguous" },
+    });
+    throw new Error("approved action outcome is ambiguous; review before retrying");
+  }
+
+  const claimed = await deps.prisma.externalEffect.updateMany({
+    where: {
+      id: effect.id,
+      runId: run.id,
+      workspaceId: run.workspaceId,
+      status: "approved",
+    },
+    data: { status: "intended" },
+  });
+  if (claimed.count !== 1) {
+    const current = await deps.prisma.externalEffect.findUnique({ where: { id: effect.id } });
+    if (current?.status === "completed") return approvedEffectInstruction(effect.kind, effect.id);
+    throw new Error("approved action outcome is ambiguous; review before retrying");
+  }
+
+  let result: unknown;
+  try {
+    result = await execute(effect.kind, jsonObject(effect.request), effect.idempotencyKey);
+  } catch (error) {
+    await markProtectedEffectAmbiguous(deps, effect.id, error);
+    throw new Error(
+      `approved action outcome is ambiguous: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  const error = effectError(result);
+  if (error) {
+    await markProtectedEffectAmbiguous(deps, effect.id, error);
+    throw new Error(`approved action outcome is ambiguous: ${error}`);
+  }
+
+  let receipt: { id: string };
+  try {
+    receipt = await settleApprovedEffect(deps, run, effect.id, effect.kind, result);
+  } catch (error) {
+    await markProtectedEffectAmbiguous(deps, effect.id, error);
+    throw error;
+  }
+  const blocks: MessageBlock[] = [
+    { kind: "meta", text: `Approved ${effect.kind} finished. Evidence: ${effect.id}.` },
+  ];
+  await appendEvent(deps.prisma, {
+    workspaceId: run.workspaceId,
+    threadId: run.threadId,
+    botId: run.botId,
+    type: "thread.message.created",
+    runId: run.id,
+    payload: { messageId: receipt.id, role: "bot", blocks },
+  }).catch(() => undefined);
+  return approvedEffectInstruction(effect.kind, effect.id);
+}
+
+function approvedEffectInstruction(kind: string, effectId: string): string {
+  return `The owner approved ${kind}. The exact stored action was dispatched successfully and evidence ${effectId} was saved in this thread. Do not repeat it. Continue the original task.`;
+}
+
+async function markProtectedEffectAmbiguous(deps: ExecutorDeps, effectId: string, error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  await deps.prisma.externalEffect.updateMany({
+    where: { id: effectId, status: "intended" },
+    data: { status: "ambiguous", result: { error: message.slice(0, 500) } },
+  });
+}
+
+async function settleApprovedEffect(
+  deps: ExecutorDeps,
+  run: ApprovalRun,
+  effectId: string,
+  kind: string,
+  result: unknown,
+): Promise<{ id: string }> {
+  const blocks: MessageBlock[] = [
+    { kind: "meta", text: `Approved ${kind} finished. Evidence: ${effectId}.` },
+  ];
+  return deps.prisma.$transaction(async (tx) => {
+    const completed = await tx.externalEffect.updateMany({
+      where: {
+        id: effectId,
+        runId: run.id,
+        workspaceId: run.workspaceId,
+        status: "intended",
+      },
+      data: { status: "completed", result: result as never },
+    });
+    if (completed.count !== 1) throw new Error("approved action could not be settled safely");
+
+    const last = await tx.message.findFirst({
+      where: { threadId: run.threadId },
+      orderBy: { seq: "desc" },
+      select: { seq: true },
+    });
+    return tx.message.create({
+      data: {
+        threadId: run.threadId,
+        seq: (last?.seq ?? -1) + 1,
+        role: "bot",
+        runId: run.id,
+        blocks: blocks as never,
+      },
+      select: { id: true },
+    });
+  });
+}
+
+function ownerApprovalRequired(effectId: string): OwnerApprovalRequired {
+  return { kind: "owner_approval_required", effectId };
+}
+
+function approvalActionName(name: string): string {
+  if (name === "shell") return "running this command";
+  if (name === "delete_bot") return "deleting this bot";
+  if (name === "destination.write") return "writing to the connected destination";
+  return `running ${name}`;
+}
+
+export function approvalActionDetail(
+  name: string,
+  args: Record<string, unknown>,
+  runSecrets: string[],
+): string {
+  const tool = `Tool: ${name}`;
+  if (name === "shell") {
+    return boundedApprovalDetail([
+      tool,
+      `Command: ${approvalPreview(args.command ?? args.cmd ?? "", runSecrets, 800)}`,
+      `Working directory: ${approvalPreview(args.cwd ?? "default", runSecrets, 200)}`,
+    ]);
+  }
+  if (name === "delete_bot") {
+    const target = approvalPreview(
+      args.confirm_name ?? args.confirmName ?? args.bot_id ?? args.botId ?? "requested bot",
+      runSecrets,
+      200,
+    );
+    return `${tool}\nTarget: ${target}`;
+  }
+  if (name === "destination.write") {
+    const collection = approvalPreview(args.collection ?? "destination", runSecrets, 200);
+    return `${tool}\nCollection: ${collection}\nContent values are hidden.`;
+  }
+  if (name === "COMPOSIO_MULTI_EXECUTE_TOOL") {
+    const batch = composioBatch(args);
+    const names = batch
+      .map((item) => item.tool_slug ?? item.tool_name ?? item.tool ?? item.name)
+      .filter((value): value is string => typeof value === "string" && Boolean(value));
+    const targets = approvalTargets(args, runSecrets);
+    return boundedApprovalDetail([
+      tool,
+      `Batch size: ${batch.length || "unknown"}`,
+      `Tools: ${names.length ? names.map((value) => approvalPreview(value, runSecrets, 120)).join(", ") : "not provided"}`,
+      targets ? `Targets: ${targets}` : "Targets: not provided",
+    ]);
+  }
+  if (name === "COMPOSIO_REMOTE_BASH_TOOL" || name === "COMPOSIO_REMOTE_WORKBENCH") {
+    const command =
+      args.command ??
+      args.cmd ??
+      args.script ??
+      args.code_to_execute ??
+      args.code ??
+      "not provided";
+    const targets = approvalTargets(args, runSecrets);
+    return boundedApprovalDetail([
+      tool,
+      `Command: ${approvalPreview(command, runSecrets, 800)}`,
+      targets ? `Target: ${targets}` : "Target: not provided",
+    ]);
+  }
+  if (name === "COMPOSIO_MANAGE_CONNECTIONS") {
+    const action = args.action ?? args.operation ?? args.intent ?? "not provided";
+    const targets = approvalTargets(args, runSecrets);
+    return boundedApprovalDetail([
+      tool,
+      `Action: ${approvalPreview(action, runSecrets, 200)}`,
+      targets ? `Target: ${targets}` : "Target: not provided",
+    ]);
+  }
+  const fields = Object.keys(args)
+    .slice(0, 12)
+    .map((key) => key.slice(0, 80))
+    .join(", ");
+  return `${tool}\nArgument fields: ${fields || "none"}\nArgument values are hidden.`;
+}
+
+function approvalPreview(value: unknown, runSecrets: string[], limit: number): string {
+  const raw = typeof value === "string" ? value : JSON.stringify(value);
+  const redacted = redactSecrets(raw ?? String(value), runSecrets);
+  if (redacted.length <= limit) return redacted;
+  const tail = Math.min(120, Math.floor(limit / 3));
+  const head = limit - tail;
+  return `${redacted.slice(0, head)}…[${redacted.length - limit} chars omitted]…${redacted.slice(-tail)}`;
+}
+
+function boundedApprovalDetail(lines: string[]): string {
+  return lines.join("\n").slice(0, 1_200);
+}
+
+function composioBatch(args: Record<string, unknown>): Record<string, unknown>[] {
+  const candidate = args.tools ?? args.tool_calls ?? args.calls ?? args.actions;
+  return Array.isArray(candidate) ? candidate.map(jsonObject) : [];
+}
+
+function approvalTargets(value: unknown, runSecrets: string[]): string {
+  const safeKeys = new Set([
+    "recipient",
+    "recipients",
+    "to",
+    "target",
+    "targets",
+    "destination",
+    "destinations",
+    "channel",
+    "channels",
+    "email",
+    "collection",
+    "toolkit",
+    "toolkits",
+    "app",
+    "apps",
+    "provider",
+    "providers",
+  ]);
+  const found: string[] = [];
+  const visit = (node: unknown, depth: number) => {
+    if (depth > 4 || found.length >= 6 || !node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item, depth + 1);
+      return;
+    }
+    for (const [key, nested] of Object.entries(node)) {
+      if (found.length >= 6) break;
+      if (
+        safeKeys.has(key.toLowerCase()) &&
+        (typeof nested !== "object" ||
+          nested === null ||
+          (Array.isArray(nested) && nested.every((item) => typeof item !== "object")))
+      ) {
+        found.push(`${key}=${approvalPreview(nested, runSecrets, 160)}`);
+      } else {
+        visit(nested, depth + 1);
+      }
+    }
+  };
+  visit(value, 0);
+  return found.join(", ");
+}
+
+function jsonObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function isUniqueConstraintError(error: unknown): boolean {
+  return Boolean(error && typeof error === "object" && "code" in error && error.code === "P2002");
+}
+
 async function recordEffect(
   deps: ExecutorDeps,
   run: { id: string; workspaceId: string },
@@ -753,6 +1332,13 @@ async function recordEffect(
     where: { idempotencyKey: executionId },
   });
   if (existing) {
+    if (
+      existing.runId !== run.id ||
+      existing.workspaceId !== run.workspaceId ||
+      existing.kind !== kind
+    ) {
+      return { duplicate: false, ambiguous: true, blocked: undefined, effect: existing };
+    }
     await appendEvent(deps.prisma, {
       workspaceId: run.workspaceId,
       threadId: (await deps.prisma.run.findUniqueOrThrow({ where: { id: run.id } })).threadId,
@@ -762,9 +1348,17 @@ async function recordEffect(
       payload: { executionId, kind },
     });
     if (existing.status === "completed") {
-      return { duplicate: true, ambiguous: false, effect: existing };
+      return { duplicate: true, ambiguous: false, blocked: undefined, effect: existing };
     }
-    if (existing.status !== "failed") {
+    if (existing.status === "awaiting_approval" || existing.status === "denied") {
+      return {
+        duplicate: false,
+        ambiguous: false,
+        blocked: existing.status,
+        effect: existing,
+      };
+    }
+    if (existing.status !== "failed" || requiresOwnerApproval(existing.kind)) {
       const effect =
         existing.status === "ambiguous"
           ? existing
@@ -772,13 +1366,27 @@ async function recordEffect(
               where: { id: existing.id },
               data: { status: "ambiguous" },
             });
-      return { duplicate: false, ambiguous: true, effect };
+      return { duplicate: false, ambiguous: true, blocked: undefined, effect };
     }
-    const effect = await deps.prisma.externalEffect.update({
-      where: { id: existing.id },
+    const transitioned = await deps.prisma.externalEffect.updateMany({
+      where: { id: existing.id, status: existing.status },
       data: { status: "intended" },
     });
-    return { duplicate: false, ambiguous: false, effect };
+    if (transitioned.count !== 1) {
+      const effect = await deps.prisma.externalEffect.findUniqueOrThrow({
+        where: { id: existing.id },
+      });
+      return {
+        duplicate: effect.status === "completed",
+        ambiguous: effect.status !== "completed",
+        blocked: undefined,
+        effect,
+      };
+    }
+    const effect = await deps.prisma.externalEffect.findUniqueOrThrow({
+      where: { id: existing.id },
+    });
+    return { duplicate: false, ambiguous: false, blocked: undefined, effect };
   }
   const effect = await deps.prisma.externalEffect.create({
     data: {
@@ -790,7 +1398,7 @@ async function recordEffect(
       request: request as never,
     },
   });
-  return { duplicate: false, ambiguous: false, effect };
+  return { duplicate: false, ambiguous: false, blocked: undefined, effect };
 }
 
 async function completeEffect(deps: ExecutorDeps, effectId: string, result: unknown) {
@@ -815,20 +1423,42 @@ function withEffectLifecycle(
 ) {
   return async (name: string, args: Record<string, unknown>, executionId: string) => {
     const applied = await recordEffect(deps, run, name, executionId, args);
+    if (applied.blocked) {
+      return {
+        error:
+          applied.blocked === "denied"
+            ? "owner denied this action"
+            : "owner approval is still required",
+        executionId,
+      };
+    }
     if (applied.ambiguous) {
       return { error: "effect outcome is ambiguous; review before retrying", executionId };
     }
     if (applied.duplicate) return applied.effect.result ?? { duplicate: true };
     let result: unknown;
     try {
-      result = await execute(name, args, executionId);
+      result = await execute(
+        applied.effect.kind,
+        jsonObject(applied.effect.request),
+        applied.effect.idempotencyKey,
+      );
     } catch (error) {
-      await failEffect(deps, applied.effect.id, error);
+      if (requiresOwnerApproval(applied.effect.kind)) {
+        await markProtectedEffectAmbiguous(deps, applied.effect.id, error);
+      } else {
+        await failEffect(deps, applied.effect.id, error);
+      }
       throw error;
     }
     const error = effectError(result);
-    if (error) await failEffect(deps, applied.effect.id, error);
-    else await completeEffect(deps, applied.effect.id, result);
+    if (error) {
+      if (requiresOwnerApproval(applied.effect.kind)) {
+        await markProtectedEffectAmbiguous(deps, applied.effect.id, error);
+      } else {
+        await failEffect(deps, applied.effect.id, error);
+      }
+    } else await completeEffect(deps, applied.effect.id, result);
     return result;
   };
 }

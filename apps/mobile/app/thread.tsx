@@ -11,15 +11,18 @@ import {
   rpc,
   subscribeThread,
 } from "../lib/api";
+import { ownerApprovalForMessage } from "../lib/approval";
 
 export default function Thread() {
   const navigation = useNavigation();
   const router = useRouter();
   const { botId, name } = useLocalSearchParams<{ botId?: string; name?: string }>();
   const scroll = useRef<ScrollView>(null);
+  const answeringRun = useRef<string | null>(null);
   const [snap, setSnap] = useState<MobileSnapshot | null>(null);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [answeringRunId, setAnsweringRunId] = useState<string | null>(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: name || "Thread" });
@@ -79,6 +82,27 @@ export default function Thread() {
     await refresh();
   }
 
+  async function submitAnswer(runId: string, selectedAction: string) {
+    if (!botId || answeringRun.current) return;
+    answeringRun.current = runId;
+    setAnsweringRunId(runId);
+    setError(null);
+    try {
+      await rpc("threads/answer", { botId, runId, answer: selectedAction });
+      setSnap((current) =>
+        current?.run?.id === runId
+          ? { ...current, run: { ...current.run, status: "queued" } }
+          : current,
+      );
+      void refresh().catch(() => undefined);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not submit this action");
+    } finally {
+      answeringRun.current = null;
+      setAnsweringRunId(null);
+    }
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: "#000", paddingHorizontal: 20, paddingBottom: 24 }}>
       {error ? <Text style={{ color: "#8E8E93", marginTop: 12 }}>{error}</Text> : null}
@@ -99,6 +123,9 @@ export default function Thread() {
           >
             <MessageBubble
               message={message}
+              run={snap?.run ?? null}
+              inFlightRunId={answeringRunId}
+              onAnswer={(runId, selectedAction) => void submitAnswer(runId, selectedAction)}
               onOpenBot={(id, botName) =>
                 router.push({ pathname: "/thread", params: { botId: id, name: botName } })
               }
@@ -152,11 +179,83 @@ export default function Thread() {
 
 function MessageBubble({
   message,
+  run,
+  inFlightRunId,
+  onAnswer,
   onOpenBot,
 }: {
   message: MobileMessage;
+  run: MobileSnapshot["run"];
+  inFlightRunId: string | null;
+  onAnswer: (runId: string, answer: string) => void;
   onOpenBot: (botId: string, name: string) => void;
 }) {
+  const approval = ownerApprovalForMessage(message, run, inFlightRunId);
+  if (approval) {
+    return (
+      <View
+        style={{
+          width: "90%",
+          borderRadius: 18,
+          borderWidth: 1,
+          borderColor: "#242428",
+          backgroundColor: "#141417",
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+        }}
+      >
+        <ChatMarkdown>{approval.ask.text ?? "Approval needed"}</ChatMarkdown>
+        {approval.ask.detail ? (
+          <Text
+            selectable
+            style={{
+              color: "#A8A8AD",
+              backgroundColor: "#0E0E10",
+              borderRadius: 12,
+              marginTop: 10,
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+              fontSize: 13,
+              lineHeight: 19,
+            }}
+          >
+            {approval.ask.detail}
+          </Text>
+        ) : null}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+          {approval.actions.map((action, index) => (
+            <Pressable
+              key={action.id}
+              accessibilityRole="button"
+              accessibilityLabel={action.label}
+              accessibilityState={{ disabled: approval.disabled }}
+              disabled={approval.disabled}
+              onPress={() => {
+                if (approval.runId) onAnswer(approval.runId, action.id);
+              }}
+              style={{
+                borderRadius: 12,
+                borderWidth: index === 0 ? 0 : 1,
+                borderColor: "#343438",
+                backgroundColor: index === 0 ? "#F1F1EF" : "#1A1A1D",
+                minHeight: 44,
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                opacity: approval.disabled ? 0.5 : 1,
+              }}
+            >
+              <Text style={{ color: index === 0 ? "#17171A" : "#ECECEE", fontWeight: "600" }}>
+                {action.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        {approval.pending ? (
+          <Text style={{ color: "#85858A", marginTop: 8, fontSize: 13 }}>Sending…</Text>
+        ) : null}
+      </View>
+    );
+  }
   const special = message.blocks.find(
     (block) => block.kind === "subagent" || block.kind === "child_bot",
   );

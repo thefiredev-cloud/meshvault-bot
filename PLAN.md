@@ -5,7 +5,7 @@ Front-load planning. If implementation fails, revise this file and retry. Do not
 
 ## Goal
 
-Add MeshVault Bot agent rituals and a short planning template without mulch/seeds or new product features.
+Add Mesh Bot agent rituals and a short planning template without mulch/seeds or new product features.
 
 ## Decompose
 
@@ -49,3 +49,34 @@ Empty — first pass.
 - [x] Retry failed effects under the same idempotency key and fail closed on ambiguous intent.
 - [x] Prove a failed write retries once and a completed write never duplicates.
 - [x] Pass focused tests, lint, check, build, and the full verification gate.
+
+## Inline approval controls subtask
+
+- [x] Render only the actions supplied by an ask message.
+- [x] Submit the selected action id against the ask message's exact waiting run.
+- [x] Disable stale, submitted, and in-flight approval controls.
+- [x] Pass the focused web test and web checks.
+
+## Mobile inline owner approval subtask
+
+- [x] Preserve ask detail, supplied actions, message run id, and active run id in mobile types.
+- [x] Render only server-supplied, accessible same-thread actions.
+- [x] Submit the selected action to `threads.answer` for the exact bot and run.
+- [x] Disable stale and in-flight actions and pass focused mobile checks.
+
+## Inline owner approval subtask
+
+- [x] Pause exact protected tool calls before any outward or destructive effect.
+- [x] Bind Approve or Deny to the owner, workspace, bot, waiting run, and stored effect.
+- [x] Execute an approved stored call at most once; denial and stale decisions execute nothing.
+- [x] Render the supplied inline actions in web and mobile threads.
+- [x] Protect shell commands and show bounded, secret-redacted command and target details.
+- [x] Fence every run owner, fail uncertain protected effects closed, and recover committed queued runs.
+- [x] Pass all six migrations, 194 tests with 5 expected skips, and both Chromium journeys.
+
+## Public copy truth subtask
+
+- [x] Remove absolutes about credential, session, and network locality.
+- [x] Describe current routines, inline approval, and bot setup without promised features.
+- [x] Preserve the Grok Bot alternative wording and current layout.
+- [x] Pass the public-site check, build, and old-claim/name scan.

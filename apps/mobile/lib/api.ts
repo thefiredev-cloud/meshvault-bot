@@ -123,22 +123,32 @@ export type MobileMe = {
   email: string;
 };
 
+export type MobileAskAction = {
+  id: string;
+  label: string;
+};
+
+export type MobileMessageBlock = {
+  kind: string;
+  text?: string;
+  detail?: string;
+  actions?: MobileAskAction[];
+  state?: string;
+  name?: string;
+  task?: string;
+  status?: string;
+  progress?: string;
+  result?: string;
+  botId?: string;
+  title?: string;
+  agentId?: string;
+};
+
 export type MobileMessage = {
   id: string;
   role: "user" | "bot" | "system";
-  blocks: Array<{
-    kind: string;
-    text?: string;
-    state?: string;
-    name?: string;
-    task?: string;
-    status?: string;
-    progress?: string;
-    result?: string;
-    botId?: string;
-    title?: string;
-    agentId?: string;
-  }>;
+  blocks: MobileMessageBlock[];
+  runId?: string;
 };
 
 export type MobileSnapshot = {
@@ -146,7 +156,7 @@ export type MobileSnapshot = {
   threadId: string;
   cursor?: number;
   messages: MobileMessage[];
-  run: { status: string } | null;
+  run: { id: string; status: string } | null;
   computer: { state: string; controlHolder: string; screenAvailable: boolean };
 };
 
@@ -228,6 +238,7 @@ export function applyMobileThreadEvent(
       id: `progress:${event.runId ?? event.id ?? "live"}`,
       role: "bot",
       blocks: [{ kind: "progress", text }],
+      runId: event.runId,
     };
     return {
       ...prev,
@@ -253,6 +264,7 @@ export function applyMobileThreadEvent(
           result: event.payload?.result ? String(event.payload.result) : undefined,
         },
       ],
+      runId: event.runId,
     };
     return {
       ...prev,
@@ -269,6 +281,7 @@ export function applyMobileThreadEvent(
       id: String(event.payload?.messageId ?? event.id ?? `msg:${event.seq ?? 0}`),
       role: (event.payload?.role as MobileMessage["role"]) ?? "bot",
       blocks: (event.payload?.blocks as MobileMessage["blocks"]) ?? [],
+      runId: event.runId,
     };
     return {
       ...prev,
