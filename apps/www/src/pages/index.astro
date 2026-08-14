@@ -7,7 +7,14 @@ import { ProductDemo } from "../components/ProductDemo";
 import { DEMO_ROSTER } from "../demo";
 import { fetchGithubStars, formatStarCount } from "../github";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { DOCS_URL, GITHUB_URL, SITE_DESCRIPTION, WAITLIST_HREF } from "../site";
+import {
+  DOCS_URL,
+  FOUNDING_INSTALL_HREF,
+  GITHUB_URL,
+  SITE_DESCRIPTION,
+  SKILL_PACK_CHECKOUT_HREF,
+  WAITLIST_HREF,
+} from "../site";
 
 const stars = await fetchGithubStars();
 const starsLabel = stars === null ? "Star" : formatStarCount(stars);
@@ -85,10 +92,11 @@ const starsLabel = stars === null ? "Star" : formatStarCount(stars);
       <section id="open-source" class="section">
         <div class="section-intro">
           <div class="eyebrow">Open source</div>
-          <h2 class="section-heading">No pricing page. Just the repo.</h2>
+          <h2 class="section-heading">Apache-2.0 to self-host. Optional extras elsewhere.</h2>
           <p class="section-copy">
             Mesh Bot is Apache-2.0 licensed and can run on your own machine with the model connections you choose.
-            The source and self-hosting setup are in the repo.
+            The source and self-hosting setup are in the repo. Native Mac and iPhone clients are in development
+            and are not released.
           </p>
         </div>
         <div class="comparison-grid">
@@ -120,6 +128,45 @@ const starsLabel = stars === null ? "Star" : formatStarCount(stars);
             </div>
             <div class="comparison-actions">
               <Button href={WAITLIST_HREF} variant="secondary" size="sm">Join the waitlist</Button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="skills" class="section">
+        <div class="section-intro">
+          <div class="eyebrow">Optional</div>
+          <h2 class="section-heading">A $49 skills pack, or a founding install</h2>
+          <p class="section-copy">
+            The runtime stays free to clone and self-host. The pack is a one-time Markdown set sold by
+            FireDev LLC dba MeshVault — not a seat license and not required to run Mesh Bot. Native Mac
+            and iPhone clients are not in the App Store or available as a public download yet.
+          </p>
+        </div>
+        <div class="comparison-grid">
+          <article class="comparison-card">
+            <h3>Agent Skills Starter Pack</h3>
+            <p class="comparison-meta">$49 · one-time</p>
+            <div class="comparison-list">
+              <div>Markdown skills, runbooks, and worked examples</div>
+              <div>Checkout on Stripe; you complete payment yourself</div>
+              <div>Signed download link by email, valid seven days</div>
+              <div>A smaller MIT set stays free on GitHub</div>
+            </div>
+            <div class="comparison-actions">
+              <Button href={SKILL_PACK_CHECKOUT_HREF} size="sm" external>Buy the $49 pack</Button>
+            </div>
+          </article>
+          <article class="comparison-card">
+            <h3>Founding install</h3>
+            <p class="comparison-meta">Quoted after a short audit</p>
+            <div class="comparison-list">
+              <div>Managed install on hardware you own</div>
+              <div>The runtime and data stay yours after we leave</div>
+              <div>Email contact@meshvault.ai — there is no fake inbox</div>
+            </div>
+            <div class="comparison-actions">
+              <Button href={FOUNDING_INSTALL_HREF} variant="secondary" size="sm">Request a founding install</Button>
             </div>
           </article>
         </div>

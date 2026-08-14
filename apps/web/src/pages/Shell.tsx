@@ -20,6 +20,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { authClient } from "../lib/auth";
 import { rpc } from "../lib/rpc";
 import { BrainOverlay } from "./Brain";
+import { CommerceOverlay } from "./CommerceOverlay";
 import { HostComputerPrompt } from "./HostComputerPrompt";
 import { PluginsOverlay } from "./PluginsOverlay";
 import { RoutineSchedule } from "./RoutineSchedule";
@@ -43,6 +44,7 @@ export function ShellPage({ view = "chat" }: { view?: "chat" | "brain" }) {
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [computer, setComputer] = useState<ComputerStatus | null>(null);
   const [pluginsOpen, setPluginsOpen] = useState(false);
+  const [commerceOpen, setCommerceOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [booting, setBooting] = useState(false);
   const [routineDraft, setRoutineDraft] = useState({
@@ -353,6 +355,16 @@ export function ShellPage({ view = "chat" }: { view?: "chat" | "brain" }) {
             </svg>
           </span>
           <span className="text-[14.5px] text-[#C9C9CE]">Plugins</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setCommerceOpen(true)}
+          className="mx-3 mb-1 flex items-center gap-3 rounded-[11px] px-2.5 py-2 hover:bg-[#131315]"
+        >
+          <span className="grid h-[30px] w-[30px] place-items-center rounded-full bg-[#17171A] text-[#9A9AA0]">
+            $
+          </span>
+          <span className="text-[14.5px] text-[#C9C9CE]">Skills pack</span>
         </button>
         <div className="relative">
           {menuOpen ? (
@@ -737,6 +749,7 @@ export function ShellPage({ view = "chat" }: { view?: "chat" | "brain" }) {
       </aside>
 
       {pluginsOpen ? <PluginsOverlay onClose={() => setPluginsOpen(false)} /> : null}
+      {commerceOpen ? <CommerceOverlay onClose={() => setCommerceOpen(false)} /> : null}
 
       {view === "brain" ? (
         <BrainOverlay onClose={() => navigate(active ? `/app/${active.id}` : "/app")} />

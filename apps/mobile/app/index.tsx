@@ -98,24 +98,28 @@ export default function Home() {
       .join("\n");
     const onSignOut = () => void signOut().then(() => setHasSession(false));
 
+    const openCommerce = () => router.push("/commerce");
+
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
           title,
           message: details || undefined,
-          options: ["Sign out", "Cancel"],
-          destructiveButtonIndex: 0,
-          cancelButtonIndex: 1,
+          options: ["Skills pack", "Sign out", "Cancel"],
+          destructiveButtonIndex: 1,
+          cancelButtonIndex: 2,
           userInterfaceStyle: "dark",
         },
         (index) => {
-          if (index === 0) onSignOut();
+          if (index === 0) openCommerce();
+          if (index === 1) onSignOut();
         },
       );
       return;
     }
 
     Alert.alert(title, details || undefined, [
+      { text: "Skills pack", onPress: openCommerce },
       { text: "Cancel", style: "cancel" },
       { text: "Sign out", style: "destructive", onPress: onSignOut },
     ]);
@@ -181,13 +185,26 @@ export default function Home() {
           />
         }
         ListEmptyComponent={
-          <Text style={styles.empty}>
-            {query.trim()
-              ? "No matching bots"
-              : searching
-                ? "Search your bots"
-                : "Tap + to create a bot"}
-          </Text>
+          query.trim() || searching ? (
+            <Text style={styles.empty}>
+              {query.trim() ? "No matching bots" : "Search your bots"}
+            </Text>
+          ) : (
+            <View>
+              <Text style={styles.empty}>Tap + to create a bot</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push("/commerce")}
+                style={styles.commerceCard}
+              >
+                <Text style={styles.commerceTitle}>Optional $49 skills pack</Text>
+                <Text style={styles.commerceCopy}>
+                  Buy the Markdown pack or request a founding install. The app stays Apache-2.0 to
+                  self-host. Mac and iPhone clients are not released.
+                </Text>
+              </Pressable>
+            </View>
+          )
         }
         renderItem={({ item }) => <BotRow bot={item} />}
       />
@@ -319,6 +336,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingHorizontal: 20,
     paddingTop: 28,
+  },
+  commerceCard: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "#26262A",
+    borderRadius: 16,
+    backgroundColor: "#141416",
+    padding: 16,
+    gap: 8,
+  },
+  commerceTitle: {
+    color: native.label,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  commerceCopy: {
+    color: native.secondaryLabel,
+    fontSize: 14,
+    lineHeight: 20,
   },
   row: {
     flexDirection: "row",

@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Optional $49 Agent Skills Starter Pack checkout and founding-install lead in first-run onboarding, the web/Electron sidebar, and the Expo inbox. The Apache-2.0 self-hosted runtime stays free; native Mac and iPhone clients are in development and are not released.
 - Electron first-run: Docker (default) or this Mac. This Mac runs the bot shell as you, with working directories under your home folder. macOS does not show its own permission dialog; the consent is Mesh Bot's. The choice is owner-only and is refused when `SANDBOX_PROVIDER` is not `docker` (so E2B and test fakes cannot enable it).
 - GitHub Copilot and SuperGrok / X Premium sign-in via Pi device-code OAuth (`openai-codex`, `github-copilot`, `xai`). Claude Pro is still omitted because Pi's Claude login uses a localhost callback that does not work from the web app.
 - Agent rituals in `AGENTS.md` plus `PLAN.md` (plan → decompose → validate → repeat) and path-anchored learnings in `.agents/context.json`.

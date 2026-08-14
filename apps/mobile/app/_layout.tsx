@@ -43,6 +43,7 @@ export default function Layout() {
         />
         <Stack.Screen name="thread" options={{ title: "Thread" }} />
         <Stack.Screen name="computer" options={{ title: "Computer" }} />
+        <Stack.Screen name="commerce" options={{ title: "Skills pack" }} />
       </Stack>
     </ThemeProvider>
   );

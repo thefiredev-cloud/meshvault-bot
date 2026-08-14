@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { rpc } from "../lib/rpc";
+import { CommercePanel } from "./CommerceOverlay";
 
 // Modified by FireDev LLC dba MeshVault on 2026-08-13.
 
@@ -393,7 +394,12 @@ export function OnboardingPage() {
         {step === "questions" && !question ? (
           <div>
             <h1 className="text-[32px] font-medium text-[#F1F1F2]">You’re set.</h1>
-            <p className="mt-2 text-[#85858A]">I’ll pick up work the moment you send it.</p>
+            <p className="mt-2 text-[#85858A]">
+              I’ll pick up work the moment you send it. The runtime stays free to self-host.
+            </p>
+            <div className="mt-6">
+              <CommercePanel title="Optional before you start" compact />
+            </div>
             <button
               type="button"
               onClick={() => void createBot()}
