@@ -1,0 +1,11 @@
+{
+  "build": {
+    "production": {
+      "distribution": "store",
+      "environment": "production",
+      "env": {
+        "MESHBOT_RELEASE_PROFILE": "production"
+      }
+    }
+  }
+}

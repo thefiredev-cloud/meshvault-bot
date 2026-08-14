@@ -137,6 +137,21 @@
       ],
       "worked": "Owner approvals are inline and run-scoped across web and mobile. Shell, delete, destination writes, and named Composio write surfaces pause before dispatch with bounded secret-redacted details. Waiting states must queue before leasing; exact owner/fence CAS blocks stale completion. Approved protected calls use stored arguments once, uncertain outcomes become ambiguous with no automatic retry, and effect settlement plus one receipt is atomic. Committed queued Run rows are a durable outbox recovered at worker startup and every five seconds with deterministic job keys. Actionless mobile asks remain ordinary questions. The integrated gate applied six migrations, passed 194 tests with 5 expected skips, and passed 2 Chromium journeys.",
       "failed": "The first green gate missed fast-decision, post-dispatch ambiguity, and commit-before-enqueue races. Independent read-only review exposed them; root fixes and deterministic checks closed them before merge."
+    },
+    {
+      "at": "2026-08-14",
+      "paths": [
+        "apps/mobile/app.config.js",
+        "apps/mobile/eas.json",
+        "apps/mobile/scripts/check-ios-release.cjs",
+        "apps/mobile/lib/release-config.test.ts",
+        "apps/mobile/package.json",
+        "README.md",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Dynamic Expo config preserves app.json unchanged for development. The production EAS profile selects store distribution plus the production variable environment and requires owner-supplied bundle id, positive build number, Expo owner, and UUID project id. Shared preflight reports exact missing or malformed fields before build. Default and fixture-production Expo config resolved, mobile TypeScript passed, focused config tests passed 4 of 4, iOS export bundled 1193 modules to one 3.61 MB Hermes bundle, targeted Biome passed, and verify:fast passed 184 tests with 19 expected skips.",
+      "failed": "The first verify:fast run lacked the ignored generated Prisma client; pnpm --filter @meshbot/db generate restored it, then the unchanged gate passed."
     }
   ]
 }
