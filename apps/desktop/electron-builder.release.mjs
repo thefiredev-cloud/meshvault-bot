@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 const packageJson = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
 const release = structuredClone(packageJson.build);
 
+release.directories.output = "out/release";
 release.forceCodeSigning = true;
 delete release.mac.identity;
 release.mac.hardenedRuntime = true;

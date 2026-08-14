@@ -29,11 +29,12 @@ if (process.argv.includes("--self-test")) {
     ),
   );
   assert.doesNotThrow(() => check(Object.fromEntries(REQUIRED.map((name) => [name, "fixture"]))));
+  assert.equal(releaseConfig.directories.output, "out/release");
   assert.equal(releaseConfig.forceCodeSigning, true);
   assert.equal(releaseConfig.mac.identity, undefined);
   assert.equal(releaseConfig.mac.hardenedRuntime, true);
   assert.equal(releaseConfig.mac.notarize, true);
-  console.log("macOS release self-check passed (7 assertions).");
+  console.log("macOS release self-check passed (8 assertions).");
 } else {
   try {
     check(process.env);

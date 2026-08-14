@@ -110,3 +110,9 @@ Empty — first pass.
 - [x] Fail the release if electron-builder cannot find a valid signing identity.
 - [x] Enable hardened runtime and built-in notarization only in the release configuration.
 - [x] Prove the focused preflight, unsigned package smoke, and repository gates.
+
+## macOS release artifact isolation subtask
+
+- [x] Keep signed release output separate from ordinary unsigned package output.
+- [x] Make release verification search only the signed-output directory.
+- [x] Pass the release self-check and repository gates.
