@@ -122,4 +122,4 @@ Empty — first pass.
 - [x] Add checkout and founding-install helpers that POST to meshvault.ai and never invent a Stripe URL.
 - [x] Surface a first-run and in-app CTA in the web/Electron UI so a user can start the $49 pack checkout or submit a lead.
 - [x] Add the same path on Expo without claiming Mac or iOS clients are released.
-- [ ] Keep Apache-2.0 / self-host copy honest; add tests for the network helpers; leave verify:fast green.
+- [x] Keep Apache-2.0 / self-host copy honest; add tests for the network helpers; leave verify:fast green.
