@@ -9,6 +9,9 @@
     "build": "tsc -p tsconfig.json && cp src/preload.cjs src/connect.html src/connect.js dist/",
     "pack": "pnpm build && electron-builder --mac --win --linux",
     "pack:dir": "pnpm build && electron-builder --dir",
+    "release:mac:check": "node scripts/check-macos-release.mjs",
+    "release:mac:test": "node scripts/check-macos-release.mjs --self-test",
+    "release:mac": "pnpm release:mac:check && pnpm build && electron-builder --mac --config electron-builder.release.mjs",
     "check": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run --root ../.. apps/desktop/src"
   },
@@ -38,6 +41,8 @@
     "mac": {
       "icon": "assets/icon.icns",
       "category": "public.app-category.productivity",
+      "identity": null,
+      "notarize": false,
       "target": [
         "dmg",
         "zip"

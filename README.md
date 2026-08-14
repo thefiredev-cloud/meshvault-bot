@@ -115,6 +115,30 @@ pnpm --filter @meshbot/desktop pack
 Outputs land in `apps/desktop/out/` (macOS dmg/zip, Windows NSIS, Linux AppImage). Those builds still need a running API and web origin.
 The public Mac download must be signed with a Developer ID Application certificate and notarized by Apple; an unsigned local package is only a smoke-test artifact.
 
+For a direct-download macOS release, provide the Developer ID Application certificate and App Store Connect API notarization inputs to electron-builder, then run the release-only command:
+
+```bash
+export CSC_LINK='<certificate file, URL, or base64 data>'
+export CSC_KEY_PASSWORD='<certificate password>'
+export APPLE_API_KEY='<absolute path to AuthKey_*.p8>'
+export APPLE_API_KEY_ID='<App Store Connect key id>'
+export APPLE_API_ISSUER='<App Store Connect issuer id>'
+pnpm --filter @meshbot/desktop release:mac
+```
+
+The preflight names every missing field before TypeScript compilation or packaging. It does not print credential values. The release config requires a valid signing identity, enables hardened runtime, and uses electron-builder's built-in notarization; ordinary `pack` builds stay unsigned. Verify the produced app and disk image before publishing either artifact:
+
+```bash
+MESH_APP="$(find apps/desktop/out -maxdepth 2 -type d -name 'Mesh Bot.app' -print -quit)"
+test -n "$MESH_APP"
+codesign --verify --deep --strict --verbose=2 "$MESH_APP"
+codesign -dvv "$MESH_APP" 2>&1 | grep -F 'Authority=Developer ID Application:'
+xcrun stapler validate "$MESH_APP"
+MESH_DMG="$(find apps/desktop/out -maxdepth 1 -type f -name '*.dmg' -print -quit)"
+test -n "$MESH_DMG"
+hdiutil verify "$MESH_DMG"
+```
+
 ## Run the iOS app
 
 Mobile is the existing Expo app (`apps/mobile`). Leave `pnpm dev` running, then:

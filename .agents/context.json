@@ -187,6 +187,19 @@
       ],
       "worked": "Product-facing and generated identifiers now use Mesh Bot across issue forms, API logs, current mobile origins, Brain errors, plugin popup state, the public lockup, Cloud docs, site demo data, and test fixtures. The server still accepts meshvault:// only as inbound compatibility; current clients emit meshbot://. Legal FireDev LLC dba MeshVault text, meshvault.ai, the meshvault-bot repository address, and required Rakazo attribution remain. Focused tests passed 18 of 18; verify:fast passed 194 tests with 19 expected skips; lint checked 220 files; all 19 checks and all 4 builds passed.",
       "failed": null
+    },
+    {
+      "at": "2026-08-14",
+      "paths": [
+        "apps/desktop/package.json",
+        "apps/desktop/electron-builder.release.mjs",
+        "apps/desktop/scripts/check-macos-release.mjs",
+        "README.md",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Normal macOS packaging now explicitly sets identity null and notarize false. The opt-in release command fails before build with the exact missing CSC_LINK, CSC_KEY_PASSWORD, APPLE_API_KEY, APPLE_API_KEY_ID, and APPLE_API_ISSUER names, then uses the existing electron-builder 26 release config with identity discovery restored, forceCodeSigning true, hardened runtime true, and notarization true. The self-check passed 7 assertions; desktop tests passed 3 of 3; lint checked 222 files; all 19 checks and 4 builds passed; verify:fast passed 194 tests with 19 expected skips. The unsigned ARM64 directory smoke reported identity explicitly null, Signature=adhoc, no Team ID, and no staple ticket.",
+      "failed": "Apple signing and notarization were not attempted because no Developer ID certificate source/password or App Store Connect API credentials were supplied; a signed build still requires the documented codesign and stapler checks."
     }
   ]
 }
