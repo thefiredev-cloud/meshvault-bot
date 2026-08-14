@@ -79,7 +79,7 @@ This dumps Postgres (`pg_dump`) and archives `data/` into `backups/<stamp>/`.
 
 Pull the new source, run `pnpm --filter @meshbot/db migrate`, then restart API and worker. Product contracts stay compatible across cloud and self-hosted.
 
-## What “MeshVault Cloud” still needs
+## What “Mesh Bot Cloud” still needs
 
 `apps/www` (Astro, `output: "static"`, `site: https://meshvault.ai`) can go live today on Vercel, Cloudflare Pages, or any static host. The waitlist link is `mailto:tanner@meshvault.ai`. That is the marketing site, not the product.
 

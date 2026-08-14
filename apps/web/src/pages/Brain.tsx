@@ -15,7 +15,7 @@ const failureCopy: Record<Extract<BrainGraph, { available: false }>["reason"], s
     "The Windows vault rejected this credential. Pair the runtime again before loading Brain.",
   "identity-mismatch":
     "The Windows node certificate did not match its pinned identity. Brain stays closed until the node is paired again.",
-  "invalid-response": "The Windows vault returned a graph MeshVault could not safely read.",
+  "invalid-response": "The Windows vault returned a graph Mesh Bot could not safely read.",
 };
 
 export function BrainOverlay({ onClose }: { onClose: () => void }) {
