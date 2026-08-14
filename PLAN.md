@@ -123,3 +123,17 @@ Empty — first pass.
 - [x] Surface a first-run and in-app CTA in the web/Electron UI so a user can start the $49 pack checkout or submit a lead.
 - [x] Add the same path on Expo without claiming Mac or iOS clients are released.
 - [x] Keep Apache-2.0 / self-host copy honest; add tests for the network helpers; leave verify:fast green.
+
+## iOS pre-release money / founding-install subtask
+
+- [x] Add `POST /api/create-checkout` and `POST /api/install-lead` with the meshvault-scroll #17 contract.
+- [x] Fail closed with 503 when Stripe or Resend env is missing; never invent a checkout URL or inbox.
+- [x] Add a visible Expo founding path: honest pre-release copy, lead form, Buy the $49 pack.
+- [x] Do not add, enable, or label an App Store / TestFlight / Download on iPhone control.
+- [x] Prove the form POST, mocked checkout open, and absent download state with tests.
+
+## iOS founding PR rebase / check-green subtask
+
+- [x] Rebase `cursor/ios-founding-checkout-2e10` onto current main after #13.
+- [x] Annotate `handleCreateCheckout` and `handleInstallLead` so the public return type is `Promise<Response>`.
+- [x] Push the same PR #14 and leave `pnpm check` green.

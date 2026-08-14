@@ -123,6 +123,15 @@ export default function SignIn() {
             {pending ? "Working…" : "Continue with email"}
           </Text>
         </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Pre-release and founding install"
+          hitSlop={12}
+          onPress={() => router.push("/founding")}
+          style={{ alignItems: "center", marginTop: 20 }}
+        >
+          <Text style={{ color: "#6E6E68", fontSize: 15 }}>Pre-release and founding install</Text>
+        </Pressable>
       </View>
       <Pressable
         accessibilityRole="button"

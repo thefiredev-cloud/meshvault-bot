@@ -33,6 +33,15 @@ export default function Layout() {
         <Stack.Screen name="index" options={{ headerShown: false, title: "Mesh Bot" }} />
         <Stack.Screen name="sign-in" options={{ headerShown: false }} />
         <Stack.Screen
+          name="founding"
+          options={{
+            title: "Pre-release",
+            headerStyle: { backgroundColor: "#F7F7F4" },
+            headerTintColor: "#1B1B1E",
+            contentStyle: { backgroundColor: "#F7F7F4" },
+          }}
+        />
+        <Stack.Screen
           name="new"
           options={{
             title: "New bot",
