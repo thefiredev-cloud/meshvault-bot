@@ -431,7 +431,7 @@ function checkoutResponse(
   request: Request,
   requestUrl: URL,
   entry: { brand: string; kind: string; url: string; offer: string; sessionId?: string },
-) {
+): Response {
   const checkoutUrl = assertStripeCheckoutUrl(entry.url);
   if (request.method === "GET" && requestUrl.searchParams.get("redirect") !== "0") {
     return new Response(null, {
@@ -446,7 +446,7 @@ function json(
   status: number,
   body: Record<string, unknown>,
   extraHeaders: Record<string, string> = {},
-) {
+): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
@@ -457,7 +457,7 @@ function json(
   });
 }
 
-function emptyOk() {
+function emptyOk(): Response {
   return new Response(null, {
     status: 200,
     headers: {

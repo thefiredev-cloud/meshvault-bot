@@ -227,6 +227,19 @@
       ],
       "worked": "POST https://meshvault.ai/api/create-checkout?offer=meshvault-skill-pack-starter returns {brand,kind,url,offer}; url is HTTPS buy.stripe.com or checkout.stripe.com. Browser CORS allowlists only meshvault.ai, so startSkillPackCheckout falls back to GET navigation of that same API (303), never a reconstructed Stripe URL. POST /api/install-lead wants name+email (+ optional company/notes); live mailer_not_configured returns contact@meshvault.ai. First-run onboarding, web/Electron Skills pack sidebar, and Expo commerce screen can start checkout or submit a lead. Mac/iPhone clients stay in-development, not released. verify:fast passed 205 tests with 19 expected skips.",
       "failed": null
+    },
+    {
+      "at": "2026-08-14",
+      "paths": [
+        "apps/mobile/app/founding.tsx",
+        "apps/mobile/lib/commerce.ts",
+        "apps/api/src/commerce.ts",
+        "apps/api/src/app.ts",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Expo founding screen is reachable from sign-in and the inbox account menu. It states iOS is pre-release with no App Store/TestFlight download, POSTs leads to /api/install-lead, and opens only the Stripe url returned by POST /api/create-checkout?offer=meshvault-skill-pack-starter. Missing RESEND_API_KEY or STRIPE_SECRET_KEY is 503 with contact@meshvault.ai. No download button. Focused 20 commerce tests and verify:fast 214/19 passed.",
+      "failed": null
     }
   ]
 }

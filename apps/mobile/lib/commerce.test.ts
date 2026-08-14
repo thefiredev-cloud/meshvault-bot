@@ -29,6 +29,7 @@ function mobileAppSources() {
     "index.tsx",
     "sign-in.tsx",
     "founding.tsx",
+    "commerce.tsx",
     "new.tsx",
     "thread.tsx",
     "computer.tsx",
