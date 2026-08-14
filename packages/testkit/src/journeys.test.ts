@@ -287,7 +287,7 @@ describeJourneys("required product journeys", () => {
     expect(records.length).toBeGreaterThan(0);
   });
 
-  it("8: retrying a completed effect does not duplicate the destination write", async () => {
+  it("8: failed effects retry once and completed effects do not duplicate", async () => {
     const cookie = await signup(app, `crash-j-${stamp}@meshbot.test`, "Crash");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
@@ -297,18 +297,59 @@ describeJourneys("required product journeys", () => {
       notifyOnFinish: true,
     });
     const before = connector.records.length;
-    const sent = await rpc<{ runId: string }>(app, cookie, "threads/send", {
-      botId: bot.id,
-      text: "write this to the destination crm as a note",
+    await connector.stop();
+    let sent: { runId: string };
+    try {
+      sent = await rpc<{ runId: string }>(app, cookie, "threads/send", {
+        botId: bot.id,
+        text: "write this to the destination crm as a note",
+      });
+      await waitUntil(
+        async () =>
+          (await prisma.run.findUnique({ where: { id: sent.runId } }))?.status === "failed",
+      );
+    } finally {
+      await connector.start();
+    }
+    const key = `${sent.runId}:destination.write`;
+    const failed = await prisma.externalEffect.findUniqueOrThrow({
+      where: { idempotencyKey: key },
     });
-    await waitFor(
-      app,
-      cookie,
-      bot.id,
-      (s) => !s.run || ["completed", "failed", "cancelled"].includes(s.run.status),
-    );
+    expect(failed.status).toBe("failed");
+    expect(failed.result).toMatchObject({ error: expect.any(String) });
+    expect(connector.records.length).toBe(before);
+
+    await prisma.externalEffect.update({
+      where: { id: failed.id },
+      data: { status: "intended" },
+    });
+    await prisma.run.update({
+      where: { id: sent.runId },
+      data: { status: "queued", completedAt: null, error: null },
+    });
+    await executor.continueRun(sent.runId, "retry-ambiguous");
+    expect(connector.records.length).toBe(before);
+    expect(
+      (await prisma.externalEffect.findUniqueOrThrow({ where: { id: failed.id } })).status,
+    ).toBe("ambiguous");
+
+    await prisma.externalEffect.update({
+      where: { id: failed.id },
+      data: { status: "failed" },
+    });
+    await prisma.run.update({
+      where: { id: sent.runId },
+      data: { status: "queued", completedAt: null, error: null },
+    });
+    await executor.continueRun(sent.runId, "retry-failed");
     const afterFirst = connector.records.length;
-    expect(afterFirst).toBeGreaterThan(before);
+    expect(afterFirst).toBe(before + 1);
+    const completed = await prisma.externalEffect.findUniqueOrThrow({
+      where: { idempotencyKey: key },
+    });
+    expect(completed.status).toBe("completed");
+    expect(completed.result).toMatchObject({ written: true });
+
     await prisma.run.update({
       where: { id: sent.runId },
       data: { status: "running", completedAt: null },
@@ -680,4 +721,13 @@ async function waitFor(app: App, cookie: string, botId: string, pred: (snap: Sna
     await new Promise((r) => setTimeout(r, 100));
   }
   throw new Error(`timeout waiting for thread: ${JSON.stringify(last)}`);
+}
+
+async function waitUntil(check: () => Promise<boolean>) {
+  const start = Date.now();
+  while (Date.now() - start < 20_000) {
+    if (await check()) return;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error("timeout waiting for durable state");
 }
