@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "at": "2026-08-14",
+      "paths": [
+        "packages/adapters/src/pi-registry.ts",
+        "packages/core/src/model-env.ts",
+        "apps/api/src/env.ts"
+      ],
+      "worked": "Qwen is a first-class Pi provider via createProvider + openAICompletionsApi. Keys: QWEN_API_KEY or DASHSCOPE_API_KEY. Base URL: QWEN_BASE_URL or DASHSCOPE_BASE_URL, default DashScope intl compatible-mode. Same BYO-key path as OPENROUTER_API_KEY. Do not remove OpenRouter or qwen-token-plan.",
+      "failed": null
+    },
+    {
+      "at": "2026-08-14",
+      "paths": ["packages/core/src/model-env.ts", ".env.example"],
+      "worked": "Defaults: PI_DEFAULT_PROVIDER=qwen, PI_DEFAULT_MODEL=qwen-plus. SPARK_GX10_BASE_URL set → provider spark-gx10 / deepseek-v4-flash. Explicit PI_DEFAULT_PROVIDER=openrouter keeps deepseek/deepseek-v4-flash-0731.",
+      "failed": null
+    },
+    {
+      "at": "2026-08-14",
+      "paths": ["package.json", "apps/desktop/package.json", "apps/mobile/app.json"],
+      "worked": "User-facing name MeshVault. Keep @rakazo/* workspace names. Electron productName MeshVault, appId ai.meshvault.desktop. Expo name/slug/scheme meshvault; API still trusts rakazo:// and meshvault://.",
+      "failed": "Renaming npm packages without a lockfile rewrite breaks pnpm. Do not rename @rakazo/*."
+    },
+    {
+      "at": "2026-08-14",
+      "paths": ["AGENTS.md", "PLAN.md", ".agents/context.json"],
+      "worked": "Rituals live in AGENTS.md. No CLAUDE.md in this repo. Structured context is .agents/context.json (append JSON records). PLAN.md is plan→decompose→validate→repeat. Failed impl → revise plan, retry; no LLM review loop. Do not add mulch/seeds.",
+      "failed": null
+    }
+  ]
+}

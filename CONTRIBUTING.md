@@ -4,6 +4,8 @@ Thanks for helping improve MeshVault. Keep changes focused and testable.
 
 This repository is a fork of [Rakazo](https://github.com/elie222/rakazo) (Apache-2.0). Keep the product architecture: Electron desktop, Expo iOS, Pi runtime, Docker/E2B computers.
 
+Agents: read [AGENTS.md](AGENTS.md). Plan in [PLAN.md](PLAN.md). Do not skip the session rituals.
+
 ## Run locally
 
 See [README.md](README.md) for full details. Quick start from the repo root:
