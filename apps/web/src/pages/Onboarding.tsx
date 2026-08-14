@@ -201,8 +201,8 @@ export function OnboardingPage() {
           <div>
             <h1 className="text-[32px] font-medium text-[#F1F1F2]">Connect a model</h1>
             <p className="mt-2 text-[#85858A]">
-              MeshVault does not pay for model usage. Paste an API key, sign in with ChatGPT, Copilot,
-              or SuperGrok, or skip if this deployment already has a key.
+              MeshVault does not pay for model usage. Paste an API key, sign in with ChatGPT,
+              Copilot, or SuperGrok, or skip if this deployment already has a key.
             </p>
             <input
               value={query}
@@ -229,9 +229,7 @@ export function OnboardingPage() {
                   <span className="text-[15px] text-[#ECECEE]">
                     {entry.providerName ?? entry.provider}
                   </span>
-                  <span className="text-[12px] text-[#85858A]">
-                    {providerHint(entry)}
-                  </span>
+                  <span className="text-[12px] text-[#85858A]">{providerHint(entry)}</span>
                 </button>
               ))}
             </div>

@@ -1,5 +1,4 @@
-export const DEFAULT_QWEN_BASE_URL =
-  "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
+export const DEFAULT_QWEN_BASE_URL = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
 export const DEFAULT_SPARK_GX10_BASE_URL = "http://127.0.0.1:8000/v1";
 export const DEFAULT_QWEN_MODEL = "qwen-plus";
 export const DEFAULT_OPENROUTER_MODEL = "deepseek/deepseek-v4-flash-0731";

@@ -1,4 +1,9 @@
-import { createProvider, envApiKeyAuth, type Model, type MutableModels } from "@earendil-works/pi-ai";
+import {
+  createProvider,
+  envApiKeyAuth,
+  type Model,
+  type MutableModels,
+} from "@earendil-works/pi-ai";
 import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";
 import { qwenBaseUrl, sparkGx10BaseUrl } from "@rakazo/core";
@@ -31,11 +36,7 @@ function qwenModel(
   };
 }
 
-function sparkModel(
-  id: string,
-  name: string,
-  baseUrl: string,
-): Model<"openai-completions"> {
+function sparkModel(id: string, name: string, baseUrl: string): Model<"openai-completions"> {
   return {
     id,
     name,

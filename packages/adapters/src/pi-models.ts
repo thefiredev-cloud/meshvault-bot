@@ -1,8 +1,4 @@
-import {
-  DEVICE_CODE_PROVIDERS,
-  DEVICE_CODE_SIGN_IN,
-  isDeviceCodeProvider,
-} from "./pi-oauth.js";
+import { DEVICE_CODE_PROVIDERS, DEVICE_CODE_SIGN_IN, isDeviceCodeProvider } from "./pi-oauth.js";
 import { piModels } from "./pi-registry.js";
 
 export type PiCatalogAuth = "api-key" | "oauth" | "both";

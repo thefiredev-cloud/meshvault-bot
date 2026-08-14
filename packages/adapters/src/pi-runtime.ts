@@ -7,8 +7,8 @@ import type {
   AgentRuntimeEvent,
   ConnectorTool,
 } from "@rakazo/adapter-kit";
-import { builtinAgentTools, DELEGATION_TOOL_NAMES } from "./builtin-tools.js";
 import { defaultPiModel, defaultPiProvider, fallbackApiKey } from "@rakazo/core";
+import { builtinAgentTools, DELEGATION_TOOL_NAMES } from "./builtin-tools.js";
 import { piModels } from "./pi-registry.js";
 
 const running = new Map<string, AbortController>();

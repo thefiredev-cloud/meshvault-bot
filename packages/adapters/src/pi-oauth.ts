@@ -25,8 +25,7 @@ export const DEVICE_CODE_PROVIDERS: Record<
   [COPILOT_OAUTH_PROVIDER]: {
     loginLabel: "Sign in with GitHub Copilot",
     hint: "Copilot",
-    billing:
-      "Sign in with GitHub Copilot. Uses your Copilot subscription. MeshVault does not pay.",
+    billing: "Sign in with GitHub Copilot. Uses your Copilot subscription. MeshVault does not pay.",
   },
   [XAI_OAUTH_PROVIDER]: {
     loginLabel: "Sign in with SuperGrok or X Premium",
