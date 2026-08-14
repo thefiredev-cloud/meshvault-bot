@@ -200,6 +200,18 @@
       ],
       "worked": "Normal macOS packaging now explicitly sets identity null and notarize false. The opt-in release command fails before build with the exact missing CSC_LINK, CSC_KEY_PASSWORD, APPLE_API_KEY, APPLE_API_KEY_ID, and APPLE_API_ISSUER names, then uses the existing electron-builder 26 release config with identity discovery restored, forceCodeSigning true, hardened runtime true, and notarization true. The self-check passed 7 assertions; desktop tests passed 3 of 3; lint checked 222 files; all 19 checks and 4 builds passed; verify:fast passed 194 tests with 19 expected skips. The unsigned ARM64 directory smoke reported identity explicitly null, Signature=adhoc, no Team ID, and no staple ticket.",
       "failed": "Apple signing and notarization were not attempted because no Developer ID certificate source/password or App Store Connect API credentials were supplied; a signed build still requires the documented codesign and stapler checks."
+    },
+    {
+      "at": "2026-08-14",
+      "paths": [
+        "apps/desktop/electron-builder.release.mjs",
+        "apps/desktop/scripts/check-macos-release.mjs",
+        "README.md",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Release-only macOS output now targets apps/desktop/out/release, while ordinary unsigned packages remain in apps/desktop/out. The documented codesign, stapler, and DMG checks search only the release directory. The release config built into out/release/mac-arm64 and failed at code signing when identity discovery was disabled; no unsigned DMG appeared in the ordinary output root. The self-check passed 8 assertions, desktop tests passed 3 of 3, lint checked 222 files, all 19 checks and 4 builds passed, and verify:fast passed 194 tests with 19 expected skips.",
+      "failed": "The first isolated-config diagnostic ran from the repository root before building desktop output, so electron-builder could not resolve the package-local build correctly. Running from apps/desktop after pnpm build proved the intended output and signing failure boundary."
     }
   ]
 }

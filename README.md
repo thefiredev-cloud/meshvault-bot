@@ -126,15 +126,16 @@ export APPLE_API_ISSUER='<App Store Connect issuer id>'
 pnpm --filter @meshbot/desktop release:mac
 ```
 
-The preflight names every missing field before TypeScript compilation or packaging. It does not print credential values. The release config requires a valid signing identity, enables hardened runtime, and uses electron-builder's built-in notarization; ordinary `pack` builds stay unsigned. Verify the produced app and disk image before publishing either artifact:
+The preflight names every missing field before TypeScript compilation or packaging. It does not print credential values. The release config writes only to `apps/desktop/out/release/`, requires a valid signing identity, enables hardened runtime, and uses electron-builder's built-in notarization. Ordinary unsigned `pack` builds stay in `apps/desktop/out/` and cannot be mistaken for release output. Verify the produced app and disk image before publishing either artifact:
 
 ```bash
-MESH_APP="$(find apps/desktop/out -maxdepth 2 -type d -name 'Mesh Bot.app' -print -quit)"
+MESH_RELEASE_DIR="apps/desktop/out/release"
+MESH_APP="$(find "$MESH_RELEASE_DIR" -maxdepth 2 -type d -name 'Mesh Bot.app' -print -quit)"
 test -n "$MESH_APP"
 codesign --verify --deep --strict --verbose=2 "$MESH_APP"
 codesign -dvv "$MESH_APP" 2>&1 | grep -F 'Authority=Developer ID Application:'
 xcrun stapler validate "$MESH_APP"
-MESH_DMG="$(find apps/desktop/out -maxdepth 1 -type f -name '*.dmg' -print -quit)"
+MESH_DMG="$(find "$MESH_RELEASE_DIR" -maxdepth 1 -type f -name '*.dmg' -print -quit)"
 test -n "$MESH_DMG"
 hdiutil verify "$MESH_DMG"
 ```
