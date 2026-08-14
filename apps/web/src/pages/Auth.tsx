@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authClient } from "../lib/auth";
 
+// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+
 export function AuthPage({ mode }: { mode: "in" | "up" }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -9,7 +11,7 @@ export function AuthPage({ mode }: { mode: "in" | "up" }) {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const title = mode === "in" ? "Sign in to Rakazo" : "Create your Rakazo";
+  const title = mode === "in" ? "Sign in to MeshVault" : "Create a MeshVault account";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,9 +36,8 @@ export function AuthPage({ mode }: { mode: "in" | "up" }) {
   return (
     <div className="flex min-h-full items-center justify-center bg-[#F7F7F4] px-6 py-16 text-[#1B1B1E]">
       <form onSubmit={submit} className="flex w-[460px] flex-col items-center">
-        <div className="flex h-[74px] w-[74px] items-center justify-center gap-[11px] rounded-full bg-[#16161A]">
-          <span className="h-5 w-[9px] rounded-full bg-[#F7F7F4]" />
-          <span className="h-5 w-[9px] rounded-full bg-[#F7F7F4]" />
+        <div className="flex h-[74px] w-[74px] items-center justify-center rounded-[20px] bg-[#F1F1ED] p-1.5">
+          <img src="/favicon.svg" alt="" className="h-full w-full" />
         </div>
         <h1 className="mb-[38px] mt-[30px] text-[38px] tracking-[-0.02em]">{title}</h1>
         {mode === "up" ? (

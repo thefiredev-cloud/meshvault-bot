@@ -59,7 +59,8 @@ test("takeover, routine, plugins, and export are reachable", async ({ page }) =>
   await expect(page.getByText("Monday briefing")).toBeVisible();
 
   await page.getByText("Plugins").click();
-  await expect(page.getByPlaceholder("Search apps")).toBeVisible();
+  await expect(page.getByText("Composio", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Connect" })).toBeVisible();
   await page.getByRole("button", { name: "Close plugins" }).click();
 
   await page.getByText("Chief").first().click();
@@ -97,7 +98,7 @@ async function completeOnboarding(page: Page, answers: string[]) {
     for (const answer of answers) {
       await page.getByText(answer, { exact: true }).click();
     }
-    await page.getByRole("button", { name: "Open Rakazo" }).click();
+    await page.getByRole("button", { name: "Open MeshVault" }).click();
   }
   await page.waitForURL(/\/app/);
   await expect(page.getByText("Chief").first()).toBeVisible();

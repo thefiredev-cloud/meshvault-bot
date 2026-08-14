@@ -10,6 +10,8 @@ import type {
 } from "@rakazo/adapter-kit";
 import { builtinAgentTools, DELEGATION_TOOL_NAMES } from "./builtin-tools.js";
 
+// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+
 const running = new Map<string, AbortController>();
 const models = builtinModels();
 const MAX_PARALLEL_SUBAGENTS = 4;
@@ -71,7 +73,7 @@ export class PiAgentRuntime implements AgentRuntime {
           initialState: {
             systemPrompt:
               request.instructions ||
-              "You are a Rakazo bot with a real computer. Use write_file, shell, remember, and request_takeover when they are the right tools. Be concise.",
+              "You are a MeshVault bot with a real computer. Use write_file, shell, remember, and request_takeover when they are the right tools. Be concise.",
             model,
             thinkingLevel: "off",
             tools,
@@ -177,7 +179,7 @@ function toAgentTool(tool: ConnectorTool, host: ToolHost): AgentTool {
       if (tool.name === "destination.write") {
         return {
           collection: String(raw.collection ?? "notes"),
-          title: String(raw.title ?? "Rakazo result"),
+          title: String(raw.title ?? "MeshVault result"),
           body: String(raw.body ?? ""),
         };
       }
@@ -284,7 +286,7 @@ async function executeSubagent(host: ToolHost, executionId: string, args: Record
     getApiKey: async () => host.apiKey,
     initialState: {
       systemPrompt: [
-        `You are a Rakazo subagent named "${name}".`,
+        `You are a MeshVault subagent named "${name}".`,
         "You run inside the parent bot's turn — you are not a separate bot chat.",
         "Complete the task and return a concise result. Do not spawn bots or further subagents.",
         extra,

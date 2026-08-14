@@ -43,7 +43,7 @@ Edit `.env`:
 - Set `BETTER_AUTH_SECRET` and `ENCRYPTION_KEY` to long random strings before any network exposure. Placeholder values only work in local `development` / `test` runs.
 - Put your OpenRouter key in `OPENROUTER_API_KEY` (or skip the key and paste one during onboarding).
 - ChatGPT Plus or Pro, GitHub Copilot, or SuperGrok / X Premium: skip the key and sign in on the **Connect a model** screen. Pick **OpenAI Codex**, **GitHub Copilot**, or **xAI**, then sign in with the device code Pi shows. Claude Pro is not in the Rakazo UI yet — Pi's Claude login opens a localhost callback, which does not work from the web app.
-- Optional: `COMPOSIO_API_KEY` if you want Plugins to talk to live apps.
+- Plugins use personal Composio sign-in through the fixed remote MCP endpoint.
 
 Then:
 
@@ -66,7 +66,7 @@ Confirm the product path:
 curl -s http://127.0.0.1:3100/health
 ```
 
-You want `"runtime":"pi"`, `"sandbox":"docker"`, `"wakeup":"graphile"`. `"composio":true` only if the Composio key is set.
+You want `"runtime":"pi"`, `"sandbox":"docker"`, `"wakeup":"graphile"`. `"composio":true` means the personal OAuth connector is available; each user still connects Composio in Plugins.
 
 Product defaults are Pi + Docker + Graphile. `pnpm verify:fast` pins the emulators (`AGENT_RUNTIME=scripted`, `SANDBOX_PROVIDER=fake`, `WAKEUP_DRIVER=memory`) so default tests never call live models or Composio.
 

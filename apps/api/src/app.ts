@@ -10,10 +10,10 @@ import {
   ExpoPushProvider,
   GraphileWakeupDriver,
   InMemoryWakeupDriver,
-  isComposioEnabled,
   LocalAgentHomeStore,
   PiAgentRuntime,
   PiOAuthLogins,
+  resolveComposioCallbackUrl,
   ScriptedAgentRuntime,
   sleepComputerIfIdle,
 } from "@rakazo/adapters";
@@ -40,6 +40,7 @@ export async function createApp(
   overrides: Partial<AppEnv> & { prisma?: PrismaClient } = {},
 ): Promise<AppHandles> {
   const env = { ...loadEnv(process.env), ...overrides };
+  const composioCallbackUrl = resolveComposioCallbackUrl(env.apiUrl, env.nodeEnv);
   const created = overrides.prisma
     ? { prisma: overrides.prisma, pool: undefined }
     : createDb(env.databaseUrl);
@@ -83,10 +84,13 @@ export async function createApp(
   const oauthLogins = new PiOAuthLogins();
   const home = new LocalAgentHomeStore(env.dataDir);
   const memory = new MarkdownMemoryStore(prisma);
-  const stack = createConnectorStack(isComposioEnabled(env.composioApiKey));
+  const stack = createConnectorStack({
+    prisma,
+    secrets,
+    callbackUrl: composioCallbackUrl,
+  });
   const connector = stack.destination;
   await connector.start();
-  void stack.composio?.warmDirectory().catch(() => undefined);
   const runtime =
     env.agentRuntime === "scripted" ? new ScriptedAgentRuntime() : new PiAgentRuntime();
   const notifications = new ExpoPushProvider(env.dataDir);
@@ -97,7 +101,7 @@ export async function createApp(
     memory,
     home,
     connector: stack.connector,
-    secrets: [env.openRouterKey ?? "", env.composioApiKey ?? ""].filter(Boolean),
+    secrets: [env.openRouterKey ?? ""].filter(Boolean),
     secretStore: secrets,
     deploymentModelKey: env.openRouterKey,
     dataDir: env.dataDir,
@@ -152,6 +156,17 @@ export async function createApp(
       credentials: true,
     }),
   );
+  app.get("/api/connections/composio/callback", async (c) => {
+    c.header("cache-control", "no-store");
+    c.header("content-security-policy", "default-src 'none'");
+    c.header("referrer-policy", "no-referrer");
+    try {
+      await stack.composio.completeCallback(new URL(c.req.url).searchParams);
+      return c.text("Composio connected. You can close this window.");
+    } catch {
+      return c.text("Composio could not connect. Return to MeshVault and try again.", 400);
+    }
+  });
   app.on(["GET", "POST"], "/api/auth/*", async (c) => {
     const path = new URL(c.req.url).pathname.replace("/api/auth", "");
     if (blockedAuthPaths.some((blocked) => path.startsWith(blocked))) {

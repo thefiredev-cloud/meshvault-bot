@@ -24,6 +24,8 @@ import {
   signIn,
 } from "../lib/api";
 
+// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+
 export default function SignIn() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -71,7 +73,7 @@ export default function SignIn() {
       <StatusBar style="dark" />
       <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 24 }}>
         <Text style={{ color: "#1B1B1E", fontSize: 32, fontWeight: "500", textAlign: "center" }}>
-          Sign in to Rakazo
+          Sign in to MeshVault
         </Text>
         <Text style={{ color: "#6E6E68", marginTop: 8, textAlign: "center" }}>
           Same Better Auth session as the web app.
@@ -245,7 +247,7 @@ function ServerSheet({
             </Pressable>
           </View>
           <Text style={{ color: "#6E6E68", marginTop: 28, fontSize: 15, lineHeight: 22 }}>
-            Point this app at your self-hosted Rakazo origin — the same HTTPS URL you open in a
+            Point this app at your self-hosted MeshVault origin — the same HTTPS URL you open in a
             browser.
           </Text>
           <TextInput

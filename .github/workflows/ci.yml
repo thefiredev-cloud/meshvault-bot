@@ -29,6 +29,8 @@ jobs:
         env:
           DATABASE_URL: postgres://rakazo:rakazo@127.0.0.1:5433/rakazo
       - run: pnpm check
+      # MeshVault change: keep the production bundle in the required gate.
+      - run: pnpm build
 
   verify-fast:
     runs-on: ubuntu-latest

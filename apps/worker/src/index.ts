@@ -29,9 +29,9 @@ import {
   ExpoPushProvider,
   GraphileWakeupDriver,
   InMemoryWakeupDriver,
-  isComposioEnabled,
   LocalAgentHomeStore,
   PiAgentRuntime,
+  resolveComposioCallbackUrl,
   ScriptedAgentRuntime,
   sleepComputerIfIdle,
 } from "@rakazo/adapters";
@@ -42,6 +42,10 @@ import { MarkdownMemoryStore } from "@rakazo/memory";
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) throw new Error("DATABASE_URL is required");
+  const composioCallbackUrl = resolveComposioCallbackUrl(
+    process.env.API_URL ?? "http://127.0.0.1:3100",
+    process.env.NODE_ENV,
+  );
   const { prisma } = createDb(databaseUrl);
   const runtime =
     process.env.AGENT_RUNTIME === "scripted" ? new ScriptedAgentRuntime() : new PiAgentRuntime();
@@ -52,10 +56,14 @@ async function main() {
     dataDir,
     prisma,
   });
-  const stack = createConnectorStack(isComposioEnabled(process.env.COMPOSIO_API_KEY));
+  const secrets = new EncryptedSecretStore(resolveEncryptionKey(process.env));
+  const stack = createConnectorStack({
+    prisma,
+    secrets,
+    callbackUrl: composioCallbackUrl,
+  });
   const connector = stack.destination;
   await connector.start();
-  const secrets = new EncryptedSecretStore(resolveEncryptionKey(process.env));
   const wakeup =
     process.env.WAKEUP_DRIVER === "memory"
       ? new InMemoryWakeupDriver()
@@ -67,9 +75,7 @@ async function main() {
     memory: new MarkdownMemoryStore(prisma),
     home: new LocalAgentHomeStore(dataDir),
     connector: stack.connector,
-    secrets: [process.env.OPENROUTER_API_KEY ?? "", process.env.COMPOSIO_API_KEY ?? ""].filter(
-      Boolean,
-    ),
+    secrets: [process.env.OPENROUTER_API_KEY ?? ""].filter(Boolean),
     secretStore: secrets,
     deploymentModelKey: process.env.OPENROUTER_API_KEY,
     dataDir,

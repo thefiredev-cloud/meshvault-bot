@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { rpc } from "../lib/rpc";
 
+// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+
 const QUESTIONS = [
   {
     q: "What do you mainly want help with?",
@@ -201,8 +203,8 @@ export function OnboardingPage() {
           <div>
             <h1 className="text-[32px] font-medium text-[#F1F1F2]">Connect a model</h1>
             <p className="mt-2 text-[#85858A]">
-              Rakazo does not pay for model usage. Paste an API key, sign in with ChatGPT, Copilot,
-              or SuperGrok, or skip if this deployment already has a key.
+              MeshVault uses the model connection you choose. Paste an API key, sign in with
+              ChatGPT, Copilot, or SuperGrok, or skip if this deployment already has a key.
             </p>
             <input
               value={query}
@@ -229,9 +231,7 @@ export function OnboardingPage() {
                   <span className="text-[15px] text-[#ECECEE]">
                     {entry.providerName ?? entry.provider}
                   </span>
-                  <span className="text-[12px] text-[#85858A]">
-                    {providerHint(entry)}
-                  </span>
+                  <span className="text-[12px] text-[#85858A]">{providerHint(entry)}</span>
                 </button>
               ))}
             </div>
@@ -386,7 +386,7 @@ export function OnboardingPage() {
               onClick={() => void createBot()}
               className="mt-6 rounded-[11px] bg-[#F1F1EF] px-5 py-2.5 text-[#17171A]"
             >
-              Open Rakazo
+              Open MeshVault
             </button>
           </div>
         ) : null}

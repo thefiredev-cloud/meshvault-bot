@@ -1,7 +1,7 @@
 {
-  "name": "Rakazo",
-  "short_name": "Rakazo",
-  "description": "Your team of always-on agents.",
+  "name": "MeshVault",
+  "short_name": "MeshVault",
+  "description": "Private bots on computers you control.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#050506",

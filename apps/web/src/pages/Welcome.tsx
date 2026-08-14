@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { WindowChrome } from "./WindowChrome";
 
+// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+
 export function WelcomePage() {
   const navigate = useNavigate();
   return (
@@ -8,18 +10,19 @@ export function WelcomePage() {
       <div className="app-drag flex gap-2 px-5 py-[18px]">
         <WindowChrome />
       </div>
-      <div className="flex flex-1 flex-col items-center justify-center gap-11 pb-[90px]">
-        <div className="flex items-center gap-[26px]">
-          <div className="flex h-[88px] w-[88px] items-center justify-center gap-[13px] rounded-full bg-[#F2F2F0]">
-            <span className="h-6 w-[11px] rounded-full bg-[#101012]" />
-            <span className="h-6 w-[11px] rounded-full bg-[#101012]" />
+      <div className="flex flex-1 flex-col items-center justify-center gap-8 px-6 pb-16 sm:gap-11 sm:pb-[90px]">
+        <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-[26px]">
+          <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[20px] bg-[#F2F2F0] p-2 sm:h-[88px] sm:w-[88px] sm:rounded-[24px]">
+            <img src="/favicon.svg" alt="" className="h-full w-full" />
           </div>
-          <div className="text-[76px] leading-none tracking-[-0.03em] text-white">Rakazo</div>
+          <div className="text-[48px] leading-none tracking-[-0.03em] text-white sm:text-[76px]">
+            MeshVault
+          </div>
         </div>
-        <p className="max-w-[600px] text-center text-[27px] leading-[1.4] text-[#E4E4E6]">
-          Your team of always-on agents
+        <p className="max-w-[600px] text-center text-[22px] leading-[1.4] text-[#E4E4E6] sm:text-[27px]">
+          Private bots on computers you control.
           <br />
-          that you can give real work to.
+          Give them real work and watch it happen.
         </p>
         <button
           type="button"

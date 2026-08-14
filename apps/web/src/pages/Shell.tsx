@@ -19,6 +19,7 @@ import { type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useStat
 import { useNavigate, useParams } from "react-router-dom";
 import { authClient } from "../lib/auth";
 import { rpc } from "../lib/rpc";
+import { BrainOverlay } from "./Brain";
 import { HostComputerPrompt } from "./HostComputerPrompt";
 import { PluginsOverlay } from "./PluginsOverlay";
 import { RoutineSchedule } from "./RoutineSchedule";
@@ -26,7 +27,7 @@ import { WindowChrome } from "./WindowChrome";
 
 type Panel = "computer" | "settings" | "routine" | "create" | null;
 
-export function ShellPage() {
+export function ShellPage({ view = "chat" }: { view?: "chat" | "brain" }) {
   const { botId } = useParams();
   const navigate = useNavigate();
   const session = authClient.useSession();
@@ -63,7 +64,7 @@ export function ShellPage() {
       navigate("/onboarding", { replace: true });
       return;
     }
-    if (!botId || !list.some((bot) => bot.id === botId)) {
+    if (view !== "brain" && (!botId || !list.some((bot) => bot.id === botId))) {
       navigate(`/app/${list[0]!.id}`, { replace: true });
     }
   }
@@ -83,12 +84,13 @@ export function ShellPage() {
 
   useEffect(() => {
     void refreshBots();
+    if (view === "brain") return;
     const poll = window.setInterval(() => void refreshBots().catch(() => undefined), 4000);
     return () => window.clearInterval(poll);
-  }, []);
+  }, [view]);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active || view === "brain") return;
     const abort = new AbortController();
     let fallback: number | undefined;
     void (async () => {
@@ -137,7 +139,7 @@ export function ShellPage() {
       abort.abort();
       if (fallback !== undefined) window.clearInterval(fallback);
     };
-  }, [active?.id]);
+  }, [active?.id, view]);
 
   const filtered = useMemo(
     () => bots.filter((b) => `${b.name} ${b.preview}`.toLowerCase().includes(query.toLowerCase())),
@@ -301,6 +303,31 @@ export function ShellPage() {
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          onClick={() => navigate("/app/brain")}
+          className="mx-3 mb-1 flex items-center gap-3 rounded-[11px] px-2.5 py-2 hover:bg-[#131315]"
+          style={{ background: view === "brain" ? "#161618" : "transparent" }}
+        >
+          <span className="grid h-[30px] w-[30px] place-items-center rounded-full bg-[#17171A] text-[#9A9AA0]">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M9.5 4A2.5 2.5 0 0 0 7 6.5V8a3 3 0 0 0-1 5.83V16a3 3 0 0 0 3 3h.5" />
+              <path d="M14.5 4A2.5 2.5 0 0 1 17 6.5V8a3 3 0 0 1 1 5.83V16a3 3 0 0 1-3 3h-.5" />
+              <path d="M12 3v18M8 10h4m0 5h4" />
+            </svg>
+          </span>
+          <span className="text-[14.5px] text-[#C9C9CE]">Brain</span>
+        </button>
         <button
           type="button"
           onClick={() => setPluginsOpen(true)}
@@ -698,6 +725,10 @@ export function ShellPage() {
       </aside>
 
       {pluginsOpen ? <PluginsOverlay onClose={() => setPluginsOpen(false)} /> : null}
+
+      {view === "brain" ? (
+        <BrainOverlay onClose={() => navigate(active ? `/app/${active.id}` : "/app")} />
+      ) : null}
 
       {booting ? (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-[22px] bg-[rgba(4,4,5,.96)]">

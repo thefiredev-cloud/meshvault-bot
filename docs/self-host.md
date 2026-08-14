@@ -9,7 +9,7 @@ Same as the README quick start: `.env` from `.env.example`, Postgres via Compose
 ## Docker Compose (single machine)
 
 1. Copy `.env.example` to `.env` and set `BETTER_AUTH_SECRET` and `ENCRYPTION_KEY` to long random strings. Rakazo refuses placeholder or missing secrets outside `development` / `test` (or when `RAKAZO_ALLOW_DEV_SECRETS=1` is set).
-2. Set `OPENROUTER_API_KEY` (and `COMPOSIO_API_KEY` if you want Plugins).
+2. Set `OPENROUTER_API_KEY`. Plugins use personal Composio sign-in and do not need a project API key.
 3. Build the computer image: `pnpm sandbox:build` (Compose also builds it via the `computer` service).
 4. `docker compose -f infra/compose/docker-compose.yml up --build`
 5. Open the web origin (`http://127.0.0.1:5173` by default). The first registered user becomes the deployment owner.
@@ -28,7 +28,7 @@ WEB_ORIGIN=https://app.example.com
 API_URL=https://app.example.com
 ```
 
-Cookies and CORS follow those origins. Keep `SIGNUPS_ENABLED` / `SIGNUP_ALLOWLIST` tight on a public host.
+Cookies and CORS follow those origins. In production, `API_URL` must be browser-reachable HTTPS because it forms `/api/connections/composio/callback`. HTTP is accepted only in development or tests on `localhost`, `127.0.0.1`, or `::1`. Keep `SIGNUPS_ENABLED` / `SIGNUP_ALLOWLIST` tight on a public host.
 
 Optional:
 
@@ -42,7 +42,7 @@ SANDBOX_IDLE_MS=600000    # pause the bot computer after 10 minutes idle
 E2B_API_KEY=              # when SANDBOX_PROVIDER=e2b
 ```
 
-Do not commit `.env`. Never put `COMPOSIO_API_KEY`, OpenRouter keys, or provider tokens in git, logs, or chat.
+Do not commit `.env`. Never put OpenRouter keys, Composio OAuth tokens, or provider tokens in git, logs, or chat.
 
 ## Choosing a computer provider
 

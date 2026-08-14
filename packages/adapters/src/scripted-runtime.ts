@@ -5,6 +5,8 @@ import type {
   AgentRuntimeEvent,
 } from "@rakazo/adapter-kit";
 
+// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+
 const running = new Map<string, AbortController>();
 
 export class ScriptedAgentRuntime implements AgentRuntime {
@@ -179,7 +181,7 @@ export function inferScript(
         toolCalls: [
           {
             name: "destination.write",
-            args: { collection: "notes", title: "Rakazo result", body: prompt },
+            args: { collection: "notes", title: "MeshVault result", body: prompt },
           },
         ],
         complete: true,

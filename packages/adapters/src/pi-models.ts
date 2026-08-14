@@ -1,9 +1,7 @@
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";
-import {
-  DEVICE_CODE_PROVIDERS,
-  DEVICE_CODE_SIGN_IN,
-  isDeviceCodeProvider,
-} from "./pi-oauth.js";
+import { DEVICE_CODE_PROVIDERS, DEVICE_CODE_SIGN_IN, isDeviceCodeProvider } from "./pi-oauth.js";
+
+// Modified by FireDev LLC dba MeshVault on 2026-08-13.
 
 export type PiCatalogAuth = "api-key" | "oauth" | "both";
 export type PiCatalogSignIn = typeof DEVICE_CODE_SIGN_IN;
@@ -68,12 +66,12 @@ function catalogBilling(
   const device = DEVICE_CODE_PROVIDERS[providerId];
   if (device) return device.billing;
   if (opts.oauth && !opts.apiKey) {
-    return `${name} subscription login is not in the Rakazo UI yet. Skip if this deployment already has credentials.`;
+    return `${name} subscription login is not in the MeshVault UI yet. Skip if this deployment already has credentials.`;
   }
   if (opts.apiKey) {
-    return `Uses your ${name} API key. Rakazo does not pay for model usage.`;
+    return `Uses your ${name} API key. MeshVault does not pay for model usage.`;
   }
-  return `Uses your ${name} key. Rakazo does not pay for model usage.`;
+  return `Uses your ${name} key. MeshVault does not pay for model usage.`;
 }
 
 export const scriptedCatalogEntry: PiCatalogEntry = {

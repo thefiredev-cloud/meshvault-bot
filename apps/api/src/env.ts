@@ -1,6 +1,7 @@
 import { resolveAuthSecret, resolveEncryptionKey, resolveSupervisorToken } from "@rakazo/core";
 
 export interface AppEnv {
+  nodeEnv: string;
   databaseUrl: string;
   authSecret: string;
   authUrl: string;
@@ -16,7 +17,6 @@ export interface AppEnv {
   agentRuntime: string;
   openRouterKey: string | undefined;
   e2bApiKey: string | undefined;
-  composioApiKey: string | undefined;
   defaultProvider: string;
   defaultModel: string;
   wakeupDriver: string;
@@ -26,6 +26,7 @@ export interface AppEnv {
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
   const authSecret = resolveAuthSecret(source);
   return {
+    nodeEnv: source.NODE_ENV ?? "development",
     databaseUrl: required(source, "DATABASE_URL"),
     authSecret,
     authUrl: source.BETTER_AUTH_URL ?? source.WEB_ORIGIN ?? "http://127.0.0.1:5173",
@@ -41,7 +42,6 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     agentRuntime: source.AGENT_RUNTIME ?? "pi",
     openRouterKey: source.OPENROUTER_API_KEY,
     e2bApiKey: source.E2B_API_KEY,
-    composioApiKey: source.COMPOSIO_API_KEY,
     defaultProvider: source.PI_DEFAULT_PROVIDER ?? "openrouter",
     defaultModel: source.PI_DEFAULT_MODEL ?? "deepseek/deepseek-v4-flash-0731",
     wakeupDriver: source.WAKEUP_DRIVER ?? "graphile",
