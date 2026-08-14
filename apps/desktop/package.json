@@ -6,11 +6,11 @@
   "main": "dist/main.js",
   "scripts": {
     "dev": "pnpm build && electron .",
-    "build": "tsc -p tsconfig.json && cp src/preload.cjs dist/preload.cjs",
+    "build": "tsc -p tsconfig.json && cp src/preload.cjs src/connect.html src/connect.js dist/",
     "pack": "pnpm build && electron-builder --mac --win --linux",
     "pack:dir": "pnpm build && electron-builder --dir",
     "check": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --root ../.. apps/desktop/src"
   },
   "dependencies": {
     "@meshbot/contracts": "workspace:*"

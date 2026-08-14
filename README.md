@@ -104,7 +104,7 @@ pnpm --filter @meshbot/desktop dev
 
 Native red / yellow / green buttons close, minimize, and zoom that window. They do nothing in the browser tab. On first launch the desktop app asks whether bots should keep using Docker or run on this Mac as you. Docker stays the default. macOS will not show a permission prompt for that choice — the consent is Mesh Bot's.
 
-Point Electron at a different origin with `MESHBOT_WEB_URL` (default `http://127.0.0.1:5173`).
+Development defaults to `http://127.0.0.1:5173`. A packaged build asks for the HTTPS origin served by the Windows-owned Mesh Bot runtime and remembers it. Use **Mesh Bot → Change Server…** to change it; `MESHBOT_WEB_URL` remains the explicit startup override.
 
 Packaged installers (optional):
 
@@ -113,6 +113,7 @@ pnpm --filter @meshbot/desktop pack
 ```
 
 Outputs land in `apps/desktop/out/` (macOS dmg/zip, Windows NSIS, Linux AppImage). Those builds still need a running API and web origin.
+The public Mac download must be signed with a Developer ID Application certificate and notarized by Apple; an unsigned local package is only a smoke-test artifact.
 
 ## Run the iOS app
 

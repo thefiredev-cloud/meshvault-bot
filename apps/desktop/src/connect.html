@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; form-action 'none'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Connect Mesh Bot</title>
+    <style>
+      :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; color: #f5f5f5; background: #050506; }
+      main { width: min(520px, calc(100vw - 48px)); padding: 36px; border: 1px solid #29292d; border-radius: 18px; background: #111113; box-shadow: 0 24px 80px #0009; }
+      .mark { width: 34px; height: 34px; display: grid; place-items: center; margin-bottom: 24px; border: 1px solid #4a4a50; border-radius: 10px; font-weight: 700; }
+      h1 { margin: 0 0 10px; font-size: 26px; letter-spacing: -0.02em; }
+      p { margin: 0 0 24px; color: #aaaab2; line-height: 1.5; }
+      label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
+      input { width: 100%; min-height: 46px; padding: 0 14px; border: 1px solid #3b3b42; border-radius: 10px; color: inherit; background: #09090b; font: inherit; outline: none; }
+      input:focus { border-color: #8b8b96; box-shadow: 0 0 0 3px #ffffff14; }
+      button { width: 100%; min-height: 46px; margin-top: 14px; border: 0; border-radius: 10px; color: #09090b; background: #f5f5f5; font: inherit; font-weight: 700; cursor: pointer; }
+      button:disabled { cursor: wait; opacity: 0.6; }
+      #status { min-height: 22px; margin: 14px 0 0; color: #aaaab2; font-size: 13px; }
+      #status.error { color: #ff9d9d; }
+      #hint { margin: 14px 0 0; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark" aria-hidden="true">M</div>
+      <h1>Connect to Mesh Bot</h1>
+      <p>Enter the web address served by your Windows-owned Mesh Bot runtime.</p>
+      <form id="server-form">
+        <label for="server-origin">Server address</label>
+        <input id="server-origin" name="server-origin" type="url" inputmode="url" autocomplete="url" placeholder="https://meshbot.example.com" required />
+        <button id="connect" type="submit">Connect</button>
+      </form>
+      <div id="status" role="status" aria-live="polite"></div>
+      <p id="hint">HTTPS is required. HTTP is allowed only for a server on this Mac.</p>
+    </main>
+    <script src="connect.js"></script>
+  </body>
+</html>

@@ -87,3 +87,11 @@ Empty — first pass.
 - [x] Require owner-supplied bundle identifier, build number, Expo owner, and EAS project id for production.
 - [x] Add one production EAS profile and one focused preflight check with exact missing-field output.
 - [x] Document the release preflight and pass Expo config, TypeScript, focused test, and iOS export smoke.
+
+## macOS remote client subtask
+
+- [x] Replace the packaged `:5173` fallback with a bundled server connection screen.
+- [x] Validate and persist one same-origin Mesh Bot web endpoint; require HTTPS outside loopback.
+- [x] Keep `MESHBOT_WEB_URL` as the explicit startup override and allow failed/saved servers to be changed.
+- [x] Prove origin validation and persistence with one focused test.
+- [x] Pass desktop checks and produce an inspected unsigned ARM64 DMG without signing discovery.
