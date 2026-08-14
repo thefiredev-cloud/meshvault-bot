@@ -124,6 +124,19 @@ pnpm --filter @meshbot/mobile start
 
 Point the app at your API origin (`EXPO_PUBLIC_API_URL`, or **Use a custom server** on the sign-in screen).
 
+Before a production iPhone build, supply the exact Apple and Expo identity assigned to this app:
+
+```bash
+export MESHBOT_IOS_BUNDLE_IDENTIFIER='<assigned bundle id>'
+export MESHBOT_IOS_BUILD_NUMBER='<next build number>'
+export MESHBOT_EXPO_OWNER='<Expo account>'
+export MESHBOT_EXPO_PROJECT_ID='<EAS project id>'
+pnpm --filter @meshbot/mobile release:ios:check
+cd apps/mobile && eas build --platform ios --profile production
+```
+
+The same variables feed the `production` profile in `apps/mobile/eas.json` from the shell or Expo's production environment. Development does not require them. The preflight exits before EAS or Xcode when any value is missing.
+
 ## Verify
 
 ```bash

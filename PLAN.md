@@ -80,3 +80,10 @@ Empty — first pass.
 - [x] Describe current routines, inline approval, and bot setup without promised features.
 - [x] Preserve the Grok Bot alternative wording and current layout.
 - [x] Pass the public-site check, build, and old-claim/name scan.
+
+## iOS release configuration subtask
+
+- [x] Keep the existing Expo development config working without Apple or Expo release identity.
+- [x] Require owner-supplied bundle identifier, build number, Expo owner, and EAS project id for production.
+- [x] Add one production EAS profile and one focused preflight check with exact missing-field output.
+- [x] Document the release preflight and pass Expo config, TypeScript, focused test, and iOS export smoke.
