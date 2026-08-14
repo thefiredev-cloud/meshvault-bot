@@ -7,6 +7,8 @@ import type {
 } from "@earendil-works/pi-ai";
 import { piModels } from "./pi-registry.js";
 
+// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+
 export const CHATGPT_OAUTH_PROVIDER = "openai-codex";
 export const COPILOT_OAUTH_PROVIDER = "github-copilot";
 export const XAI_OAUTH_PROVIDER = "xai";
@@ -20,18 +22,17 @@ export const DEVICE_CODE_PROVIDERS: Record<
     loginLabel: "Sign in with ChatGPT Plus/Pro",
     hint: "ChatGPT Plus/Pro",
     billing:
-      "Sign in with ChatGPT Plus or Pro. Uses your OpenAI subscription. MeshVault does not pay.",
+      "Sign in with ChatGPT Plus or Pro. Uses your OpenAI subscription. Mesh Bot does not pay.",
   },
   [COPILOT_OAUTH_PROVIDER]: {
     loginLabel: "Sign in with GitHub Copilot",
     hint: "Copilot",
-    billing: "Sign in with GitHub Copilot. Uses your Copilot subscription. MeshVault does not pay.",
+    billing: "Sign in with GitHub Copilot. Uses your Copilot subscription. Mesh Bot does not pay.",
   },
   [XAI_OAUTH_PROVIDER]: {
     loginLabel: "Sign in with SuperGrok or X Premium",
     hint: "SuperGrok / key",
-    billing:
-      "Sign in with SuperGrok or X Premium, or paste an xAI API key. MeshVault does not pay.",
+    billing: "Sign in with SuperGrok or X Premium, or paste an xAI API key. Mesh Bot does not pay.",
   },
 };
 

@@ -2,7 +2,7 @@ import { execSync, spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { SandboxProvider } from "@rakazo/adapter-kit";
+import type { SandboxProvider } from "@meshbot/adapter-kit";
 import { afterAll, describe, expect, it } from "vitest";
 import { DesktopSandboxProvider } from "./desktop-sandbox.js";
 import { DockerSandboxProvider } from "./docker-sandbox.js";
@@ -75,7 +75,7 @@ describe("sandbox conformance", () => {
 
 describe("docker sandbox", () => {
   let spawned: ReturnType<typeof spawn> | undefined;
-  const dataDir = mkdtempSync(path.join(tmpdir(), "rakazo-docker-conformance-"));
+  const dataDir = mkdtempSync(path.join(tmpdir(), "meshbot-docker-conformance-"));
 
   afterAll(async () => {
     spawned?.kill("SIGTERM");
@@ -91,7 +91,7 @@ describe("docker sandbox", () => {
     const token = "sandbox-conformance-token";
     const url = `http://127.0.0.1:${port}`;
     const root = path.resolve(import.meta.dirname, "../../..");
-    spawned = spawn("pnpm", ["--filter", "@rakazo/sandbox-supervisor", "start"], {
+    spawned = spawn("pnpm", ["--filter", "@meshbot/sandbox-supervisor", "start"], {
       cwd: root,
       env: {
         ...process.env,
@@ -131,7 +131,7 @@ function dockerAvailable() {
 
 function hasAnySandboxImage() {
   try {
-    execSync("docker image inspect rakazo/computer:local", { stdio: "ignore", timeout: 8_000 });
+    execSync("docker image inspect meshbot/computer:local", { stdio: "ignore", timeout: 8_000 });
     return true;
   } catch {
     return false;

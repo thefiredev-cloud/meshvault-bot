@@ -1,4 +1,4 @@
-import { type Actor, BOT_COLORS, type Bot } from "@rakazo/contracts";
+import { type Actor, BOT_COLORS, type Bot } from "@meshbot/contracts";
 import type { PrismaClient } from "./client.js";
 import { IsolationError } from "./scope.js";
 
@@ -12,6 +12,8 @@ function mapBot(
     instructions: string;
     color: string;
     notifyOnFinish: boolean;
+    modelProvider: string | null;
+    modelId: string | null;
     parentBotId: string | null;
     createdAt: Date;
     updatedAt: Date;
@@ -32,6 +34,8 @@ function mapBot(
     instructions: bot.instructions,
     color: bot.color,
     notifyOnFinish: bot.notifyOnFinish,
+    modelProvider: bot.modelProvider,
+    modelId: bot.modelId,
     parentBotId: bot.parentBotId,
     threadId: bot.thread.id,
     preview,
@@ -92,6 +96,8 @@ export function createRepos(prisma: PrismaClient) {
         instructions: string;
         notifyOnFinish: boolean;
         color?: string;
+        modelProvider?: string | null;
+        modelId?: string | null;
         parentBotId?: string | null;
       },
     ): Promise<Bot> {
@@ -124,6 +130,8 @@ export function createRepos(prisma: PrismaClient) {
             instructions: input.instructions,
             notifyOnFinish: input.notifyOnFinish,
             color,
+            modelProvider: input.modelProvider ?? null,
+            modelId: input.modelId ?? null,
             parentBotId: input.parentBotId ?? null,
           },
         });

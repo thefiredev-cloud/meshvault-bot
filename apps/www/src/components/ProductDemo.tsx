@@ -1,4 +1,4 @@
-import { BotAvatar, Button } from "@rakazo/ui-web";
+import { BotAvatar, Button } from "@meshbot/ui-web";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DEMO_BOTS,

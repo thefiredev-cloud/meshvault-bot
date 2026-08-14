@@ -13,7 +13,7 @@ afterEach(async () => {
 
 describe("expo push", () => {
   it("does not call Expo when the user has no token", async () => {
-    const dataDir = await mkdtemp(path.join(tmpdir(), "rakazo-push-"));
+    const dataDir = await mkdtemp(path.join(tmpdir(), "meshbot-push-"));
     dirs.push(dataDir);
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
@@ -32,7 +32,7 @@ describe("expo push", () => {
   });
 
   it("posts to Expo when a token is registered", async () => {
-    const dataDir = await mkdtemp(path.join(tmpdir(), "rakazo-push-"));
+    const dataDir = await mkdtemp(path.join(tmpdir(), "meshbot-push-"));
     dirs.push(dataDir);
     await savePushToken(dataDir, "user-1", "ExponentPushToken[test]");
     const fetchMock = vi.fn().mockResolvedValue({ ok: true });

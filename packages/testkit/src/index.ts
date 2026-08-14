@@ -1,1 +1,1 @@
-export { DestinationEmulator, McpEmulator } from "@rakazo/adapters";
+export { DestinationEmulator, McpEmulator } from "@meshbot/adapters";

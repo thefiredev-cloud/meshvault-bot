@@ -1,4 +1,4 @@
-export interface RakazoDesktop {
+export interface MeshBotDesktop {
   platform: string;
   window: {
     close: () => Promise<void>;
@@ -10,15 +10,15 @@ export interface RakazoDesktop {
 
 declare global {
   interface Window {
-    rakazoDesktop?: RakazoDesktop;
+    meshbotDesktop?: MeshBotDesktop;
   }
 }
 
-export function desktopBridge(): RakazoDesktop | undefined {
-  return typeof window === "undefined" ? undefined : window.rakazoDesktop;
+export function desktopBridge(): MeshBotDesktop | undefined {
+  return typeof window === "undefined" ? undefined : window.meshbotDesktop;
 }
 
-export function windowChromeKind(desktop?: RakazoDesktop): "spacer" | "darwin" | "controls" {
+export function windowChromeKind(desktop?: MeshBotDesktop): "spacer" | "darwin" | "controls" {
   if (!desktop) return "spacer";
   if (desktop.platform === "darwin") return "darwin";
   return "controls";

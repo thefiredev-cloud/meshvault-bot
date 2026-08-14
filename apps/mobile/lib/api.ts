@@ -7,7 +7,7 @@ import {
   tokenFromAuthResponse,
 } from "./session";
 
-const ENDPOINT_KEY = "rakazo.api_base";
+const ENDPOINT_KEY = "meshbot.api_base";
 
 let cachedApiBase: string | undefined;
 

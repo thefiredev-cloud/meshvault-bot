@@ -6,7 +6,7 @@ import {
 } from "@earendil-works/pi-ai";
 import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";
-import { qwenBaseUrl, sparkGx10BaseUrl } from "@rakazo/core";
+import { qwenBaseUrl } from "@meshbot/core";
 
 const QWEN_COMPAT = {
   thinkingFormat: "qwen" as const,
@@ -36,27 +36,6 @@ function qwenModel(
   };
 }
 
-function sparkModel(id: string, name: string, baseUrl: string): Model<"openai-completions"> {
-  return {
-    id,
-    name,
-    api: "openai-completions",
-    provider: "spark-gx10",
-    baseUrl,
-    reasoning: true,
-    input: ["text"],
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    contextWindow: 1_000_000,
-    maxTokens: 384_000,
-    compat: {
-      thinkingFormat: "deepseek",
-      supportsDeveloperRole: false,
-      supportsStore: false,
-      supportsReasoningEffort: true,
-    },
-  };
-}
-
 export function qwenProvider() {
   const baseUrl = qwenBaseUrl();
   return createProvider({
@@ -79,23 +58,6 @@ export function qwenProvider() {
   });
 }
 
-export function sparkGx10Provider() {
-  const baseUrl = sparkGx10BaseUrl();
-  return createProvider({
-    id: "spark-gx10",
-    name: "Spark+GX10",
-    baseUrl,
-    auth: {
-      apiKey: envApiKeyAuth("Spark+GX10 API key", ["SPARK_GX10_API_KEY"]),
-    },
-    models: [
-      sparkModel("deepseek-v4-flash", "DeepSeek V4 Flash", baseUrl),
-      sparkModel("deepseek-v4-flash-0731", "DeepSeek V4 Flash 0731", baseUrl),
-    ],
-    api: openAICompletionsApi(),
-  });
-}
-
 let cached: MutableModels | undefined;
 
 export function piModels(): MutableModels {
@@ -110,6 +72,5 @@ export function resetPiModels(): void {
 function buildPiModels(): MutableModels {
   const models = builtinModels();
   models.setProvider(qwenProvider());
-  models.setProvider(sparkGx10Provider());
   return models;
 }

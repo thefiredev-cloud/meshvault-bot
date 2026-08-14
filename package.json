@@ -1,5 +1,5 @@
 {
-  "name": "meshvault-bot",
+  "name": "meshbot",
   "private": true,
   "version": "0.1.0",
   "license": "Apache-2.0",
@@ -8,18 +8,18 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "turbo dev --filter=@rakazo/api --filter=@rakazo/worker --filter=@rakazo/web --filter=@rakazo/sandbox-supervisor",
+    "dev": "turbo dev --filter=@meshbot/api --filter=@meshbot/worker --filter=@meshbot/web --filter=@meshbot/sandbox-supervisor",
     "build": "turbo build",
     "check": "turbo check",
     "lint": "biome check .",
     "format": "biome check --write .",
-    "db:generate": "pnpm --filter @rakazo/db generate",
-    "db:migrate": "pnpm --filter @rakazo/db migrate",
-    "sandbox:build": "docker build -t rakazo/computer:local infra/sandboxes/computer",
+    "db:generate": "pnpm --filter @meshbot/db generate",
+    "db:migrate": "pnpm --filter @meshbot/db migrate",
+    "sandbox:build": "docker build -t meshbot/computer:local infra/sandboxes/computer",
     "verify:fast": "vitest run",
     "verify": "tsx packages/testkit/src/cli/verify.ts",
     "verify:providers": "tsx packages/testkit/src/cli/verify.ts --providers",
-    "e2e": "pnpm --filter @rakazo/web exec playwright test",
+    "e2e": "pnpm --filter @meshbot/web exec playwright test",
     "compose:up": "docker compose -f infra/compose/docker-compose.yml up --build",
     "compose:down": "docker compose -f infra/compose/docker-compose.yml down -v"
   },

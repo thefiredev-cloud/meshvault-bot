@@ -4,11 +4,13 @@ import {
   openRouterApiKey,
   qwenApiKey,
   resolveAuthSecret,
+  deploymentModelKey as resolveDeploymentModelKey,
   resolveEncryptionKey,
   resolveSupervisorToken,
-} from "@rakazo/core";
+} from "@meshbot/core";
 
 export interface AppEnv {
+  nodeEnv: string;
   databaseUrl: string;
   authSecret: string;
   authUrl: string;
@@ -26,7 +28,6 @@ export interface AppEnv {
   qwenKey: string | undefined;
   deploymentModelKey: string | undefined;
   e2bApiKey: string | undefined;
-  composioApiKey: string | undefined;
   defaultProvider: string;
   defaultModel: string;
   wakeupDriver: string;
@@ -38,6 +39,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
   const qwenKey = qwenApiKey(source);
   const openRouterKey = openRouterApiKey(source);
   return {
+    nodeEnv: source.NODE_ENV ?? "development",
     databaseUrl: required(source, "DATABASE_URL"),
     authSecret,
     authUrl: source.BETTER_AUTH_URL ?? source.WEB_ORIGIN ?? "http://127.0.0.1:5173",
@@ -53,9 +55,8 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     agentRuntime: source.AGENT_RUNTIME ?? "pi",
     openRouterKey,
     qwenKey,
-    deploymentModelKey: qwenKey ?? openRouterKey,
+    deploymentModelKey: resolveDeploymentModelKey(source),
     e2bApiKey: source.E2B_API_KEY,
-    composioApiKey: source.COMPOSIO_API_KEY,
     defaultProvider: defaultPiProvider(source),
     defaultModel: defaultPiModel(source),
     wakeupDriver: source.WAKEUP_DRIVER ?? "graphile",

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { rpc } from "../lib/rpc";
 
+// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+
 const QUESTIONS = [
   {
     q: "What do you mainly want help with?",
@@ -57,6 +59,11 @@ export function OnboardingPage() {
   const [provider, setProvider] = useState("qwen");
   const [modelId, setModelId] = useState("qwen-plus");
   const [apiKey, setApiKey] = useState("");
+  const [currentDefault, setCurrentDefault] = useState<{
+    provider: string;
+    modelId: string;
+  } | null>(null);
+  const [useSelectedModel, setUseSelectedModel] = useState(false);
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -81,6 +88,9 @@ export function OnboardingPage() {
         if (preferred) {
           setProvider(preferred.provider);
           setModelId(preferred.id);
+        }
+        if (me.defaultProvider && me.defaultModel) {
+          setCurrentDefault({ provider: me.defaultProvider, modelId: me.defaultModel });
         }
         setStep("model");
       })
@@ -130,8 +140,11 @@ export function OnboardingPage() {
           modelId,
           label: selected?.providerName ?? provider,
         });
+      } else if (currentDefault?.provider !== provider || currentDefault.modelId !== modelId) {
+        await rpc.models.setDefault({ provider, modelId });
       }
-      await rpc.models.setDefault({ provider, modelId });
+      setCurrentDefault({ provider, modelId });
+      setUseSelectedModel(true);
       setStep("bot");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save model");
@@ -155,7 +168,8 @@ export function OnboardingPage() {
       for (let i = 0; i < 180; i += 1) {
         const row = await rpc.models.completeOAuth({ loginId: started.loginId });
         if (row.status === "connected") {
-          await rpc.models.setDefault({ provider, modelId });
+          setCurrentDefault({ provider, modelId });
+          setUseSelectedModel(true);
           setOauth(null);
           setStep("bot");
           return;
@@ -187,6 +201,7 @@ export function OnboardingPage() {
       description,
       instructions,
       notifyOnFinish: true,
+      ...(useSelectedModel ? { modelProvider: provider, modelId } : {}),
     });
     navigate(`/app/${bot.id}`);
   }
@@ -201,7 +216,7 @@ export function OnboardingPage() {
           <div>
             <h1 className="text-[32px] font-medium text-[#F1F1F2]">Connect a model</h1>
             <p className="mt-2 text-[#85858A]">
-              MeshVault does not pay for model usage. Paste an API key, sign in with ChatGPT,
+              Mesh Bot does not pay for model usage. Paste an API key, sign in with ChatGPT,
               Copilot, or SuperGrok, or skip if this deployment already has a key.
             </p>
             <input
@@ -384,7 +399,7 @@ export function OnboardingPage() {
               onClick={() => void createBot()}
               className="mt-6 rounded-[11px] bg-[#F1F1EF] px-5 py-2.5 text-[#17171A]"
             >
-              Open MeshVault
+              Open Mesh Bot
             </button>
           </div>
         ) : null}

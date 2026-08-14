@@ -6,13 +6,23 @@ import type {
   AgentRuntime,
   AgentRuntimeEvent,
   ConnectorTool,
-} from "@rakazo/adapter-kit";
-import { defaultPiModel, defaultPiProvider, fallbackApiKey } from "@rakazo/core";
+} from "@meshbot/adapter-kit";
+import { defaultPiModel, defaultPiProvider, fallbackApiKey } from "@meshbot/core";
 import { builtinAgentTools, DELEGATION_TOOL_NAMES } from "./builtin-tools.js";
+import { registerGateway } from "./pi-gateway.js";
 import { piModels } from "./pi-registry.js";
+
+// Modified by FireDev LLC dba MeshVault on 2026-08-13.
 
 const running = new Map<string, AbortController>();
 const models = piModels();
+// Registered lazily: tsx evaluates this module before the worker's dotenv
+// loadRootEnv() runs, so a top-level call here always saw an empty env and
+// the worker answered "Unknown model meshvault-gateway/..." while the API
+// (which registers at request time in pi-models) listed it fine.
+function ensureGateway() {
+  registerGateway(models);
+}
 const MAX_PARALLEL_SUBAGENTS = 4;
 
 export class PiAgentRuntime implements AgentRuntime {
@@ -30,6 +40,7 @@ export class PiAgentRuntime implements AgentRuntime {
   }
 
   async *run(request: AgentRunRequest, context: AdapterContext): AsyncIterable<AgentRuntimeEvent> {
+    ensureGateway();
     const controller = new AbortController();
     running.set(request.runId, controller);
     const signal = context.signal ?? controller.signal;
@@ -40,10 +51,7 @@ export class PiAgentRuntime implements AgentRuntime {
         const provider =
           request.model.provider === "scripted" ? defaultPiProvider() : request.model.provider;
         const modelId = request.model.id === "scripted" ? defaultPiModel() : request.model.id;
-        const model =
-          models.getModel(provider, modelId) ??
-          models.getModel("qwen", modelId) ??
-          models.getModel("openrouter", modelId);
+        const model = models.getModel(provider, modelId);
         if (!model) {
           queue.push({ type: "text", text: `Unknown model ${provider}/${modelId}` });
           queue.push({ type: "done" });
@@ -72,7 +80,7 @@ export class PiAgentRuntime implements AgentRuntime {
           initialState: {
             systemPrompt:
               request.instructions ||
-              "You are a MeshVault bot with a real computer. Use write_file, shell, remember, and request_takeover when they are the right tools. Be concise.",
+              "You are a Mesh Bot agent with a real computer. Use write_file, shell, remember, and request_takeover when they are the right tools. Be concise.",
             model,
             thinkingLevel: "off",
             tools,
@@ -178,7 +186,7 @@ function toAgentTool(tool: ConnectorTool, host: ToolHost): AgentTool {
       if (tool.name === "destination.write") {
         return {
           collection: String(raw.collection ?? "notes"),
-          title: String(raw.title ?? "MeshVault result"),
+          title: String(raw.title ?? "Mesh Bot result"),
           body: String(raw.body ?? ""),
         };
       }
@@ -194,7 +202,7 @@ function toAgentTool(tool: ConnectorTool, host: ToolHost): AgentTool {
       if (tool.name === "shell") {
         return {
           command: String(raw.command ?? ""),
-          cwd: raw.cwd ? String(raw.cwd) : "/home/rakazo",
+          cwd: raw.cwd ? String(raw.cwd) : "/home/meshbot",
         };
       }
       if (tool.name === "run_subagent") {
@@ -285,7 +293,7 @@ async function executeSubagent(host: ToolHost, executionId: string, args: Record
     getApiKey: async () => host.apiKey,
     initialState: {
       systemPrompt: [
-        `You are a MeshVault subagent named "${name}".`,
+        `You are a Mesh Bot subagent named "${name}".`,
         "You run inside the parent bot's turn — you are not a separate bot chat.",
         "Complete the task and return a concise result. Do not spawn bots or further subagents.",
         extra,

@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { loadApiBase } from "../lib/api";
 
+// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+
 export default function Layout() {
   const [ready, setReady] = useState(false);
 
@@ -28,7 +30,7 @@ export default function Layout() {
           contentStyle: { backgroundColor: "#000" },
         }}
       >
-        <Stack.Screen name="index" options={{ headerShown: false, title: "MeshVault" }} />
+        <Stack.Screen name="index" options={{ headerShown: false, title: "Mesh Bot" }} />
         <Stack.Screen name="sign-in" options={{ headerShown: false }} />
         <Stack.Screen
           name="new"

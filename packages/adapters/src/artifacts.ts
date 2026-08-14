@@ -6,7 +6,7 @@ import type {
   ArtifactStore,
   NotificationMessage,
   NotificationProvider,
-} from "@rakazo/adapter-kit";
+} from "@meshbot/adapter-kit";
 
 export class LocalArtifactStore implements ArtifactStore {
   constructor(private readonly root: string) {}

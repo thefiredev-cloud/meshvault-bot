@@ -1,6 +1,6 @@
-# MeshVault Bot — agent brief
+# Mesh Bot — agent brief
 
-Open-source Grok Bot alternative. Electron desktop + Expo iOS. BYO model. Default: Qwen (DashScope / OpenAI-compatible). Spark+GX10 (DeepSeek V4 Flash) when `SPARK_GX10_BASE_URL` is set. Fork of [elie222/rakazo](https://github.com/elie222/rakazo) (Apache-2.0). Packages stay `@rakazo/*`.
+Open-source Grok Bot alternative. Electron desktop + Expo iOS. BYO model. Default: Qwen (DashScope / OpenAI-compatible); deployment-owned local models use the explicit `MESHBOT_GATEWAY_*` lane. Packages use `@meshbot/*`; upstream and license records live in `UPSTREAM.md`, `NOTICE`, and `LICENSE`.
 
 Do not invent a Swift rewrite. Do not delete Electron or Expo. Do not add Aside/SimpleX/mesh-net as the sold app. Do not invent API keys.
 

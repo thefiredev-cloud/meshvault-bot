@@ -1,4 +1,4 @@
-import type { SandboxKind } from "@rakazo/contracts";
+import type { SandboxKind } from "@meshbot/contracts";
 
 export interface AdapterContext {
   operationId: string;

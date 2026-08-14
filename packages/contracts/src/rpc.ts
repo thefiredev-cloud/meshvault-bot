@@ -3,6 +3,7 @@ import * as z from "zod";
 import {
   ArtifactSchema,
   BotSchema,
+  BrainGraphSchema,
   CapabilityInstallSchema,
   ComputerStatusSchema,
   ConnectionCatalogItemSchema,
@@ -206,6 +207,9 @@ export const appContract = {
       .input(z.object({ connectionId: Id, code: z.string().optional() }))
       .output(ConnectionSchema),
     revoke: oc.input(z.object({ connectionId: Id })).output(z.object({ ok: z.literal(true) })),
+  },
+  brain: {
+    graph: oc.output(BrainGraphSchema),
   },
   artifacts: {
     list: oc.input(botId).output(z.array(ArtifactSchema)),

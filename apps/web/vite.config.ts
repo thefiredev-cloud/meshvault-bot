@@ -1,7 +1,7 @@
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
-import { resolveAuthSecret } from "@rakazo/core";
+import { resolveAuthSecret } from "@meshbot/core";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv, type PreviewServer, type ViteDevServer } from "vite";
@@ -11,6 +11,8 @@ import {
   safeProxyResponseHeaders,
   stripSensitiveHandshakeHeaders,
 } from "./src/screen-proxy.js";
+
+// Modified by FireDev LLC dba MeshVault on 2026-08-13.
 
 const webPort = Number(process.env.WEB_PORT ?? 5173);
 
@@ -108,18 +110,19 @@ function attachNovncProxy(server: ViteDevServer | PreviewServer, secret: string)
 export default defineConfig(({ mode }) => {
   const rootEnv = loadEnv(mode, path.resolve(import.meta.dirname, "../.."), "");
   const api = process.env.API_PROXY_TARGET ?? rootEnv.API_PROXY_TARGET ?? "http://127.0.0.1:3100";
-  const screenProxySecret = resolveAuthSecret({
-    ...process.env,
-    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? rootEnv.BETTER_AUTH_SECRET,
-  });
+  const screenProxySecret = () =>
+    resolveAuthSecret({
+      ...process.env,
+      BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? rootEnv.BETTER_AUTH_SECRET,
+    });
   return {
     plugins: [
       react(),
       tailwindcss(),
       {
-        name: "rakazo-novnc-proxy",
-        configureServer: (server) => attachNovncProxy(server, screenProxySecret),
-        configurePreviewServer: (server) => attachNovncProxy(server, screenProxySecret),
+        name: "meshbot-novnc-proxy",
+        configureServer: (server) => attachNovncProxy(server, screenProxySecret()),
+        configurePreviewServer: (server) => attachNovncProxy(server, screenProxySecret()),
       },
     ],
     server: {

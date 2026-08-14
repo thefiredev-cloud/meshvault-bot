@@ -1,5 +1,5 @@
 {
-  "name": "@rakazo/mobile",
+  "name": "@meshbot/mobile",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "main": "expo-router/entry",
@@ -13,9 +13,9 @@
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
     "@orpc/client": "^1.15.0",
-    "@rakazo/chat-ui": "workspace:*",
-    "@rakazo/contracts": "workspace:*",
-    "@rakazo/ui-tokens": "workspace:*",
+    "@meshbot/chat-ui": "workspace:*",
+    "@meshbot/contracts": "workspace:*",
+    "@meshbot/ui-tokens": "workspace:*",
     "@react-navigation/native": "^7.1.17",
     "expo": "^53.0.20",
     "expo-notifications": "~0.31.4",

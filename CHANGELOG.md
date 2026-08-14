@@ -1,6 +1,6 @@
 # Changelog
 
-Notable product changes in MeshVault Bot. This is for people following the repo, not a dump of every commit. GitHub Releases still mark tagged builds.
+Notable product changes in Mesh Bot. This is for people following the repo, not a dump of every commit. GitHub Releases still mark tagged builds.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
@@ -8,9 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- Rebranded the user-facing product from Rakazo to MeshVault Bot. This is a fork of [elie222/rakazo](https://github.com/elie222/rakazo) (Apache-2.0). Workspace packages stay `@rakazo/*`.
+- Renamed the shipped product and workspace scope to Mesh Bot and `@meshbot/*`. Required upstream attribution remains in `UPSTREAM.md` and `NOTICE`.
 - Default model path is Qwen (DashScope / compatible OpenAI API) via `QWEN_API_KEY` / `DASHSCOPE_API_KEY` and optional `QWEN_BASE_URL` / `DASHSCOPE_BASE_URL`. OpenRouter and the rest of the Pi catalog remain.
-- Spark+GX10 (DeepSeek V4 Flash) is the local inference plane when `SPARK_GX10_BASE_URL` is set.
+- Deployment-owned local models use the explicit `MESHBOT_GATEWAY_*` OpenAI-compatible lane; DGX Spark and ASUS GX10 remain separate inference hosts.
 
 ### Added
 
@@ -29,4 +29,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.1.0-beta] - 2026-08-13
 
-Initial public beta (as Rakazo): web, Electron, and Expo clients; Pi runtime; Docker and E2B computers; plugins; one thread, computer, memory, routines, and history per bot.
+Initial upstream beta: web, Electron, and Expo clients; Pi runtime; Docker and E2B computers; plugins; one thread, computer, memory, routines, and history per bot.

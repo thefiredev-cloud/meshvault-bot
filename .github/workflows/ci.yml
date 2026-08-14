@@ -27,8 +27,10 @@ jobs:
       - run: pnpm install
       - run: pnpm db:generate
         env:
-          DATABASE_URL: postgres://rakazo:rakazo@127.0.0.1:5433/rakazo
+          DATABASE_URL: postgres://meshbot:meshbot@127.0.0.1:5433/meshbot
       - run: pnpm check
+      # MeshVault change: keep the production bundle in the required gate.
+      - run: pnpm build
 
   verify-fast:
     runs-on: ubuntu-latest
@@ -42,5 +44,5 @@ jobs:
       - run: pnpm install
       - run: pnpm db:generate
         env:
-          DATABASE_URL: postgres://rakazo:rakazo@127.0.0.1:5433/rakazo
+          DATABASE_URL: postgres://meshbot:meshbot@127.0.0.1:5433/meshbot
       - run: pnpm verify:fast

@@ -1,7 +1,7 @@
 import { rm } from "node:fs/promises";
-import type { AdapterContext, AgentHomeStore, SandboxProvider } from "@rakazo/adapter-kit";
-import type { Actor } from "@rakazo/contracts";
-import { createRepos, type PrismaClient } from "@rakazo/db";
+import type { AdapterContext, AgentHomeStore, SandboxProvider } from "@meshbot/adapter-kit";
+import type { Actor } from "@meshbot/contracts";
+import { createRepos, type PrismaClient } from "@meshbot/db";
 import { resolveAgentHomePath } from "./home.js";
 
 export function confirmSpawnedBotName(confirmName: string, botName: string) {
