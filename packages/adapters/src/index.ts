@@ -19,6 +19,7 @@ export * from "./pi-models.js";
 export * from "./pi-oauth.js";
 export * from "./pi-registry.js";
 export * from "./pi-runtime.js";
+export * from "./queued-runs.js";
 export * from "./realtime.js";
 export * from "./sandbox-factory.js";
 export * from "./scripted-runtime.js";

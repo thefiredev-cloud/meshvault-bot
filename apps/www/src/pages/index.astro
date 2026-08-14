@@ -43,8 +43,8 @@ const starsLabel = stars === null ? "Star" : formatStarCount(stars);
           <div class="eyebrow">Self-hosted</div>
           <h2 class="section-heading">The computer is yours</h2>
           <p class="section-copy">
-            Every bot gets a sandboxed browser and shell — running in your Docker, in your account, behind your
-            firewall. Sessions and credentials never leave it.
+            Every bot gets a sandboxed browser and shell. Self-host the runtime in your Docker environment, then
+            connect the model and SaaS services you choose.
           </p>
         </div>
         <div class="card-grid-3">
@@ -53,12 +53,12 @@ const starsLabel = stars === null ? "Star" : formatStarCount(stars);
             <p>Point a bot at Qwen, Claude, GPT, Grok, or a local OpenAI-compatible gateway. Swap per bot — the cheap one triages, the smart one writes.</p>
           </article>
           <article class="feature-card">
-            <h3>Readable routines</h3>
-            <p>Show a bot a workflow once and it saves a routine as plain Markdown you can read, edit, and commit.</p>
+            <h3>Scheduled routines</h3>
+            <p>Save a prompt with a cron schedule and timezone, then let the bot run it in the same thread.</p>
           </article>
           <article class="feature-card">
-            <h3>Approvals that hold</h3>
-            <p>Set what a bot may do alone and what it must ask about. Every action lands in an audit log you own.</p>
+            <h3>Inline approvals</h3>
+            <p>When a protected action needs your decision, approve or deny it in the same chat before it runs.</p>
           </article>
         </div>
       </section>
@@ -68,8 +68,7 @@ const starsLabel = stars === null ? "Star" : formatStarCount(stars);
           <div class="eyebrow">Bot Templates</div>
           <h2 class="section-heading">Give each bot a job</h2>
           <p class="section-copy">
-            Start a new bot and it interviews you — a few questions about the work, how you write, and where it
-            lives. Then it gets going.
+            Give a bot a name, a job, and instructions, then start its first task from the same chat.
           </p>
         </div>
         <div class="card-grid-4">
@@ -88,8 +87,8 @@ const starsLabel = stars === null ? "Star" : formatStarCount(stars);
           <div class="eyebrow">Open source</div>
           <h2 class="section-heading">No pricing page. Just the repo.</h2>
           <p class="section-copy">
-            Mesh Bot is Apache-2.0 licensed and runs on your own machine with your own model keys. Nothing is
-            gated, nothing phones home.
+            Mesh Bot is Apache-2.0 licensed and can run on your own machine with the model connections you choose.
+            The source and self-hosting setup are in the repo.
           </p>
         </div>
         <div class="comparison-grid">
@@ -99,8 +98,8 @@ const starsLabel = stars === null ? "Star" : formatStarCount(stars);
             <div class="comparison-list">
               <div>Docker runner and sandboxed browser</div>
               <div>Bring your own model keys</div>
-              <div>Routines, memory, and audit log</div>
-              <div>Unlimited bots, no seats, no limits</div>
+              <div>Routines and bot memory</div>
+              <div>Multiple bots without seat licensing</div>
               <div>Community support on GitHub</div>
             </div>
             <div class="comparison-actions">

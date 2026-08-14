@@ -257,10 +257,18 @@ describeJourneys("required product journeys", () => {
     await desktop.destroy(c, ctx);
   });
 
-  it("7: destination write is independently inspectable and credentials stay out of the thread", async () => {
+  it("7: owner approval is isolated, single-use, and inline", async () => {
     const cookie = await signup(app, `dest-j-${stamp}@meshbot.test`, "Dest");
+    const outsider = await signup(app, `dest-outside-j-${stamp}@meshbot.test`, "Outside");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
+      title: "",
+      description: "",
+      instructions: "",
+      notifyOnFinish: true,
+    });
+    await rpc<Bot>(app, outsider, "bots/create", {
+      name: "Other",
       title: "",
       description: "",
       instructions: "",
@@ -278,16 +286,139 @@ describeJourneys("required product journeys", () => {
       label: "test",
       modelId: openrouter!.id,
     });
-    await sendAndWait(app, cookie, bot.id, "write this to the destination crm as a note");
-    expect(connector.records.length).toBeGreaterThan(before);
-    const snap = await rpc<Snap>(app, cookie, "threads/get", { botId: bot.id });
-    expect(JSON.stringify(snap)).not.toContain(secret);
+    const prompt = "write this to the destination crm as a note";
+    const sent = await rpc<{ runId: string }>(app, cookie, "threads/send", {
+      botId: bot.id,
+      text: prompt,
+    });
+    const waiting = await waitFor(
+      app,
+      cookie,
+      bot.id,
+      (snap) => snap.run?.id === sent.runId && snap.run.status === "waiting_input",
+    );
+    expect(connector.records.length).toBe(before);
+    const effect = await prisma.externalEffect.findFirstOrThrow({
+      where: { runId: sent.runId },
+    });
+    expect(effect).toMatchObject({
+      status: "awaiting_approval",
+      kind: "destination.write",
+      idempotencyKey: `${sent.runId}:destination.write`,
+    });
+    expect(effect.request).toMatchObject({ body: prompt });
+    const approvalMessage = waiting.messages.find(
+      (message) =>
+        message.runId === sent.runId &&
+        message.blocks.some(
+          (block) => block && typeof block === "object" && "kind" in block && block.kind === "ask",
+        ),
+    );
+    expect(approvalMessage?.blocks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "ask",
+          actions: [
+            { id: "approve", label: "Approve" },
+            { id: "deny", label: "Deny" },
+          ],
+        }),
+      ]),
+    );
+    expect(JSON.stringify(waiting)).not.toContain(secret);
+
+    const arbitrary = await raw(app, cookie, "threads/answer", {
+      botId: bot.id,
+      runId: sent.runId,
+      answer: "edit",
+    });
+    expect(arbitrary.status).toBeGreaterThanOrEqual(400);
+    const stolen = await raw(app, outsider, "threads/answer", {
+      botId: bot.id,
+      runId: sent.runId,
+      answer: "approve",
+    });
+    expect(stolen.status).toBeGreaterThanOrEqual(400);
+    expect(connector.records.length).toBe(before);
+
+    const decisions = await Promise.all([
+      raw(app, cookie, "threads/answer", {
+        botId: bot.id,
+        runId: sent.runId,
+        answer: "approve",
+      }),
+      raw(app, cookie, "threads/answer", {
+        botId: bot.id,
+        runId: sent.runId,
+        answer: "approve",
+      }),
+    ]);
+    expect(decisions.filter((response) => response.status < 400)).toHaveLength(1);
+    expect(decisions.filter((response) => response.status >= 400)).toHaveLength(1);
+    await waitUntil(
+      async () =>
+        (await prisma.run.findUnique({ where: { id: sent.runId } }))?.status === "completed",
+    );
+    expect(connector.records.length).toBe(before + 1);
+    expect(
+      (await prisma.externalEffect.findUniqueOrThrow({ where: { id: effect.id } })).status,
+    ).toBe("completed");
+    const receipts = await prisma.message.findMany({
+      where: { runId: sent.runId, role: "bot" },
+    });
+    expect(
+      receipts.filter((message) =>
+        JSON.stringify(message.blocks).includes(`Evidence: ${effect.id}.`),
+      ),
+    ).toHaveLength(1);
+    expect(
+      (await prisma.task.findFirstOrThrow({ where: { runs: { some: { id: sent.runId } } } }))
+        .prompt,
+    ).toBe(prompt);
+
+    const duplicate = await raw(app, cookie, "threads/answer", {
+      botId: bot.id,
+      runId: sent.runId,
+      answer: "approve",
+    });
+    expect(duplicate.status).toBeGreaterThanOrEqual(400);
+    expect(connector.records.length).toBe(before + 1);
+
+    const denied = await rpc<{ runId: string }>(app, cookie, "threads/send", {
+      botId: bot.id,
+      text: "write a second note to the destination crm",
+    });
+    await waitFor(
+      app,
+      cookie,
+      bot.id,
+      (snap) => snap.run?.id === denied.runId && snap.run.status === "waiting_input",
+    );
+    expect(connector.records.length).toBe(before + 1);
+    await rpc(app, cookie, "threads/answer", {
+      botId: bot.id,
+      runId: denied.runId,
+      answer: "deny",
+    });
+    await waitUntil(
+      async () =>
+        (await prisma.run.findUnique({ where: { id: denied.runId } }))?.status === "completed",
+    );
+    expect(connector.records.length).toBe(before + 1);
+    expect(
+      (await prisma.externalEffect.findFirstOrThrow({ where: { runId: denied.runId } })).status,
+    ).toBe("denied");
+    const deniedMessages = await prisma.message.findMany({
+      where: { runId: denied.runId, role: "bot" },
+    });
+    expect(JSON.stringify(deniedMessages)).toContain("The action was denied and was not run.");
+
     const inspect = await fetch(`http://127.0.0.1:${connector.port}/records`);
     const records = (await inspect.json()) as unknown[];
-    expect(records.length).toBeGreaterThan(0);
+    expect(records.length).toBe(connector.records.length);
   });
 
-  it("8: failed effects retry once and completed effects do not duplicate", async () => {
+  it("8: uncertain protected effects never retry and completed effects do not duplicate", async () => {
     const cookie = await signup(app, `crash-j-${stamp}@meshbot.test`, "Crash");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
@@ -304,6 +435,18 @@ describeJourneys("required product journeys", () => {
         botId: bot.id,
         text: "write this to the destination crm as a note",
       });
+      await waitFor(
+        app,
+        cookie,
+        bot.id,
+        (snap) => snap.run?.id === sent.runId && snap.run.status === "waiting_input",
+      );
+      expect(connector.records.length).toBe(before);
+      await rpc(app, cookie, "threads/answer", {
+        botId: bot.id,
+        runId: sent.runId,
+        answer: "approve",
+      });
       await waitUntil(
         async () =>
           (await prisma.run.findUnique({ where: { id: sent.runId } }))?.status === "failed",
@@ -312,50 +455,70 @@ describeJourneys("required product journeys", () => {
       await connector.start();
     }
     const key = `${sent.runId}:destination.write`;
-    const failed = await prisma.externalEffect.findUniqueOrThrow({
+    const ambiguous = await prisma.externalEffect.findUniqueOrThrow({
       where: { idempotencyKey: key },
     });
-    expect(failed.status).toBe("failed");
-    expect(failed.result).toMatchObject({ error: expect.any(String) });
+    expect(ambiguous.status).toBe("ambiguous");
+    expect(ambiguous.result).toMatchObject({ error: expect.any(String) });
     expect(connector.records.length).toBe(before);
 
     await prisma.externalEffect.update({
-      where: { id: failed.id },
-      data: { status: "intended" },
-    });
-    await prisma.run.update({
-      where: { id: sent.runId },
-      data: { status: "queued", completedAt: null, error: null },
-    });
-    await executor.continueRun(sent.runId, "retry-ambiguous");
-    expect(connector.records.length).toBe(before);
-    expect(
-      (await prisma.externalEffect.findUniqueOrThrow({ where: { id: failed.id } })).status,
-    ).toBe("ambiguous");
-
-    await prisma.externalEffect.update({
-      where: { id: failed.id },
+      where: { id: ambiguous.id },
       data: { status: "failed" },
     });
     await prisma.run.update({
       where: { id: sent.runId },
       data: { status: "queued", completedAt: null, error: null },
     });
-    await executor.continueRun(sent.runId, "retry-failed");
-    const afterFirst = connector.records.length;
-    expect(afterFirst).toBe(before + 1);
-    const completed = await prisma.externalEffect.findUniqueOrThrow({
-      where: { idempotencyKey: key },
+    await executor.continueRun(sent.runId, "blocked-retry");
+    expect(connector.records.length).toBe(before);
+    expect(
+      (await prisma.externalEffect.findUniqueOrThrow({ where: { id: ambiguous.id } })).status,
+    ).toBe("ambiguous");
+
+    const successful = await rpc<{ runId: string }>(app, cookie, "threads/send", {
+      botId: bot.id,
+      text: "write one approved record to the destination crm",
+    });
+    await waitFor(
+      app,
+      cookie,
+      bot.id,
+      (snap) => snap.run?.id === successful.runId && snap.run.status === "waiting_input",
+    );
+    await rpc(app, cookie, "threads/answer", {
+      botId: bot.id,
+      runId: successful.runId,
+      answer: "approve",
+    });
+    await waitUntil(
+      async () =>
+        (await prisma.run.findUnique({ where: { id: successful.runId } }))?.status === "completed",
+    );
+    const completed = await prisma.externalEffect.findFirstOrThrow({
+      where: { runId: successful.runId },
     });
     expect(completed.status).toBe("completed");
-    expect(completed.result).toMatchObject({ written: true });
+    expect(connector.records.length).toBe(before + 1);
 
+    const attemptsBefore = await prisma.attempt.count({ where: { runId: successful.runId } });
     await prisma.run.update({
-      where: { id: sent.runId },
-      data: { status: "running", completedAt: null },
+      where: { id: successful.runId },
+      data: {
+        status: "queued",
+        checkpoint: `approval:${completed.id}:approve`,
+        completedAt: null,
+        error: null,
+      },
     });
-    await executor.continueRun(sent.runId, "retry");
-    expect(connector.records.length).toBe(afterFirst);
+    await Promise.all([
+      executor.continueRun(successful.runId, "claim-a"),
+      executor.continueRun(successful.runId, "claim-b"),
+    ]);
+    expect(await prisma.attempt.count({ where: { runId: successful.runId } })).toBe(
+      attemptsBefore + 1,
+    );
+    expect(connector.records.length).toBe(before + 1);
   });
 
   it("9: export includes memory and files but not secrets or browser sessions", async () => {
@@ -468,17 +631,17 @@ describeJourneys("required product journeys", () => {
       (s) => !s.run || ["completed", "failed", "cancelled"].includes(s.run.status),
     );
 
-    await sendAndWait(app, cookie, parent.id, "delete the bot named Nested");
+    await sendApproveAndWait(app, cookie, parent.id, "delete the bot named Nested");
     expect((await rpc<Bot[]>(app, cookie, "bots/list")).some((bot) => bot.id === nested!.id)).toBe(
       true,
     );
 
-    await sendAndWait(app, cookie, parent.id, "delete the bot named WrongName");
+    await sendApproveAndWait(app, cookie, parent.id, "delete the bot named WrongName");
     expect((await rpc<Bot[]>(app, cookie, "bots/list")).some((bot) => bot.id === scout!.id)).toBe(
       true,
     );
 
-    await sendAndWait(app, cookie, parent.id, "delete the bot named Scout");
+    await sendApproveAndWait(app, cookie, parent.id, "delete the bot named Scout");
     const afterScout = await rpc<Bot[]>(app, cookie, "bots/list");
     expect(afterScout.some((bot) => bot.id === scout!.id)).toBe(false);
     expect(afterScout.some((bot) => bot.id === nested!.id)).toBe(true);
@@ -648,7 +811,7 @@ type Bot = {
   modelId?: string | null;
 };
 type Snap = {
-  messages: Array<{ seq: number; blocks: unknown[] }>;
+  messages: Array<{ seq: number; blocks: unknown[]; runId?: string }>;
   run: { id: string; status: string } | null;
   computer: { controlHolder: string };
 };
@@ -710,6 +873,28 @@ async function sendAndWait(app: App, cookie: string, botId: string, text: string
     botId,
     (snap) => !snap.run || ["completed", "failed", "cancelled"].includes(snap.run.status),
   );
+}
+
+async function sendApproveAndWait(app: App, cookie: string, botId: string, text: string) {
+  const sent = await rpc<{ runId: string }>(app, cookie, "threads/send", { botId, text });
+  await waitFor(
+    app,
+    cookie,
+    botId,
+    (snap) => snap.run?.id === sent.runId && snap.run.status === "waiting_input",
+  );
+  await rpc(app, cookie, "threads/answer", {
+    botId,
+    runId: sent.runId,
+    answer: "approve",
+  });
+  await waitFor(
+    app,
+    cookie,
+    botId,
+    (snap) => !snap.run || ["completed", "failed", "cancelled"].includes(snap.run.status),
+  );
+  return rpc<Snap>(app, cookie, "threads/get", { botId });
 }
 
 async function waitFor(app: App, cookie: string, botId: string, pred: (snap: Snap) => boolean) {

@@ -174,6 +174,22 @@ export interface AgentRunRequest {
   ) => Promise<unknown>;
 }
 
+export type OwnerApprovalRequired = {
+  kind: "owner_approval_required";
+  effectId: string;
+};
+
+export function isOwnerApprovalRequired(value: unknown): value is OwnerApprovalRequired {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      "kind" in value &&
+      value.kind === "owner_approval_required" &&
+      "effectId" in value &&
+      typeof value.effectId === "string",
+  );
+}
+
 export interface ScriptedTurn {
   assistant?: string;
   toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;

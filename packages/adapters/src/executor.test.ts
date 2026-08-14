@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { requireBotModelAccess, resolveBotModelSelection } from "./executor.js";
+import {
+  approvalActionDetail,
+  requireBotModelAccess,
+  requiresOwnerApproval,
+  resolveBotModelSelection,
+} from "./executor.js";
 
 const none = { modelProvider: null, modelId: null };
 const knownModels = new Set([
@@ -132,5 +137,37 @@ describe("bot model dispatch", () => {
       ),
     ).rejects.toThrow(/No workspace credential/);
     expect(ambientChecked).toBe(false);
+  });
+});
+
+describe("owner approval boundary", () => {
+  it("protects shell and shows bounded redacted command, target, and batch details", () => {
+    const secret = "top-secret-token";
+    expect(requiresOwnerApproval("shell")).toBe(true);
+    expect(requiresOwnerApproval("write_file")).toBe(false);
+    expect(
+      approvalActionDetail(
+        "shell",
+        { command: `curl -H 'Authorization: ${secret}' https://example.test`, cwd: "/work" },
+        [secret],
+      ),
+    ).toBe(
+      "Tool: shell\nCommand: curl -H 'Authorization: [redacted]' https://example.test\nWorking directory: /work",
+    );
+    expect(
+      approvalActionDetail(
+        "COMPOSIO_MULTI_EXECUTE_TOOL",
+        {
+          tools: [
+            { tool_slug: "GMAIL_SEND_EMAIL", arguments: { recipient: "owner@example.test" } },
+            { tool_slug: "SLACK_SEND_MESSAGE", arguments: { channel: "alerts" } },
+          ],
+          toolkits: ["gmail", "slack"],
+        },
+        [],
+      ),
+    ).toContain(
+      'Batch size: 2\nTools: GMAIL_SEND_EMAIL, SLACK_SEND_MESSAGE\nTargets: recipient=owner@example.test, channel=alerts, toolkits=["gmail","slack"]',
+    );
   });
 });

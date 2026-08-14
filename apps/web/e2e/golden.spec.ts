@@ -53,6 +53,16 @@ test("takeover, routine, plugins, and export are reachable", async ({ page }) =>
   await page.getByRole("button", { name: "Release" }).last().click();
   await expect(page.getByText(/signed in|session stays/i).first()).toBeVisible({ timeout: 30_000 });
 
+  await composer.fill("write this to the destination crm as a note");
+  await page.keyboard.press("Enter");
+  const approve = page.getByRole("button", { name: "Approve" });
+  await expect(approve).toBeVisible({ timeout: 30_000 });
+  await approve.click();
+  await expect(approve).toBeDisabled();
+  await expect(page.getByText("The approved action finished.").first()).toBeVisible({
+    timeout: 30_000,
+  });
+
   await page.getByText("+ New routine").click();
   await page.locator("label:has-text('Name') input").fill("Monday briefing");
   await page
