@@ -252,6 +252,12 @@
       ],
       "worked": "Rebased #14 onto main after #13. Kept #13 /commerce plus /founding. handleCreateCheckout and handleInstallLead now return Promise<Response> so tsc does not leak undici-types (TS2742). Local pnpm check 19/19, lint clean, verify:fast 225/19.",
       "failed": null
+    },
+    {
+      "at": "2026-08-16",
+      "paths": ["package.json", "pnpm-lock.yaml", "PLAN.md", ".agents/context.json"],
+      "worked": "A root pnpm override moved every Expo/Metro PostCSS path from 8.4.49 to patched 8.5.26. Production audit findings fell from 8 to 4; Expo public config, mobile TypeScript, 225 fast tests with 19 expected skips, lint, all 19 checks, and all 4 builds passed.",
+      "failed": "The first fast gate lacked the ignored generated Prisma client; pnpm db:generate restored it. UUID remains on vulnerable transitive v7/v10 because the fix is a major v11 jump needing parent compatibility proof. image-size has no patched npm release and remains an upstream Expo/Metro build-time finding."
     }
   ]
 }

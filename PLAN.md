@@ -137,3 +137,10 @@ Empty — first pass.
 - [x] Rebase `cursor/ios-founding-checkout-2e10` onto current main after #13.
 - [x] Annotate `handleCreateCheckout` and `handleInstallLead` so the public return type is `Promise<Response>`.
 - [x] Push the same PR #14 and leave `pnpm check` green.
+
+## Expo PostCSS security subtask
+
+- [x] Trace the production audit findings to their exact dependency paths.
+- [x] Override the shared PostCSS leaf to the current patched release.
+- [x] Prove the audit reduction, Expo config, mobile checks, and repository fast gate.
+- [x] Record the remaining upstream-only UUID and image-size findings without hiding them.
