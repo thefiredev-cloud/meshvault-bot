@@ -144,3 +144,10 @@ Empty — first pass.
 - [x] Override the shared PostCSS leaf to the current patched release.
 - [x] Prove the audit reduction, Expo config, mobile checks, and repository fast gate.
 - [x] Record the remaining upstream-only UUID and image-size findings without hiding them.
+
+## Shared UUID security subtask
+
+- [x] Trace both vulnerable UUID paths to their exact CommonJS v4 calls.
+- [x] Override the shared UUID leaf to the first patched release.
+- [x] Prove the Xcode and Dockerode caller paths plus all repository gates.
+- [x] Keep the unpatched image-size findings visible.

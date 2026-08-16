@@ -258,6 +258,12 @@
       "paths": ["package.json", "pnpm-lock.yaml", "PLAN.md", ".agents/context.json"],
       "worked": "A root pnpm override moved every Expo/Metro PostCSS path from 8.4.49 to patched 8.5.26. Production audit findings fell from 8 to 4; Expo public config, mobile TypeScript, 225 fast tests with 19 expected skips, lint, all 19 checks, and all 4 builds passed.",
       "failed": "The first fast gate lacked the ignored generated Prisma client; pnpm db:generate restored it. UUID remains on vulnerable transitive v7/v10 because the fix is a major v11 jump needing parent compatibility proof. image-size has no patched npm release and remains an upstream Expo/Metro build-time finding."
+    },
+    {
+      "at": "2026-08-16",
+      "paths": ["package.json", "pnpm-lock.yaml", "PLAN.md", ".agents/context.json"],
+      "worked": "A root pnpm override moved Dockerode UUID 10 and Xcode UUID 7 to patched CommonJS-compatible UUID 11.1.1. Direct smoke checks proved Dockerode emits a 36-character session UUID and Xcode emits its required 24-character project id. Production audit is now zero moderate and two high; 225 fast tests with 19 expected skips, lint, all 19 checks, and all 4 builds passed.",
+      "failed": "image-size 1.2.1 remains two upstream Expo/Metro build-time high findings because npm has no patched release."
     }
   ]
 }
