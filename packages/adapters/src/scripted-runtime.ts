@@ -26,7 +26,7 @@ export class ScriptedAgentRuntime implements AgentRuntime {
   async *run(request: AgentRunRequest, context: AdapterContext): AsyncIterable<AgentRuntimeEvent> {
     const controller = new AbortController();
     running.set(request.runId, controller);
-    const signal = context.signal ?? controller.signal;
+    const signal = AbortSignal.any([context.signal, controller.signal]);
     try {
       const script = request.script ?? inferScript(request.prompt, request.resumeFromCheckpoint);
       for (const turn of script) {

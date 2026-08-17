@@ -1,5 +1,23 @@
 import type { SandboxKind } from "@meshbot/contracts";
 
+export type MutationPermit =
+  | {
+      purpose: "run";
+      operationFence: number;
+      runId: string;
+      runLeaseFence: number;
+    }
+  | {
+      purpose: "control";
+      operationFence: number;
+      controlLeaseId: string;
+    }
+  | {
+      purpose: "lifecycle";
+      operationFence: number;
+      bootToken?: string;
+    };
+
 export interface AdapterContext {
   operationId: string;
   traceId: string;
@@ -9,6 +27,7 @@ export interface AdapterContext {
   runId?: string;
   signal: AbortSignal;
   connectedProviders?: string[];
+  mutationPermit?: MutationPermit;
 }
 
 export interface AdapterDescriptor<TCapabilities> {
@@ -36,6 +55,8 @@ export interface CommandRequest {
   cwd?: string;
   env?: Record<string, string>;
   pty?: boolean;
+  timeoutMs?: number;
+  maxOutputBytes?: number;
 }
 
 export type ProcessEvent =

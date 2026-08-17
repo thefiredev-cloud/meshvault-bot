@@ -53,11 +53,25 @@ export function containerCreateOptions(input: ComputerCreateInput) {
       },
       ShmSize: 256 * 1024 * 1024,
       ReadonlyPaths: ["/usr/share/novnc"],
+      PidsLimit: SANDBOX_CONTAINER_PID_LIMIT,
       AutoRemove: false,
       NetworkMode: input.networkMode ?? "bridge",
     },
     WorkingDir: "/home/meshbot",
   };
+}
+
+export function isolatedCommandArgv(argv: string[]) {
+  const command = argv.length ? argv : ["/bin/echo", "ready"];
+  const wrapper = [
+    'setsid "$@" &',
+    "command_pid=$!",
+    'wait "$command_pid"',
+    "command_code=$?",
+    'kill -KILL -- "-$command_pid" 2>/dev/null || true',
+    'exit "$command_code"',
+  ].join("\n");
+  return ["/bin/sh", "-c", wrapper, "meshbot-command", ...command];
 }
 
 export function containerNameFor(botId: string) {
@@ -102,3 +116,5 @@ function mapKey(key: string) {
   if (lower === "meta" || lower === "cmd" || lower === "super") return "super";
   return key;
 }
+
+import { SANDBOX_CONTAINER_PID_LIMIT } from "@meshbot/core";

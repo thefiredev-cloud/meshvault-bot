@@ -190,7 +190,7 @@ export const UsageRecordSchema = z.object({
 export const ComputerStatusSchema = z.object({
   botId: Id,
   kind: SandboxKind,
-  state: z.enum(["stopped", "booting", "running", "suspended", "error"]),
+  state: z.enum(["stopped", "booting", "running", "stopping", "suspended", "error"]),
   controlHolder: z.enum(["bot", "user", "none"]),
   screenAvailable: z.boolean(),
   homeRevision: z.string().nullable(),

@@ -1,3 +1,4 @@
+import { SandboxNotFoundError } from "@e2b/desktop";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SANDBOX_IDLE_MS, sandboxIdleMs } from "./computer-idle.js";
 import {
@@ -29,7 +30,8 @@ describe("e2b create options", () => {
   });
 
   it("only recreates when the sandbox is actually gone", () => {
-    expect(isUnrecoverableSandboxError(new Error("sandbox not found"))).toBe(true);
+    expect(isUnrecoverableSandboxError(new SandboxNotFoundError("sandbox not found"))).toBe(true);
+    expect(isUnrecoverableSandboxError(new Error("sandbox not found"))).toBe(false);
     expect(isUnrecoverableSandboxError(new Error("ECONNRESET"))).toBe(false);
   });
 

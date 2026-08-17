@@ -101,8 +101,13 @@ describe("fake sandbox", () => {
       userId: "u",
       signal: new AbortController().signal,
     };
-    const a = await sandbox.provision({ botId: "a", homePath: "/tmp/a" }, ctx);
-    const b = await sandbox.provision({ botId: "b", homePath: "/tmp/b" }, ctx);
+    const lifecycleContext = (botId: string) => ({
+      ...ctx,
+      botId,
+      mutationPermit: { purpose: "lifecycle" as const, operationFence: 1 },
+    });
+    const a = await sandbox.provision({ botId: "a", homePath: "/tmp/a" }, lifecycleContext("a"));
+    const b = await sandbox.provision({ botId: "b", homePath: "/tmp/b" }, lifecycleContext("b"));
     expect(a.id).not.toBe(b.id);
   });
 });

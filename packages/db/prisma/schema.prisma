@@ -183,6 +183,7 @@ model Bot {
   modelProvider  String?
   modelId        String?
   parentBotId    String?
+  deletingAt     DateTime?
   parent         Bot?     @relation("BotChildren", fields: [parentBotId], references: [id], onDelete: SetNull)
   children       Bot[]    @relation("BotChildren")
   createdAt      DateTime @default(now())
@@ -474,7 +475,8 @@ model Computer {
   controlHolder String  @default("none")
   controlLeaseId String?
   controlRunId String?
-  controlFence Int      @default(0)
+  operationFence Int    @default(0)
+  bootToken     String?
   screenUrl    String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

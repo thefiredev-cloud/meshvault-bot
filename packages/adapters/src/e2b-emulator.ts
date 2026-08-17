@@ -67,6 +67,10 @@ export class ManagedSandboxEmulator implements SandboxProvider {
     return this.inner.snapshot(computer, context);
   }
 
+  quiesce(botId: string, context: AdapterContext) {
+    return this.inner.quiesce(botId, context);
+  }
+
   stop(computer: ComputerRef, context: AdapterContext) {
     return this.inner.stop(computer, context);
   }

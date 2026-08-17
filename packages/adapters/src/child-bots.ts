@@ -1,8 +1,24 @@
 import { rm } from "node:fs/promises";
 import type { AdapterContext, AgentHomeStore, SandboxProvider } from "@meshbot/adapter-kit";
 import type { Actor } from "@meshbot/contracts";
+import { RUN_LEASE_HEARTBEAT_MS } from "@meshbot/core";
 import { createRepos, type PrismaClient } from "@meshbot/db";
 import { resolveAgentHomePath } from "./home.js";
+import {
+  cancelBotRuns,
+  finalizeRunCancellation,
+  lockBotRunLane,
+  RUN_LANE_STATUSES,
+  waitForBotQuiescence,
+} from "./run-cancellation.js";
+
+type BotDestroyDeps = {
+  prisma: PrismaClient;
+  sandbox: SandboxProvider;
+  home: AgentHomeStore;
+  dataDir?: string;
+  abortRun?: (runId: string) => Promise<void>;
+};
 
 export function confirmSpawnedBotName(confirmName: string, botName: string) {
   if (confirmName !== botName) {
@@ -45,6 +61,7 @@ export async function spawnBot(
     email: "",
     isDeploymentOwner: false,
   };
+  const prompt = (input.prompt ?? "").trim();
   const created = await createRepos(deps.prisma).createBot(actor, {
     name,
     title: (input.title ?? "").trim(),
@@ -52,52 +69,17 @@ export async function spawnBot(
     instructions: (input.instructions ?? "").trim(),
     notifyOnFinish: true,
     parentBotId: input.spawnedBy.id,
-  });
-
-  const thread = await deps.prisma.thread.findUniqueOrThrow({ where: { botId: created.id } });
-  await deps.prisma.message.create({
-    data: {
-      threadId: thread.id,
-      seq: 0,
-      role: "system",
-      blocks: [{ kind: "meta", text: `Created by ${input.spawnedBy.name}` }],
-      runId: input.runId,
+    initial: {
+      creatorName: input.spawnedBy.name,
+      sourceRunId: input.runId,
+      prompt,
     },
   });
-
-  const prompt = (input.prompt ?? "").trim();
-  if (prompt) {
-    await deps.prisma.message.create({
-      data: {
-        threadId: thread.id,
-        seq: 1,
-        role: "user",
-        blocks: [{ kind: "text", text: prompt }],
-        runId: input.runId,
-      },
+  if (created.initialRunId) {
+    await deps.wakeup?.enqueue({
+      name: "run.continue",
+      payload: { runId: created.initialRunId },
     });
-    const task = await deps.prisma.task.create({
-      data: {
-        workspaceId: input.spawnedBy.workspaceId,
-        botId: created.id,
-        threadId: thread.id,
-        userId: input.spawnedBy.userId,
-        prompt,
-        status: "queued",
-      },
-    });
-    const run = await deps.prisma.run.create({
-      data: {
-        workspaceId: input.spawnedBy.workspaceId,
-        botId: created.id,
-        threadId: thread.id,
-        taskId: task.id,
-        userId: input.spawnedBy.userId,
-        status: "queued",
-        trigger: "spawn",
-      },
-    });
-    await deps.wakeup?.enqueue({ name: "run.continue", payload: { runId: run.id } });
   }
 
   return {
@@ -110,12 +92,7 @@ export async function spawnBot(
 }
 
 export async function deleteSpawnedBot(
-  deps: {
-    prisma: PrismaClient;
-    sandbox: SandboxProvider;
-    home: AgentHomeStore;
-    dataDir?: string;
-  },
+  deps: BotDestroyDeps,
   input: {
     spawnedByBotId: string;
     userId: string;
@@ -164,44 +141,96 @@ export async function deleteSpawnedBot(
   return { ok: true as const, botId: target.id, name: target.name };
 }
 
-export async function destroyBot(
-  deps: {
-    prisma: PrismaClient;
-    sandbox: SandboxProvider;
-    home: AgentHomeStore;
-    dataDir?: string;
-  },
-  botId: string,
-  context: AdapterContext,
-) {
-  const bot = await deps.prisma.bot.findUnique({
-    where: { id: botId },
-    include: { computer: true },
+export async function destroyBot(deps: BotDestroyDeps, botId: string, context: AdapterContext) {
+  const deletion = await deps.prisma.$transaction(async (tx) => {
+    const locked = await lockBotRunLane(tx, botId, {
+      allowDeleting: true,
+      allowMissing: true,
+    });
+    if (!locked) return null;
+    if (!locked.deletingAt) {
+      await tx.bot.update({ where: { id: botId }, data: { deletingAt: new Date() } });
+    }
+    const requested = await cancelBotRuns(tx, botId);
+    const computer = await tx.computer.update({
+      where: { botId },
+      data: { operationFence: { increment: 1 }, state: "stopping" },
+      select: { operationFence: true },
+    });
+    for (const run of requested) {
+      if (run.state === "cancelling") run.operationFence = computer.operationFence;
+    }
+    return { requested, operationFence: computer.operationFence };
+  });
+  if (!deletion) return;
+  for (const run of deletion.requested) {
+    if (deps.abortRun) await deps.abortRun(run.id).catch(() => undefined);
+    if (run.state === "cancelling") {
+      await finalizeRunCancellation(deps, run.id, {
+        operationFence: deletion.operationFence,
+      });
+    }
+  }
+  await waitForBotQuiescence(deps.prisma, botId, RUN_LEASE_HEARTBEAT_MS * 3, context.signal);
+  const bot = await deps.prisma.$transaction(async (tx) => {
+    const locked = await lockBotRunLane(tx, botId, {
+      allowDeleting: true,
+      allowMissing: true,
+    });
+    if (!locked) return null;
+    const live = await tx.run.count({
+      where: { botId, status: { in: [...RUN_LANE_STATUSES] } },
+    });
+    if (live > 0) throw new Error("bot started running again before deletion");
+    return tx.bot.findUnique({
+      where: { id: botId },
+      include: { computer: true },
+    });
   });
   if (!bot) return;
-  await deps.prisma.run.updateMany({
-    where: {
-      botId,
-      status: { in: ["queued", "leased", "running", "waiting_input", "waiting_takeover"] },
+  const cleanupFence = bot.computer?.operationFence ?? deletion.operationFence;
+  const cleanupProviderRef = bot.computer?.providerRef ?? null;
+  const cleanupContext: AdapterContext = {
+    ...context,
+    operationId: "destroy.cleanup",
+    traceId: "destroy.cleanup",
+    botId,
+    runId: undefined,
+    signal: AbortSignal.any([context.signal, AbortSignal.timeout(RUN_LEASE_HEARTBEAT_MS * 3)]),
+    mutationPermit: {
+      purpose: "lifecycle",
+      operationFence: cleanupFence,
     },
-    data: { status: "cancelled", completedAt: new Date() },
-  });
+  };
   if (bot.computer?.providerRef) {
-    await deps.sandbox
-      .destroy(
-        {
-          id: bot.computer.providerRef,
-          botId,
-          kind: bot.computer.kind as never,
-          providerRef: bot.computer.providerRef,
-        },
-        context,
-      )
-      .catch(() => undefined);
+    await deps.sandbox.destroy(
+      {
+        id: bot.computer.providerRef,
+        botId,
+        kind: bot.computer.kind as never,
+        providerRef: bot.computer.providerRef,
+      },
+      cleanupContext,
+    );
   }
-  await deps.prisma.bot.delete({ where: { id: botId } }).catch(() => undefined);
+  await deps.prisma.$transaction(async (tx) => {
+    const locked = await lockBotRunLane(tx, botId, {
+      allowDeleting: true,
+      allowMissing: true,
+    });
+    if (!locked) return;
+    const computer = await tx.computer.findUniqueOrThrow({ where: { botId } });
+    if (
+      computer.operationFence !== cleanupFence ||
+      computer.providerRef !== cleanupProviderRef ||
+      computer.bootToken
+    ) {
+      throw new Error("bot cleanup ownership changed before deletion");
+    }
+    await tx.bot.delete({ where: { id: botId } });
+  });
   await rm(resolveAgentHomePath(deps.home, botId, deps.dataDir ?? "./data"), {
     recursive: true,
     force: true,
-  }).catch(() => undefined);
+  });
 }

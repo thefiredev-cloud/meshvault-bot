@@ -55,6 +55,7 @@ export interface SandboxProvider {
     context: AdapterContext,
   ): Promise<void>;
   snapshot(computer: ComputerRef, context: AdapterContext): Promise<SnapshotRef>;
+  quiesce(botId: string, context: AdapterContext): Promise<void>;
   stop(computer: ComputerRef, context: AdapterContext): Promise<void>;
   destroy(computer: ComputerRef, context: AdapterContext): Promise<void>;
 }

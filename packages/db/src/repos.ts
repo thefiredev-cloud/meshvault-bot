@@ -55,6 +55,7 @@ export function createRepos(prisma: PrismaClient) {
       });
       const previews = await Promise.all(
         bots.map(async (bot) => {
+          if (bot.deletingAt) return { preview: "Cleanup pending", status: "deleting" };
           if (!bot.thread) return { preview: "", status: "idle" };
           const last = await prisma.message.findFirst({
             where: { threadId: bot.thread.id },
@@ -63,7 +64,16 @@ export function createRepos(prisma: PrismaClient) {
           const run = await prisma.run.findFirst({
             where: {
               botId: bot.id,
-              status: { in: ["running", "queued", "leased", "waiting_input", "waiting_takeover"] },
+              status: {
+                in: [
+                  "running",
+                  "queued",
+                  "leased",
+                  "cancelling",
+                  "waiting_input",
+                  "waiting_takeover",
+                ],
+              },
             },
             orderBy: { createdAt: "desc" },
           });
@@ -99,27 +109,43 @@ export function createRepos(prisma: PrismaClient) {
         modelProvider?: string | null;
         modelId?: string | null;
         parentBotId?: string | null;
+        initial?: {
+          creatorName: string;
+          sourceRunId: string;
+          prompt: string;
+        };
       },
-    ): Promise<Bot> {
+    ): Promise<Bot & { initialRunId?: string }> {
       const count = await prisma.bot.count({
         where: { workspaceId: actor.workspaceId, userId: actor.userId },
       });
       const color = input.color ?? BOT_COLORS[count % BOT_COLORS.length] ?? BOT_COLORS[0];
-      if (input.parentBotId) {
-        const parent = await prisma.bot.findFirst({
-          where: {
-            id: input.parentBotId,
-            workspaceId: actor.workspaceId,
-            userId: actor.userId,
-          },
-        });
-        if (!parent) throw new IsolationError();
-      }
       const settings = await prisma.deploymentSettings.findUnique({ where: { id: "default" } });
       const envKind = process.env.SANDBOX_PROVIDER ?? "docker";
       const kind =
         envKind === "docker" && settings?.computerHost === "this-mac" ? "desktop" : envKind;
-      const bot = await prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async (tx) => {
+        if (input.parentBotId) {
+          const [parent] = await tx.$queryRaw<
+            Array<{
+              id: string;
+              workspaceId: string;
+              userId: string;
+              deletingAt: Date | null;
+            }>
+          >`SELECT "id", "workspaceId", "userId", "deletingAt"
+            FROM "bots" WHERE "id" = ${input.parentBotId} FOR UPDATE`;
+          if (
+            !parent ||
+            parent.workspaceId !== actor.workspaceId ||
+            parent.userId !== actor.userId ||
+            parent.deletingAt
+          ) {
+            throw new IsolationError();
+          }
+        } else if (input.initial) {
+          throw new IsolationError("Spawned bots require a parent");
+        }
         const created = await tx.bot.create({
           data: {
             workspaceId: actor.workspaceId,
@@ -135,7 +161,7 @@ export function createRepos(prisma: PrismaClient) {
             parentBotId: input.parentBotId ?? null,
           },
         });
-        await tx.thread.create({
+        const thread = await tx.thread.create({
           data: {
             workspaceId: actor.workspaceId,
             botId: created.id,
@@ -175,12 +201,59 @@ export function createRepos(prisma: PrismaClient) {
             content: `# ${input.name}\n\n`,
           },
         });
-        return tx.bot.findFirstOrThrow({
+        let initialRunId: string | undefined;
+        if (input.initial) {
+          await tx.message.create({
+            data: {
+              threadId: thread.id,
+              seq: 0,
+              role: "system",
+              blocks: [{ kind: "meta", text: `Created by ${input.initial.creatorName}` }],
+              runId: input.initial.sourceRunId,
+            },
+          });
+          if (input.initial.prompt) {
+            await tx.message.create({
+              data: {
+                threadId: thread.id,
+                seq: 1,
+                role: "user",
+                blocks: [{ kind: "text", text: input.initial.prompt }],
+                runId: input.initial.sourceRunId,
+              },
+            });
+            const task = await tx.task.create({
+              data: {
+                workspaceId: actor.workspaceId,
+                botId: created.id,
+                threadId: thread.id,
+                userId: actor.userId,
+                prompt: input.initial.prompt,
+                status: "queued",
+              },
+            });
+            const run = await tx.run.create({
+              data: {
+                workspaceId: actor.workspaceId,
+                botId: created.id,
+                threadId: thread.id,
+                taskId: task.id,
+                userId: actor.userId,
+                status: "queued",
+                trigger: "spawn",
+              },
+            });
+            initialRunId = run.id;
+          }
+        }
+        const bot = await tx.bot.findFirstOrThrow({
           where: { id: created.id },
           include: { thread: true },
         });
+        return { bot, initialRunId };
       });
-      return mapBot(bot);
+      const bot = mapBot(result.bot);
+      return result.initialRunId ? { ...bot, initialRunId: result.initialRunId } : bot;
     },
   };
 }

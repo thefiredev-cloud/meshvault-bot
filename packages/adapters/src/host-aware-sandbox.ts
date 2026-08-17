@@ -99,6 +99,10 @@ export class HostAwareSandbox implements SandboxProvider {
     return this.route(computer).snapshot(computer, context);
   }
 
+  async quiesce(botId: string, context: AdapterContext): Promise<void> {
+    await Promise.all([this.isolated.quiesce(botId, context), this.host.quiesce(botId, context)]);
+  }
+
   stop(computer: ComputerRef, context: AdapterContext) {
     return this.route(computer).stop(computer, context);
   }

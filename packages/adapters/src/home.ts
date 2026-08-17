@@ -2,9 +2,13 @@ import { constants } from "node:fs";
 import { mkdir, open, readdir, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { AdapterContext, AgentHomeStore, PortableFile } from "@meshbot/adapter-kit";
+import type { Prisma, PrismaClient } from "@meshbot/db";
 
 export class LocalAgentHomeStore implements AgentHomeStore {
-  constructor(private readonly root: string) {}
+  constructor(
+    private readonly root: string,
+    private readonly prisma?: PrismaClient,
+  ) {}
 
   describe() {
     return {
@@ -34,14 +38,16 @@ export class LocalAgentHomeStore implements AgentHomeStore {
     return "working";
   }
 
-  async commit(botId: string, src: string, _context: AdapterContext): Promise<string> {
-    const dest = this.botDir(botId);
-    await rm(dest, { recursive: true, force: true });
-    await mkdir(dest, { recursive: true });
-    await copyDir(src, dest);
-    const revision = `rev-${Date.now()}`;
-    await writeFile(path.join(dest, ".revision"), revision, "utf8");
-    return revision;
+  async commit(botId: string, src: string, context: AdapterContext): Promise<string> {
+    return this.withRunMutationFence(botId, context, async () => {
+      const dest = this.botDir(botId);
+      await rm(dest, { recursive: true, force: true });
+      await mkdir(dest, { recursive: true });
+      await copyDir(src, dest);
+      const revision = `rev-${Date.now()}`;
+      await writeFile(path.join(dest, ".revision"), revision, "utf8");
+      return revision;
+    });
   }
 
   async restore(
@@ -73,19 +79,21 @@ export class LocalAgentHomeStore implements AgentHomeStore {
     botId: string,
     filePath: string,
     content: string,
-    _context: AdapterContext,
+    context: AdapterContext,
   ): Promise<void> {
-    const full = await containedWritePath(this.botDir(botId), filePath);
-    const handle = await open(
-      full,
-      constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW,
-      0o666,
-    );
-    try {
-      await handle.writeFile(content, "utf8");
-    } finally {
-      await handle.close();
-    }
+    await this.withRunMutationFence(botId, context, async () => {
+      const full = await containedWritePath(this.botDir(botId), filePath);
+      const handle = await open(
+        full,
+        constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW,
+        0o666,
+      );
+      try {
+        await handle.writeFile(content, "utf8");
+      } finally {
+        await handle.close();
+      }
+    });
   }
 
   async list(botId: string, dirPath: string, _context: AdapterContext) {
@@ -107,6 +115,51 @@ export class LocalAgentHomeStore implements AgentHomeStore {
     );
     return listed.filter((entry): entry is NonNullable<typeof entry> => entry !== null);
   }
+
+  private async withRunMutationFence<T>(
+    botId: string,
+    context: AdapterContext,
+    mutate: () => Promise<T>,
+  ): Promise<T> {
+    const permit = context.mutationPermit;
+    if (context.runId && permit?.purpose !== "run") {
+      throw new Error("A run mutation permit is required");
+    }
+    if (permit?.purpose !== "run") return mutate();
+    if (context.runId !== permit.runId || (context.botId && context.botId !== botId)) {
+      throw new Error("Run mutation permit does not match the adapter context");
+    }
+    if (!this.prisma) throw new Error("Run home mutations require a database fence");
+    return this.prisma.$transaction(async (tx) => {
+      await validateRunMutation(tx, context, botId, permit);
+      return mutate();
+    });
+  }
+}
+
+type RunPermit = Extract<NonNullable<AdapterContext["mutationPermit"]>, { purpose: "run" }>;
+
+async function validateRunMutation(
+  tx: Prisma.TransactionClient,
+  context: AdapterContext,
+  botId: string,
+  permit: RunPermit,
+) {
+  const rows = await tx.$queryRaw<Array<{ id: string }>>`
+    SELECT r."id"
+    FROM "runs" r
+    JOIN "computers" c ON c."botId" = r."botId"
+    WHERE r."id" = ${permit.runId}
+      AND r."workspaceId" = ${context.workspaceId}
+      AND r."userId" = ${context.userId}
+      AND r."botId" = ${botId}
+      AND r."status" = 'running'
+      AND r."leaseFence" = ${permit.runLeaseFence}
+      AND r."leaseExpiresAt" > CURRENT_TIMESTAMP
+      AND c."operationFence" = ${permit.operationFence}
+    FOR UPDATE OF r, c
+  `;
+  if (rows.length !== 1) throw new Error("Run mutation permit is no longer valid");
 }
 
 export function resolveAgentHomePath(home: AgentHomeStore, botId: string, dataDir = "./data") {

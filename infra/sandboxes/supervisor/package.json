@@ -7,18 +7,21 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "check": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --root ../../.. infra/sandboxes/supervisor/src"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.1",
     "@meshbot/core": "workspace:*",
     "dockerode": "^4.0.7",
     "hono": "^4.9.6",
+    "pg": "^8.16.3",
     "pino": "^9.9.0",
+    "tsx": "^4.20.5",
     "zod": "^4.1.5"
   },
   "devDependencies": {
     "@types/dockerode": "^3.3.44",
+    "@types/pg": "^8.15.5",
     "typescript": "^5.9.2",
     "vitest": "^4.1.10"
   }

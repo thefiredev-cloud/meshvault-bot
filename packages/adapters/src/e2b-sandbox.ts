@@ -1,4 +1,4 @@
-import { Sandbox } from "@e2b/desktop";
+import { Sandbox, SandboxNotFoundError } from "@e2b/desktop";
 import type {
   AdapterContext,
   CommandRequest,
@@ -11,6 +11,7 @@ import type {
   ScreenSession,
 } from "@meshbot/adapter-kit";
 import { sandboxIdleMs } from "./computer-idle.js";
+import { SandboxMutationFence } from "./sandbox-mutation-permit.js";
 
 export function e2bCreateOptions(botId: string, apiKey: string) {
   return {
@@ -23,19 +24,23 @@ export function e2bCreateOptions(botId: string, apiKey: string) {
 }
 
 export function isUnrecoverableSandboxError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  return /not found|does not exist|404|not_found|killed|doesn't exist|sandbox not found/i.test(
-    message,
+  return (
+    error instanceof SandboxNotFoundError ||
+    (error instanceof Error && error.name === "SandboxNotFoundError")
   );
 }
 
 export const E2B_BROWSER_APPS = ["google-chrome", "firefox", "chromium"] as const;
 
-export async function openDesktopBrowser(desktop: {
-  launch: (application: string, uri?: string) => Promise<void>;
-  open: (fileOrUrl: string) => Promise<void>;
-}): Promise<void> {
+export async function openDesktopBrowser(
+  desktop: {
+    launch: (application: string, uri?: string) => Promise<void>;
+    open: (fileOrUrl: string) => Promise<void>;
+  },
+  beforeMutation: () => void = () => undefined,
+): Promise<void> {
   for (const app of E2B_BROWSER_APPS) {
+    beforeMutation();
     try {
       await desktop.launch(app);
       return;
@@ -43,11 +48,14 @@ export async function openDesktopBrowser(desktop: {
       // try the next installed browser
     }
   }
+  beforeMutation();
   await desktop.open("https://www.google.com").catch(() => undefined);
 }
 
 export class E2BSandboxProvider implements SandboxProvider {
   private readonly boxes = new Map<string, Sandbox>();
+  private readonly boxBots = new Map<string, string>();
+  private readonly mutationFence = new SandboxMutationFence();
 
   constructor(private readonly apiKey: string) {}
 
@@ -66,38 +74,66 @@ export class E2BSandboxProvider implements SandboxProvider {
     };
   }
 
-  private async box(computer: ComputerRef): Promise<Sandbox> {
+  private remember(botId: string, desktop: Sandbox): void {
+    this.boxes.set(desktop.sandboxId, desktop);
+    this.boxBots.set(desktop.sandboxId, botId);
+  }
+
+  private forget(id: string): void {
+    this.boxes.delete(id);
+    this.boxBots.delete(id);
+  }
+
+  private async box(computer: ComputerRef, stream = false): Promise<Sandbox> {
     const id = computer.providerRef || computer.id;
     const existing = this.boxes.get(id);
     if (existing) {
-      await existing.setTimeout(sandboxIdleMs()).catch(() => undefined);
+      if (stream) await this.startStream(existing);
       return existing;
     }
     const connected = await Sandbox.connect(id, {
       apiKey: this.apiKey,
       timeoutMs: sandboxIdleMs(),
     });
-    await this.startStream(connected);
-    this.boxes.set(connected.sandboxId, connected);
+    this.remember(computer.botId, connected);
+    if (stream) await this.startStream(connected);
     return connected;
   }
 
-  private async startStream(desktop: Sandbox) {
-    await desktop.stream.start({ requireAuth: true }).catch(() => desktop.stream.start());
+  private async startStream(desktop: Sandbox, beforeMutation: () => void = () => undefined) {
+    beforeMutation();
+    try {
+      await desktop.stream.start({ requireAuth: true });
+    } catch {
+      beforeMutation();
+      await desktop.stream.start();
+    }
   }
 
   async provision(
     request: { botId: string; homePath: string; providerRef?: string },
-    _context: AdapterContext,
+    context: AdapterContext,
   ): Promise<ComputerRef> {
+    const verify = () => {
+      this.mutationFence.accept(request.botId, context, ["run", "lifecycle"]);
+    };
+    verify();
     if (request.providerRef) {
       try {
+        verify();
         const desktop = await Sandbox.connect(request.providerRef, {
           apiKey: this.apiKey,
           timeoutMs: sandboxIdleMs(),
         });
-        await this.startStream(desktop);
-        this.boxes.set(desktop.sandboxId, desktop);
+        this.remember(request.botId, desktop);
+        try {
+          verify();
+          await this.startStream(desktop, verify);
+          verify();
+        } catch (error) {
+          await this.pauseProvisionFailure(desktop);
+          throw error;
+        }
         return {
           id: desktop.sandboxId,
           botId: request.botId,
@@ -105,15 +141,25 @@ export class E2BSandboxProvider implements SandboxProvider {
           providerRef: desktop.sandboxId,
         };
       } catch (error) {
-        this.boxes.delete(request.providerRef);
         if (!isUnrecoverableSandboxError(error)) throw error;
+        this.forget(request.providerRef);
       }
     }
+    verify();
     const desktop = await Sandbox.create(e2bCreateOptions(request.botId, this.apiKey));
-    await desktop.files.makeDir("/home/user/meshbot-home").catch(() => undefined);
-    await this.startStream(desktop);
-    await openDesktopBrowser(desktop);
-    this.boxes.set(desktop.sandboxId, desktop);
+    this.remember(request.botId, desktop);
+    try {
+      verify();
+      await desktop.files.makeDir("/home/user/meshbot-home").catch(() => undefined);
+      verify();
+      await this.startStream(desktop, verify);
+      verify();
+      await openDesktopBrowser(desktop, verify);
+      verify();
+    } catch (error) {
+      await this.killProvisionFailure(desktop);
+      throw error;
+    }
     return {
       id: desktop.sandboxId,
       botId: request.botId,
@@ -123,10 +169,11 @@ export class E2BSandboxProvider implements SandboxProvider {
   }
 
   async *execute(
-    _computer: ComputerRef,
+    computer: ComputerRef,
     _request: CommandRequest,
-    _context: AdapterContext,
+    context: AdapterContext,
   ): AsyncIterable<ProcessEvent> {
+    this.mutationFence.accept(computer.botId, context, ["run"]);
     yield {
       type: "stderr",
       data: "E2B command execution is disabled because this SDK starts a writable login shell; use the Docker or desktop sandbox",
@@ -139,7 +186,7 @@ export class E2BSandboxProvider implements SandboxProvider {
     _request: ScreenRequest,
     _context: AdapterContext,
   ): Promise<ScreenSession> {
-    const desktop = await this.box(computer);
+    const desktop = await this.box(computer, true);
     let authKey: string | undefined;
     try {
       authKey = desktop.stream.getAuthKey();
@@ -166,19 +213,26 @@ export class E2BSandboxProvider implements SandboxProvider {
   async sendInput(
     computer: ComputerRef,
     input: ComputerInput,
-    _lease: ControlLeaseRef,
-    _context: AdapterContext,
+    lease: ControlLeaseRef,
+    context: AdapterContext,
   ): Promise<void> {
+    const verify = () => {
+      this.mutationFence.accept(computer.botId, context, ["control"], lease.leaseId);
+    };
+    verify();
     const desktop = await this.box(computer);
     if (input.kind === "key") {
+      verify();
       await desktop.press(input.key);
     } else if (input.kind === "pointer") {
+      verify();
       if (input.type === "move") await desktop.moveMouse(input.x, input.y);
       else if (input.type === "click" || input.type === "down") {
         if (input.button === "right") await desktop.rightClick(input.x, input.y);
         else await desktop.leftClick(input.x, input.y);
       }
     } else if (input.kind === "clipboard") {
+      verify();
       await desktop.write(input.text);
     }
   }
@@ -190,23 +244,75 @@ export class E2BSandboxProvider implements SandboxProvider {
   }
 
   async keepAlive(computer: ComputerRef): Promise<void> {
-    await this.box(computer);
+    const desktop = await this.box(computer);
+    await desktop.setTimeout(sandboxIdleMs()).catch(() => undefined);
   }
 
-  async stop(computer: ComputerRef, _context: AdapterContext): Promise<void> {
+  async quiesce(botId: string, context: AdapterContext): Promise<void> {
+    const verify = () => {
+      this.mutationFence.accept(botId, context, ["run", "control", "lifecycle"]);
+    };
+    verify();
+    const boxes = [...this.boxes.entries()].filter(([id]) => this.boxBots.get(id) === botId);
+    await Promise.all(
+      boxes.map(async ([id, desktop]) => {
+        verify();
+        try {
+          await desktop.pause({ signal: context.signal });
+          this.forget(id);
+        } catch (error) {
+          if (!isUnrecoverableSandboxError(error)) throw error;
+          this.forget(id);
+        }
+      }),
+    );
+  }
+
+  async stop(computer: ComputerRef, context: AdapterContext): Promise<void> {
+    this.mutationFence.accept(computer.botId, context, ["lifecycle"]);
     const id = computer.providerRef || computer.id;
     const desktop = this.boxes.get(id);
-    this.boxes.delete(id);
-    if (desktop) {
-      await desktop.pause().catch(() => undefined);
-      return;
+    try {
+      if (desktop) await desktop.pause({ signal: context.signal });
+      else await Sandbox.pause(id, { apiKey: this.apiKey, signal: context.signal });
+      this.forget(id);
+    } catch (error) {
+      if (!isUnrecoverableSandboxError(error)) throw error;
+      this.forget(id);
     }
-    await Sandbox.pause(id, { apiKey: this.apiKey }).catch(() => undefined);
   }
 
-  async destroy(computer: ComputerRef, _context: AdapterContext): Promise<void> {
-    const desktop = await this.box(computer).catch(() => undefined);
-    await desktop?.kill();
-    this.boxes.delete(computer.providerRef || computer.id);
+  async destroy(computer: ComputerRef, context: AdapterContext): Promise<void> {
+    this.mutationFence.accept(computer.botId, context, ["lifecycle"]);
+    const id = computer.providerRef || computer.id;
+    const desktop = this.boxes.get(id);
+    try {
+      if (desktop) await desktop.kill({ signal: context.signal });
+      else await Sandbox.kill(id, { apiKey: this.apiKey, signal: context.signal });
+      this.forget(id);
+    } catch (error) {
+      if (!isUnrecoverableSandboxError(error)) throw error;
+      this.forget(id);
+    }
+  }
+
+  private async pauseProvisionFailure(desktop: Sandbox): Promise<void> {
+    try {
+      await desktop.pause();
+      this.forget(desktop.sandboxId);
+    } catch (error) {
+      if (!isUnrecoverableSandboxError(error)) throw error;
+      this.forget(desktop.sandboxId);
+    }
+  }
+
+  private async killProvisionFailure(desktop: Sandbox): Promise<void> {
+    try {
+      await desktop.kill();
+      this.forget(desktop.sandboxId);
+    } catch (error) {
+      if (!isUnrecoverableSandboxError(error)) throw error;
+      this.forget(desktop.sandboxId);
+    }
   }
 }

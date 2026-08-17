@@ -1,10 +1,19 @@
 import type { SandboxProvider, WakeupDriver } from "@meshbot/adapter-kit";
+import { RUN_LEASE_HEARTBEAT_MS } from "@meshbot/core";
 import type { PrismaClient } from "@meshbot/db";
-import { appendEvent } from "@meshbot/db";
+import { appendEventInTransaction } from "@meshbot/db";
+import { lockBotRunLane } from "./run-cancellation.js";
 
 export const DEFAULT_SANDBOX_IDLE_MS = 10 * 60 * 1000;
 
-const ACTIVE_RUN = ["queued", "leased", "running", "waiting_input", "waiting_takeover"] as const;
+const ACTIVE_RUN = [
+  "queued",
+  "leased",
+  "running",
+  "waiting_input",
+  "waiting_takeover",
+  "cancelling",
+] as const;
 
 export function sandboxIdleMs(): number {
   const raw = Number(process.env.SANDBOX_IDLE_MS ?? DEFAULT_SANDBOX_IDLE_MS);
@@ -46,51 +55,62 @@ export async function sleepComputerIfIdle(
   deps: { prisma: PrismaClient; sandbox: SandboxProvider; wakeup?: WakeupDriver },
   botId: string,
 ): Promise<void> {
-  const computer = await deps.prisma.computer.findUnique({ where: { botId } });
-  if (!computer?.providerRef) return;
-  if (computer.state !== "running") return;
-  const active = await deps.prisma.run.findFirst({
-    where: { botId, status: { in: [...ACTIVE_RUN] } },
-    select: { id: true },
+  const reservation = await deps.prisma.$transaction(async (tx) => {
+    const bot = await lockBotRunLane(tx, botId, { allowDeleting: true, allowMissing: true });
+    if (!bot || bot.deletingAt) return null;
+    const computer = await tx.computer.findUnique({ where: { botId } });
+    if (!computer?.providerRef || computer.state !== "running" || computer.bootToken) return null;
+    const active = await tx.run.findFirst({
+      where: { botId, status: { in: [...ACTIVE_RUN] } },
+      select: { id: true },
+    });
+    if (active) return "active" as const;
+    return tx.computer.update({
+      where: { botId },
+      data: {
+        operationFence: { increment: 1 },
+        state: "stopping",
+        controlHolder: "none",
+        controlLeaseId: null,
+        controlRunId: null,
+      },
+      select: { workspaceId: true, userId: true, operationFence: true },
+    });
   });
-  if (active) {
+  if (reservation === "active") {
     scheduleComputerSleep(deps.wakeup, botId);
     return;
   }
+  if (!reservation) return;
   const ctx = {
     operationId: "computer.sleep",
     traceId: "computer.sleep",
-    workspaceId: computer.workspaceId,
-    userId: computer.userId,
+    workspaceId: reservation.workspaceId,
+    userId: reservation.userId,
     botId,
-    signal: new AbortController().signal,
-  };
-  await deps.sandbox.stop(
-    {
-      id: computer.providerRef,
-      botId,
-      kind: computer.kind as "docker" | "e2b" | "desktop" | "fake",
-      providerRef: computer.providerRef,
+    signal: AbortSignal.timeout(RUN_LEASE_HEARTBEAT_MS * 3),
+    mutationPermit: {
+      purpose: "lifecycle" as const,
+      operationFence: reservation.operationFence,
     },
-    ctx,
-  );
-  await deps.prisma.computer.update({
-    where: { botId },
-    data: { state: "suspended", controlHolder: "none" },
-  });
-  if (computer.botId) {
-    const bot = await deps.prisma.bot.findUnique({
-      where: { id: botId },
-      include: { thread: true },
+  };
+  await deps.sandbox.quiesce(botId, ctx);
+  await deps.prisma.$transaction(async (tx) => {
+    await lockBotRunLane(tx, botId, { allowDeleting: true, allowMissing: true });
+    const changed = await tx.computer.updateMany({
+      where: { botId, operationFence: reservation.operationFence },
+      data: { state: "suspended" },
     });
+    if (changed.count !== 1) return;
+    const bot = await tx.bot.findUnique({ where: { id: botId }, include: { thread: true } });
     if (bot?.thread) {
-      await appendEvent(deps.prisma, {
-        workspaceId: computer.workspaceId,
+      await appendEventInTransaction(tx, {
+        workspaceId: reservation.workspaceId,
         threadId: bot.thread.id,
         botId,
         type: "computer.status",
         payload: { status: "suspended" },
       });
     }
-  }
+  });
 }

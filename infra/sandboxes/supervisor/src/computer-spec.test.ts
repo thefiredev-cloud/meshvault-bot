@@ -7,6 +7,7 @@ import {
   commandExitCode,
   containerCreateOptions,
   containerNameFor,
+  isolatedCommandArgv,
   screenUrlFor,
   xdotoolCommand,
 } from "./computer-spec.js";
@@ -39,7 +40,23 @@ describe("graphical computer spec", () => {
     expect(options.HostConfig.PortBindings["6080/tcp"]?.[0]?.HostIp).toBe("127.0.0.1");
     expect(options.HostConfig.ShmSize).toBeGreaterThanOrEqual(256 * 1024 * 1024);
     expect(options.HostConfig.ReadonlyPaths).toContain("/usr/share/novnc");
+    expect(options.HostConfig.PidsLimit).toBe(256);
     expect(options.HostConfig.NetworkMode).toBe("meshbot_default");
+  });
+
+  it("runs each command in a disposable process group", () => {
+    const command = isolatedCommandArgv(["printf", "%s", "safe value"]);
+    expect(command.slice(-3)).toEqual(["printf", "%s", "safe value"]);
+    expect(command[2]).toMatch(/setsid/);
+    expect(command[2]).toMatch(/kill -KILL/);
+  });
+
+  it("keeps cleanup failures observable and stream rejection cleanup explicit", () => {
+    const supervisor = readFileSync(path.join(import.meta.dirname, "index.ts"), "utf8");
+    expect(supervisor).not.toMatch(/container\.(?:stop|remove)\([^;\n]*\.catch/);
+    expect(supervisor).toContain("const fail = (error: Error) => settle(() => reject(error));");
+    expect(supervisor).toContain("if (c.req.raw.signal.aborted) onAbort();");
+    expect(supervisor).toContain("isDockerNotFound(error) ? 404 : 500");
   });
 
   it("ships a browser desktop, not a fullscreen terminal", () => {

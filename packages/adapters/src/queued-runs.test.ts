@@ -12,7 +12,16 @@ describe("queued run recovery", () => {
     });
 
     expect(findMany).toHaveBeenCalledWith({
-      where: { status: "queued" },
+      where: {
+        OR: [
+          { status: "queued" },
+          {
+            status: { in: ["leased", "running"] },
+            leaseExpiresAt: { lte: expect.any(Date) },
+          },
+          { status: "cancelling", leaseExpiresAt: { lte: expect.any(Date) } },
+        ],
+      },
       select: { id: true },
       orderBy: { createdAt: "asc" },
       take: 100,

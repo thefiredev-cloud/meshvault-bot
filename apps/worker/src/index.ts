@@ -76,7 +76,7 @@ async function main() {
     runtime,
     sandbox,
     memory: new MarkdownMemoryStore(prisma),
-    home: new LocalAgentHomeStore(dataDir),
+    home: new LocalAgentHomeStore(dataDir, prisma),
     connector: stack.connector,
     secrets: modelSecretsToRedact(),
     secretStore: secrets,

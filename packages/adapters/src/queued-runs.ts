@@ -7,8 +7,15 @@ export async function enqueueQueuedRuns(
   prisma: Pick<PrismaClient, "run">,
   wakeup: Pick<WakeupDriver, "enqueue">,
 ) {
+  const now = new Date();
   const runs = await prisma.run.findMany({
-    where: { status: "queued" },
+    where: {
+      OR: [
+        { status: "queued" },
+        { status: { in: ["leased", "running"] }, leaseExpiresAt: { lte: now } },
+        { status: "cancelling", leaseExpiresAt: { lte: now } },
+      ],
+    },
     select: { id: true },
     orderBy: { createdAt: "asc" },
     take: RECOVERY_BATCH_SIZE,

@@ -5,24 +5,40 @@ import path from "node:path";
 import { loadEnvFile } from "node:process";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
-import { resolveSupervisorToken } from "@meshbot/core";
+import {
+  limitCommandOutput,
+  resolveSupervisorToken,
+  SANDBOX_COMMAND_MAX_OUTPUT_BYTES,
+  SANDBOX_COMMAND_TIMEOUT_MS,
+  sandboxCommandMaxOutputBytes,
+  sandboxCommandTimeoutMs,
+} from "@meshbot/core";
 import Docker from "dockerode";
 import { Hono } from "hono";
+import { Pool } from "pg";
 import { z } from "zod";
+import { BotMutationGate } from "./bot-mutation-gate.js";
 import {
   COMPUTER_IMAGE,
   COMPUTER_PATH,
   commandExitCode,
   containerCreateOptions,
   containerNameFor,
+  isolatedCommandArgv,
   type SandboxInput,
   screenUrlFor,
   xdotoolCommand,
 } from "./computer-spec.js";
+import { authorizeMutation, MutationPermitError, readMutationPermit } from "./mutation-permit.js";
 
 loadRootEnv();
 
+const databaseUrl = process.env.DATABASE_URL?.trim();
+if (!databaseUrl) throw new Error("DATABASE_URL is required by the sandbox supervisor");
+
 const docker = new Docker({ socketPath: process.env.DOCKER_SOCKET ?? "/var/run/docker.sock" });
+const database = new Pool({ connectionString: databaseUrl, max: 5, allowExitOnIdle: true });
+const botMutations = new BotMutationGate();
 const computerContext =
   process.env.MESHBOT_COMPUTER_CONTEXT ??
   path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../computer");
@@ -67,47 +83,91 @@ app.post("/computers", async (c) => {
         workspaceId: body.workspaceId,
       },
     );
+    const permit = requestMutationPermit((name) => c.req.header(name));
     await ensureComputerImage();
-    const runtimeInfo = await inspectSupervisorContainer();
-    const networkMode = computerNetworkMode(runtimeInfo);
-    const serviceHomePath = path.resolve(body.homePath);
-    assertBotHomePath(serviceHomePath, body.botId);
-    await mkdir(serviceHomePath, { recursive: true });
-    const homePath = hostHomePath(serviceHomePath, runtimeInfo);
-    const existing = await findBotContainer(body.botId, body.workspaceId);
-    if (existing) {
-      const info = await existing.inspect();
-      const desired = await docker.getImage(COMPUTER_IMAGE).inspect();
-      if (
-        info.Image !== desired.Id ||
-        (networkMode && info.HostConfig.NetworkMode !== networkMode)
-      ) {
-        await existing.remove({ force: true }).catch(() => undefined);
-        boxes.delete(existing.id);
-      } else {
-        if (!info.State.Running) await existing.start();
-        const screenUrl = await publishedScreenUrl(existing, info.State.Running ? info : undefined);
-        boxes.set(existing.id, { containerId: existing.id, botId: body.botId, screenUrl });
-        return c.json({ id: existing.id, image: COMPUTER_IMAGE, screenUrl, resumed: true });
-      }
-    }
-    const name = containerNameFor(body.botId);
-    const container = await docker.createContainer(
-      containerCreateOptions({
-        name,
-        image: COMPUTER_IMAGE,
-        botId: body.botId,
+    return await botMutations.run(body.botId, async () => {
+      await authorizeMutation(database, {
         workspaceId: body.workspaceId,
-        homePath,
-        networkMode,
-      }),
-    );
-    await container.start();
-    const screenUrl = await publishedScreenUrl(container);
-    boxes.set(container.id, { containerId: container.id, botId: body.botId, screenUrl });
-    return c.json({ id: container.id, image: COMPUTER_IMAGE, screenUrl, resumed: false });
+        botId: body.botId,
+        permit,
+        allowedPurposes: ["run", "lifecycle"],
+        allowedRunStatuses: ["running"],
+        requireLifecycleBootToken: true,
+        allowDeleting: false,
+      });
+      const runtimeInfo = await inspectSupervisorContainer();
+      const networkMode = computerNetworkMode(runtimeInfo);
+      const serviceHomePath = path.resolve(body.homePath);
+      assertBotHomePath(serviceHomePath, body.botId);
+      await mkdir(serviceHomePath, { recursive: true });
+      const homePath = hostHomePath(serviceHomePath, runtimeInfo);
+      const existing = await findBotContainer(body.botId, body.workspaceId);
+      if (existing) {
+        const info = await existing.inspect();
+        const desired = await docker.getImage(COMPUTER_IMAGE).inspect();
+        if (
+          info.Image !== desired.Id ||
+          (networkMode && info.HostConfig.NetworkMode !== networkMode)
+        ) {
+          await existing.remove({ force: true });
+          boxes.delete(existing.id);
+        } else {
+          if (!info.State.Running) await existing.start();
+          const screenUrl = await publishedScreenUrl(
+            existing,
+            info.State.Running ? info : undefined,
+          );
+          boxes.set(existing.id, { containerId: existing.id, botId: body.botId, screenUrl });
+          return c.json({ id: existing.id, image: COMPUTER_IMAGE, screenUrl, resumed: true });
+        }
+      }
+      const name = containerNameFor(body.botId);
+      const container = await docker.createContainer(
+        containerCreateOptions({
+          name,
+          image: COMPUTER_IMAGE,
+          botId: body.botId,
+          workspaceId: body.workspaceId,
+          homePath,
+          networkMode,
+        }),
+      );
+      await container.start();
+      const screenUrl = await publishedScreenUrl(container);
+      boxes.set(container.id, { containerId: container.id, botId: body.botId, screenUrl });
+      return c.json({ id: container.id, image: COMPUTER_IMAGE, screenUrl, resumed: false });
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    if (error instanceof MutationPermitError) return c.json({ error: message }, 409);
+    return c.json({ error: message }, 500);
+  }
+});
+
+app.post("/computers/quiesce", async (c) => {
+  const body = z.object({ botId: z.string().min(1) }).parse(await c.req.json());
+  const workspaceId = c.req.header("x-meshbot-workspace-id");
+  try {
+    assertRequestIdentity(c.req.header("x-meshbot-bot-id"), workspaceId, {
+      botId: body.botId,
+      workspaceId: workspaceId ?? "",
+    });
+    const permit = requestMutationPermit((name) => c.req.header(name));
+    return await botMutations.run(body.botId, async () => {
+      await authorizeMutation(database, {
+        workspaceId: workspaceId ?? "",
+        botId: body.botId,
+        permit,
+        allowedPurposes: ["run", "lifecycle"],
+        allowedRunStatuses: ["leased"],
+        allowDeleting: true,
+      });
+      const stopped = await stopBotContainers(body.botId, workspaceId ?? "");
+      return c.json({ ok: true, stopped });
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (error instanceof MutationPermitError) return c.json({ error: message }, 409);
     return c.json({ error: message }, 500);
   }
 });
@@ -140,43 +200,98 @@ app.post("/computers/:id/exec", async (c) => {
       argv: z.array(z.string()),
       cwd: z.string().optional(),
       env: z.record(z.string(), z.string()).optional(),
+      timeoutMs: z.number().int().positive().max(SANDBOX_COMMAND_TIMEOUT_MS).optional(),
+      maxOutputBytes: z.number().int().positive().max(SANDBOX_COMMAND_MAX_OUTPUT_BYTES).optional(),
     })
     .parse(await c.req.json());
   try {
-    const { container } = await managedContainer(
-      id,
+    const identity = requestIdentity(
       c.req.header("x-meshbot-bot-id"),
       c.req.header("x-meshbot-workspace-id"),
     );
-    const exec = await container.exec({
-      Cmd: body.argv.length ? body.argv : ["/bin/echo", "ready"],
-      AttachStdout: true,
-      AttachStderr: true,
-      WorkingDir: body.cwd ?? "/home/meshbot",
-      Env: [
-        "DISPLAY=:1",
-        "HOME=/home/meshbot",
-        `PATH=${COMPUTER_PATH}`,
-        "NPM_CONFIG_PREFIX=/home/meshbot/.local",
-        "PIP_USER=1",
-        ...Object.entries(body.env ?? {}).map(([k, v]) => `${k}=${v}`),
-      ],
-    });
-    const stream = await exec.start({ hijack: true, stdin: false });
-    const chunks: Buffer[] = [];
-    await new Promise<void>((resolve, reject) => {
-      stream.on("data", (d: Buffer) => chunks.push(d));
-      stream.on("end", () => resolve());
-      stream.on("error", reject);
-    });
-    const inspect = await exec.inspect();
-    return c.json({
-      stdout: stripDockerStream(Buffer.concat(chunks)),
-      stderr: "",
-      code: commandExitCode(inspect.ExitCode),
+    const permit = requestMutationPermit((name) => c.req.header(name));
+    return await botMutations.run(identity.botId, async () => {
+      await authorizeMutation(database, {
+        ...identity,
+        permit,
+        allowedPurposes: ["run"],
+        allowedRunStatuses: ["running"],
+        expectedProviderRef: id,
+      });
+      const { container } = await managedContainer(id, identity.botId, identity.workspaceId);
+      const timeoutMs = sandboxCommandTimeoutMs(body.timeoutMs);
+      const maxOutputBytes = sandboxCommandMaxOutputBytes(body.maxOutputBytes);
+      const exec = await container.exec({
+        Cmd: isolatedCommandArgv(body.argv),
+        AttachStdout: true,
+        AttachStderr: true,
+        WorkingDir: body.cwd ?? "/home/meshbot",
+        Env: [
+          "DISPLAY=:1",
+          "HOME=/home/meshbot",
+          `PATH=${COMPUTER_PATH}`,
+          "NPM_CONFIG_PREFIX=/home/meshbot/.local",
+          "PIP_USER=1",
+          ...Object.entries(body.env ?? {}).map(([k, v]) => `${k}=${v}`),
+        ],
+      });
+      const stream = await exec.start({ hijack: true, stdin: false });
+      const chunks: Buffer[] = [];
+      let outputBytes = 0;
+      let termination: string | undefined;
+      let stopPromise: Promise<unknown> | undefined;
+      await new Promise<void>((resolve, reject) => {
+        let settled = false;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const settle = (complete: () => void) => {
+          if (settled) return;
+          settled = true;
+          if (timer) clearTimeout(timer);
+          c.req.raw.signal.removeEventListener("abort", onAbort);
+          complete();
+        };
+        const finish = () => settle(resolve);
+        const fail = (error: Error) => settle(() => reject(error));
+        const terminate = (reason: string) => {
+          if (termination) return;
+          termination = reason;
+          stopPromise = container.stop({ t: 0 });
+          stream.destroy();
+          finish();
+        };
+        const onAbort = () => terminate("command cancelled");
+        timer = setTimeout(() => terminate("command timed out"), timeoutMs);
+        timer.unref();
+        c.req.raw.signal.addEventListener("abort", onAbort, { once: true });
+        stream.on("data", (chunk: Buffer) => {
+          const remaining = maxOutputBytes - outputBytes;
+          if (remaining > 0) chunks.push(chunk.subarray(0, remaining));
+          outputBytes += Math.min(remaining, chunk.length);
+          if (chunk.length > remaining) terminate("command output limit exceeded");
+        });
+        stream.on("end", finish);
+        stream.on("close", finish);
+        stream.on("error", (error) => (termination ? finish() : fail(error)));
+        if (c.req.raw.signal.aborted) onAbort();
+      });
+      await stopPromise;
+      const inspect = termination ? undefined : await exec.inspect();
+      const output = limitCommandOutput(
+        stripDockerStream(Buffer.concat(chunks)),
+        "",
+        maxOutputBytes,
+        termination,
+      );
+      return c.json({
+        ...output,
+        code: termination ? 1 : commandExitCode(inspect?.ExitCode),
+      });
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    if (error instanceof MutationPermitError) {
+      return c.json({ stdout: "", stderr: message, code: 1 }, 409);
+    }
     return c.json({ stdout: "", stderr: message, code: 1 }, 200);
   }
 });
@@ -215,61 +330,99 @@ app.post("/computers/:id/input", async (c) => {
     .parse(await c.req.json());
   const input = toSandboxInput(body.input);
   try {
-    const { container } = await managedContainer(
-      id,
+    const identity = requestIdentity(
       c.req.header("x-meshbot-bot-id"),
       c.req.header("x-meshbot-workspace-id"),
     );
-    const exec = await container.exec({
-      Cmd: ["env", "DISPLAY=:1", ...xdotoolCommand(input)],
-      AttachStdout: true,
-      AttachStderr: true,
-      WorkingDir: "/home/meshbot",
-    });
-    const stream = await exec.start({ hijack: true, stdin: false });
-    await new Promise<void>((resolve, reject) => {
-      stream.on("end", () => resolve());
-      stream.on("error", reject);
-      stream.resume();
-    });
-    const inspect = await exec.inspect();
-    if (commandExitCode(inspect.ExitCode) !== 0) {
-      return c.json({ ok: false, error: "input failed" }, 500);
+    const permit = requestMutationPermit((name) => c.req.header(name));
+    if (permit.purpose !== "control" || permit.controlLeaseId !== body.leaseId) {
+      throw new MutationPermitError();
     }
-    return c.json({ ok: true, leaseId: body.leaseId ?? null });
+    return await botMutations.run(identity.botId, async () => {
+      await authorizeMutation(database, {
+        ...identity,
+        permit,
+        allowedPurposes: ["control"],
+        expectedProviderRef: id,
+      });
+      const { container } = await managedContainer(id, identity.botId, identity.workspaceId);
+      const exec = await container.exec({
+        Cmd: ["env", "DISPLAY=:1", ...xdotoolCommand(input)],
+        AttachStdout: true,
+        AttachStderr: true,
+        WorkingDir: "/home/meshbot",
+      });
+      const stream = await exec.start({ hijack: true, stdin: false });
+      await new Promise<void>((resolve, reject) => {
+        stream.on("end", () => resolve());
+        stream.on("error", reject);
+        stream.resume();
+      });
+      const inspect = await exec.inspect();
+      if (commandExitCode(inspect.ExitCode) !== 0) {
+        return c.json({ ok: false, error: "input failed" }, 500);
+      }
+      return c.json({ ok: true, leaseId: body.leaseId ?? null });
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    if (error instanceof MutationPermitError) return c.json({ ok: false, error: message }, 409);
     return c.json({ ok: false, error: message }, 500);
   }
 });
 
 app.post("/computers/:id/stop", async (c) => {
   try {
-    const { container } = await managedContainer(
-      c.req.param("id"),
+    const id = c.req.param("id");
+    const identity = requestIdentity(
       c.req.header("x-meshbot-bot-id"),
       c.req.header("x-meshbot-workspace-id"),
     );
-    await container.stop().catch(() => undefined);
-    return c.json({ ok: true });
-  } catch {
-    return c.json({ error: "computer not found" }, 404);
+    const permit = requestMutationPermit((name) => c.req.header(name));
+    return await botMutations.run(identity.botId, async () => {
+      await authorizeMutation(database, {
+        ...identity,
+        permit,
+        allowedPurposes: ["lifecycle"],
+        expectedProviderRef: id,
+        allowDeleting: true,
+      });
+      const { container, info } = await managedContainer(id, identity.botId, identity.workspaceId);
+      if (info.State.Running) await container.stop();
+      return c.json({ ok: true });
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (error instanceof MutationPermitError) return c.json({ error: message }, 409);
+    return c.json({ error: message }, isDockerNotFound(error) ? 404 : 500);
   }
 });
 
 app.delete("/computers/:id", async (c) => {
   const id = c.req.param("id");
   try {
-    const { container } = await managedContainer(
-      id,
+    const identity = requestIdentity(
       c.req.header("x-meshbot-bot-id"),
       c.req.header("x-meshbot-workspace-id"),
     );
-    await container.remove({ force: true }).catch(() => undefined);
-    boxes.delete(id);
-    return c.json({ ok: true });
-  } catch {
-    return c.json({ error: "computer not found" }, 404);
+    const permit = requestMutationPermit((name) => c.req.header(name));
+    return await botMutations.run(identity.botId, async () => {
+      await authorizeMutation(database, {
+        ...identity,
+        permit,
+        allowedPurposes: ["lifecycle"],
+        expectedProviderRef: id,
+        allowDeleting: true,
+      });
+      const { container } = await managedContainer(id, identity.botId, identity.workspaceId);
+      await container.remove({ force: true });
+      boxes.delete(id);
+      return c.json({ ok: true });
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (error instanceof MutationPermitError) return c.json({ error: message }, 409);
+    return c.json({ error: message }, isDockerNotFound(error) ? 404 : 500);
   }
 });
 
@@ -319,16 +472,40 @@ async function ensureComputerImage() {
 }
 
 async function findBotContainer(botId: string, workspaceId: string) {
+  return (await findBotContainers(botId, workspaceId))[0];
+}
+
+async function findBotContainers(botId: string, workspaceId: string) {
   const listed = await docker.listContainers({
     all: true,
     filters: { label: [`meshbot.botId=${botId}`, `meshbot.workspaceId=${workspaceId}`] },
   });
+  const containers: Docker.Container[] = [];
   for (const item of listed) {
     const container = docker.getContainer(item.Id);
-    const info = await container.inspect();
-    if (isMeshBotContainer(info, botId, workspaceId)) return container;
+    try {
+      const info = await container.inspect();
+      if (isMeshBotContainer(info, botId, workspaceId)) containers.push(container);
+    } catch (error) {
+      if (!isDockerNotFound(error)) throw error;
+    }
   }
-  return undefined;
+  return containers;
+}
+
+async function stopBotContainers(botId: string, workspaceId: string) {
+  const containers = await findBotContainers(botId, workspaceId);
+  let stopped = 0;
+  for (const container of containers) {
+    try {
+      const info = await container.inspect();
+      if (info.State.Running) await container.stop();
+      stopped += 1;
+    } catch (error) {
+      if (!isDockerNotFound(error)) throw error;
+    }
+  }
+  return stopped;
 }
 
 async function managedContainer(id: string, botId?: string, workspaceId?: string) {
@@ -337,6 +514,12 @@ async function managedContainer(id: string, botId?: string, workspaceId?: string
   const info = await container.inspect();
   if (!isMeshBotContainer(info, botId, workspaceId)) throw new Error("computer identity mismatch");
   return { container, info };
+}
+
+function isDockerNotFound(error: unknown) {
+  return (
+    typeof error === "object" && error !== null && "statusCode" in error && error.statusCode === 404
+  );
 }
 
 function isMeshBotContainer(info: Docker.ContainerInspectInfo, botId: string, workspaceId: string) {
@@ -355,6 +538,15 @@ function assertRequestIdentity(
   if (botId !== expected.botId || workspaceId !== expected.workspaceId) {
     throw new Error("computer identity mismatch");
   }
+}
+
+function requestIdentity(botId: string | undefined, workspaceId: string | undefined) {
+  if (!botId || !workspaceId) throw new Error("missing computer identity");
+  return { botId, workspaceId };
+}
+
+function requestMutationPermit(readHeader: (name: string) => string | undefined) {
+  return readMutationPermit(readHeader);
 }
 
 function assertBotHomePath(homePath: string, botId: string) {

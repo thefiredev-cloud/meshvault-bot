@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import type { SandboxProvider, WakeupDriver } from "@meshbot/adapter-kit";
+import type { AgentRuntime, SandboxProvider, WakeupDriver } from "@meshbot/adapter-kit";
 import {
   type ComposioConnector,
   createConnectorStack,
@@ -45,12 +45,13 @@ export interface AppHandles {
 }
 
 export async function createApp(
-  overrides: Partial<AppEnv> & { prisma?: PrismaClient } = {},
+  overrides: Partial<AppEnv> & { prisma?: PrismaClient; runtime?: AgentRuntime } = {},
 ): Promise<AppHandles> {
-  const env = { ...loadEnv(process.env), ...overrides };
+  const { prisma: overridePrisma, runtime: runtimeOverride, ...envOverrides } = overrides;
+  const env = { ...loadEnv(process.env), ...envOverrides };
   const composioCallbackUrl = resolveComposioCallbackUrl(env.apiUrl, env.nodeEnv);
-  const created = overrides.prisma
-    ? { prisma: overrides.prisma, pool: undefined }
+  const created = overridePrisma
+    ? { prisma: overridePrisma, pool: undefined }
     : createDb(env.databaseUrl);
   const { prisma } = created;
   created.pool?.on("error", () => undefined);
@@ -104,7 +105,7 @@ export async function createApp(
   });
   const secrets = new EncryptedSecretStore(env.encryptionKey);
   const oauthLogins = new PiOAuthLogins();
-  const home = new LocalAgentHomeStore(env.dataDir);
+  const home = new LocalAgentHomeStore(env.dataDir, prisma);
   const memory = new MarkdownMemoryStore(prisma);
   const stack = createConnectorStack({
     prisma,
@@ -114,7 +115,8 @@ export async function createApp(
   const connector = stack.destination;
   await connector.start();
   const runtime =
-    env.agentRuntime === "scripted" ? new ScriptedAgentRuntime() : new PiAgentRuntime();
+    runtimeOverride ??
+    (env.agentRuntime === "scripted" ? new ScriptedAgentRuntime() : new PiAgentRuntime());
   const notifications = new ExpoPushProvider(env.dataDir);
   const executor = createRunExecutor({
     prisma,
@@ -154,6 +156,7 @@ export async function createApp(
     home,
     secrets,
     oauthLogins,
+    abortRun: executor.abortRun,
     composio: stack.composio,
     dataDir: env.dataDir,
     pool: created.pool,

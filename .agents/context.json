@@ -322,6 +322,26 @@
       ],
       "worked": "Shell owner approval now rejects blank, NUL-bearing, overlong, Unicode control, and Unicode format text before display or dispatch; displays the full bounded command and cwd; and revalidates legacy approved requests before the one-way intended claim. Desktop commands no longer inherit service secrets, approved shells bypass startup files with a fixed system path, the Docker computer no longer searches bot-writable executables, and every missing or nonzero exit fails the protected effect. E2B command execution now fails closed because installed SDK 2.38.3 inserts a writable login shell before every command; browser and takeover remain available. Focused tests passed 27 with 1 expected Docker skip; all 19 type checks passed; verify:fast passed 231 tests with 20 expected skips; lint checked 232 files; the full fresh-Postgres gate passed 246 tests with 5 expected skips and both Chromium journeys. Independent review found no remaining high or medium issue. No service was deployed or restarted.",
       "failed": "The first patch quoted E2B argv but could not stop the SDK's hidden /bin/bash -l startup phase. Independent review caught the bypass, so command execution was disabled on E2B until its provider exposes a non-login exact-argv process API. Run cancellation, lease heartbeats, runtime/output limits, browser container isolation, role grants, and Windows signing remain separate work."
+    },
+    {
+      "at": "2026-08-16",
+      "paths": [
+        "packages/adapters/src/executor.ts",
+        "packages/adapters/src/run-cancellation.ts",
+        "packages/adapters/src/computer-provision.ts",
+        "packages/adapters/src/child-bots.ts",
+        "packages/adapters/src/computer-idle.ts",
+        "packages/adapters/src/sandbox-mutation-permit.ts",
+        "infra/sandboxes/supervisor/src/mutation-permit.ts",
+        "packages/db/prisma/migrations/0008_single_active_run/migration.sql",
+        "packages/db/prisma/migrations/0009_bot_deletion_tombstone/migration.sql",
+        "packages/db/prisma/migrations/0010_computer_operation_fence/migration.sql",
+        "packages/testkit/src/journeys.test.ts",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Stop, replacement, approval waits, deletion, idle sleep, boot, takeover, and owner input now use durable run leases plus computer operation fences. Provider mutations fail closed on stale permits; Docker validates each permit against Postgres inside a per-bot mutation lane, while local providers enforce the same contract in one process. Slow boot cleanup retains its token until the late provider is drained, deletion checks exact cleanup ownership before removing metadata, and abort waits for local executor settlement. Commands have bounded runtime, output, argv, and process counts. Ten fresh migrations applied; 274 tests passed with 5 expected skips; both Chromium journeys passed; Docker supervisor and adapter focused gates passed. No service was deployed or restarted.",
+      "failed": "The first full gate exposed that the new stopping state was absent from the public contract and abort returned before executor cleanup. The second exposed that terminal quiescence broke persistent-computer behavior and that the delayed-boot test awaited stop before releasing its gate. Shared-contract validation, an abort settlement barrier, atomic terminal fence rotation, and corrected race ordering fixed all four before completion. Desktop fencing is intentionally process-local because Mac desktop is a development host, not the durable runtime."
     }
   ]
 }

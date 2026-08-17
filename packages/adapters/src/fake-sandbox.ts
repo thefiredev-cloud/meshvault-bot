@@ -9,6 +9,7 @@ import type {
   ScreenRequest,
   ScreenSession,
 } from "@meshbot/adapter-kit";
+import { SandboxMutationFence } from "./sandbox-mutation-permit.js";
 
 export interface FakeBox {
   ref: ComputerRef;
@@ -19,6 +20,7 @@ export interface FakeBox {
 
 export class FakeSandboxProvider implements SandboxProvider {
   readonly boxes = new Map<string, FakeBox>();
+  private readonly mutationFence = new SandboxMutationFence();
 
   describe() {
     return {
@@ -37,8 +39,9 @@ export class FakeSandboxProvider implements SandboxProvider {
 
   async provision(
     request: { botId: string; homePath: string },
-    _context: AdapterContext,
+    context: AdapterContext,
   ): Promise<ComputerRef> {
+    this.mutationFence.accept(request.botId, context, ["run", "lifecycle"]);
     const id = `fake-${request.botId}`;
     const existing = this.boxes.get(id);
     if (existing) {
@@ -63,8 +66,9 @@ export class FakeSandboxProvider implements SandboxProvider {
   async *execute(
     computer: ComputerRef,
     request: CommandRequest,
-    _context: AdapterContext,
+    context: AdapterContext,
   ): AsyncIterable<ProcessEvent> {
+    this.mutationFence.accept(computer.botId, context, ["run"]);
     const box = this.boxes.get(computer.id);
     if (!box) {
       yield { type: "stderr", data: "computer not found" };
@@ -98,9 +102,10 @@ export class FakeSandboxProvider implements SandboxProvider {
   async sendInput(
     computer: ComputerRef,
     input: ComputerInput,
-    _lease: ControlLeaseRef,
-    _context: AdapterContext,
+    lease: ControlLeaseRef,
+    context: AdapterContext,
   ): Promise<void> {
+    this.mutationFence.accept(computer.botId, context, ["control"], lease.leaseId);
     const box = this.boxes.get(computer.id);
     if (box && input.kind === "clipboard") box.screen = input.text;
   }
@@ -109,12 +114,18 @@ export class FakeSandboxProvider implements SandboxProvider {
     return { id: `snap-${computer.id}`, createdAt: new Date().toISOString() };
   }
 
-  async stop(computer: ComputerRef, _context: AdapterContext): Promise<void> {
+  async quiesce(botId: string, context: AdapterContext): Promise<void> {
+    this.mutationFence.accept(botId, context, ["run", "control", "lifecycle"]);
+  }
+
+  async stop(computer: ComputerRef, context: AdapterContext): Promise<void> {
+    this.mutationFence.accept(computer.botId, context, ["lifecycle"]);
     const box = this.boxes.get(computer.id);
     if (box) box.running = false;
   }
 
-  async destroy(computer: ComputerRef, _context: AdapterContext): Promise<void> {
+  async destroy(computer: ComputerRef, context: AdapterContext): Promise<void> {
+    this.mutationFence.accept(computer.botId, context, ["lifecycle"]);
     this.boxes.delete(computer.id);
   }
 }

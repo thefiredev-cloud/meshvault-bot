@@ -10,7 +10,7 @@ import type {
   MemoryStore,
   PortableFile,
 } from "@meshbot/adapter-kit";
-import type { PrismaClient } from "@meshbot/db";
+import type { Prisma, PrismaClient } from "@meshbot/db";
 
 export class MarkdownMemoryStore implements MemoryStore {
   constructor(private readonly prisma: PrismaClient) {}
@@ -74,40 +74,11 @@ export class MarkdownMemoryStore implements MemoryStore {
   }
 
   async commit(request: MemoryCommitRequest, context: AdapterContext): Promise<MemoryRevision> {
-    const existing = await this.prisma.memoryDocument.findFirst({
-      where: {
-        workspaceId: context.workspaceId,
-        userId: context.userId,
-        scope: request.scope,
-        botId: request.botId ?? null,
-        path: request.path,
-      },
+    const permit = runMutationPermit(context, request.sourceRunId);
+    return this.prisma.$transaction(async (tx) => {
+      if (permit) await validateRunMutation(tx, context, permit);
+      return commitDocument(tx, request, context);
     });
-    const doc = existing
-      ? await this.prisma.memoryDocument.update({
-          where: { id: existing.id },
-          data: { content: request.content, revision: existing.revision + 1 },
-        })
-      : await this.prisma.memoryDocument.create({
-          data: {
-            workspaceId: context.workspaceId,
-            userId: context.userId,
-            botId: request.botId,
-            scope: request.scope,
-            path: request.path,
-            content: request.content,
-          },
-        });
-    await this.prisma.memoryRevision.create({
-      data: {
-        documentId: doc.id,
-        revision: doc.revision,
-        content: request.content,
-        sourceRunId: request.sourceRunId,
-        sourceThreadId: request.sourceThreadId,
-      },
-    });
-    return { id: doc.id, path: doc.path, revision: doc.revision, content: doc.content };
   }
 
   async *exportMarkdown(
@@ -127,20 +98,105 @@ export class MarkdownMemoryStore implements MemoryStore {
     files: AsyncIterable<PortableFile>,
     context: AdapterContext,
   ): Promise<MemoryRevision> {
-    let last: MemoryRevision | undefined;
-    for await (const file of files) {
-      last = await this.commit(
-        {
-          scope: "user",
-          path: file.path,
-          content: new TextDecoder().decode(file.content),
-        },
-        context,
-      );
-    }
-    if (!last) throw new Error("No memory files to import");
-    return last;
+    const permit = runMutationPermit(context);
+    return this.prisma.$transaction(async (tx) => {
+      if (permit) await validateRunMutation(tx, context, permit);
+      let last: MemoryRevision | undefined;
+      for await (const file of files) {
+        last = await commitDocument(
+          tx,
+          {
+            scope: "user",
+            path: file.path,
+            content: new TextDecoder().decode(file.content),
+          },
+          context,
+        );
+      }
+      if (!last) throw new Error("No memory files to import");
+      return last;
+    });
   }
+}
+
+type RunPermit = Extract<NonNullable<AdapterContext["mutationPermit"]>, { purpose: "run" }>;
+
+function runMutationPermit(context: AdapterContext, sourceRunId?: string): RunPermit | undefined {
+  const permit = context.mutationPermit;
+  if (sourceRunId && (permit?.purpose !== "run" || permit.runId !== sourceRunId)) {
+    throw new Error("A matching run mutation permit is required");
+  }
+  if (context.runId && permit?.purpose !== "run") {
+    throw new Error("A run mutation permit is required");
+  }
+  if (permit?.purpose !== "run") return undefined;
+  if (context.runId !== permit.runId || !context.botId) {
+    throw new Error("Run mutation permit does not match the adapter context");
+  }
+  return permit;
+}
+
+async function validateRunMutation(
+  tx: Prisma.TransactionClient,
+  context: AdapterContext,
+  permit: RunPermit,
+) {
+  const rows = await tx.$queryRaw<Array<{ id: string }>>`
+    SELECT r."id"
+    FROM "runs" r
+    JOIN "computers" c ON c."botId" = r."botId"
+    WHERE r."id" = ${permit.runId}
+      AND r."workspaceId" = ${context.workspaceId}
+      AND r."userId" = ${context.userId}
+      AND r."botId" = ${context.botId}
+      AND r."status" = 'running'
+      AND r."leaseFence" = ${permit.runLeaseFence}
+      AND r."leaseExpiresAt" > CURRENT_TIMESTAMP
+      AND c."operationFence" = ${permit.operationFence}
+    FOR UPDATE OF r, c
+  `;
+  if (rows.length !== 1) throw new Error("Run mutation permit is no longer valid");
+}
+
+async function commitDocument(
+  tx: Prisma.TransactionClient,
+  request: MemoryCommitRequest,
+  context: AdapterContext,
+): Promise<MemoryRevision> {
+  const existing = await tx.memoryDocument.findFirst({
+    where: {
+      workspaceId: context.workspaceId,
+      userId: context.userId,
+      scope: request.scope,
+      botId: request.botId ?? null,
+      path: request.path,
+    },
+  });
+  const doc = existing
+    ? await tx.memoryDocument.update({
+        where: { id: existing.id },
+        data: { content: request.content, revision: existing.revision + 1 },
+      })
+    : await tx.memoryDocument.create({
+        data: {
+          workspaceId: context.workspaceId,
+          userId: context.userId,
+          botId: request.botId,
+          scope: request.scope,
+          path: request.path,
+          content: request.content,
+        },
+      });
+  await tx.memoryRevision.create({
+    data: {
+      documentId: doc.id,
+      revision: doc.revision,
+      content: request.content,
+      sourceRunId: request.sourceRunId,
+      sourceThreadId: request.sourceThreadId,
+    },
+  });
+  return { id: doc.id, path: doc.path, revision: doc.revision, content: doc.content };
 }
 
 function snippet(content: string, q: string): string {

@@ -1,7 +1,8 @@
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import type { AdapterContext } from "@meshbot/adapter-kit";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { LocalAgentHomeStore } from "./home.js";
 
 const context = {
@@ -17,13 +18,36 @@ afterEach(async () => {
   await Promise.all(dirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
-async function fixture() {
+async function fixture(prisma?: never) {
   const root = await mkdtemp(path.join(tmpdir(), "meshbot-home-"));
   dirs.push(root);
-  const store = new LocalAgentHomeStore(root);
+  const store = new LocalAgentHomeStore(root, prisma);
   const home = store.pathFor("bot-1");
   await mkdir(home, { recursive: true });
   return { root, store, home };
+}
+
+function runFenceFixture(valid = true) {
+  const query = vi.fn(async () => (valid ? [{ id: "run-1" }] : []));
+  const tx = { $queryRaw: query };
+  const transaction = vi.fn(async (run: (value: typeof tx) => Promise<unknown>) => run(tx));
+  const runContext: AdapterContext = {
+    ...context,
+    botId: "bot-1",
+    runId: "run-1",
+    mutationPermit: {
+      purpose: "run",
+      operationFence: 7,
+      runId: "run-1",
+      runLeaseFence: 11,
+    },
+  };
+  return {
+    context: runContext,
+    query,
+    transaction,
+    prisma: { $transaction: transaction } as never,
+  };
 }
 
 describe("LocalAgentHomeStore path containment", () => {
@@ -95,5 +119,40 @@ describe("LocalAgentHomeStore path containment", () => {
     const exported = [];
     for await (const file of store.exportHome("bot-1", context)) exported.push(file.path);
     expect(exported).toEqual(["safe.txt"]);
+  });
+
+  it("holds the exact run and computer fence while writing", async () => {
+    const fence = runFenceFixture();
+    const { store, home } = await fixture(fence.prisma);
+
+    await store.writeFile("bot-1", "result.txt", "safe", fence.context);
+
+    expect(await readFile(path.join(home, "result.txt"), "utf8")).toBe("safe");
+    expect(fence.query).toHaveBeenCalledWith(
+      expect.anything(),
+      "run-1",
+      "workspace",
+      "user",
+      "bot-1",
+      11,
+      7,
+    );
+    expect(fence.transaction).toHaveBeenCalledOnce();
+  });
+
+  it("leaves the home unchanged when the run fence is stale", async () => {
+    const fence = runFenceFixture(false);
+    const { store, home, root } = await fixture(fence.prisma);
+    await writeFile(path.join(home, "kept.txt"), "before");
+    const source = path.join(root, "source");
+    await mkdir(source);
+    await writeFile(path.join(source, "new.txt"), "after");
+
+    await expect(store.commit("bot-1", source, fence.context)).rejects.toThrow(/no longer valid/i);
+
+    expect(await readFile(path.join(home, "kept.txt"), "utf8")).toBe("before");
+    await expect(readFile(path.join(home, "new.txt"), "utf8")).rejects.toMatchObject({
+      code: "ENOENT",
+    });
   });
 });

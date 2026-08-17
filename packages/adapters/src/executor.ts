@@ -1,4 +1,3 @@
-import { mkdir } from "node:fs/promises";
 import {
   type AdapterContext,
   type AgentHomeStore,
@@ -18,19 +17,30 @@ import {
   assertTransition,
   canAcquireRunLease,
   containsSecret,
+  limitCommandOutput,
   nextCronDate,
   nextFence,
   ownerApprovalCheckpoint,
   parseOwnerApprovalCheckpoint,
+  RUN_LEASE_DURATION_MS,
+  RUN_LEASE_HEARTBEAT_MS,
   redactSecrets,
+  SANDBOX_COMMAND_MAX_OUTPUT_BYTES,
+  SANDBOX_COMMAND_TIMEOUT_MS,
   shouldYieldToOwnerApproval,
 } from "@meshbot/core";
-import { appendEvent, type PrismaClient } from "@meshbot/db";
+import {
+  appendEvent,
+  appendEventInTransaction,
+  appendMessageInTransaction,
+  type Prisma,
+  type PrismaClient,
+} from "@meshbot/db";
 import { builtinAgentTools } from "./builtin-tools.js";
 import { deleteSpawnedBot, spawnBot } from "./child-bots.js";
 import { collectLogIds } from "./composio-connector.js";
 import { scheduleComputerSleep } from "./computer-idle.js";
-import { resolveAgentHomePath } from "./home.js";
+import { provisionComputer } from "./computer-provision.js";
 import {
   hasAmbientPiProviderAuth,
   isKnownPiModel,
@@ -38,6 +48,12 @@ import {
   requireKnownPiModel,
 } from "./pi-models.js";
 import { parseModelSecret, resolveModelApiKey, secretValuesToRedact } from "./pi-oauth.js";
+import {
+  finalizeRunCancellation,
+  lockBotRunLane,
+  quiesceRunOperations,
+  runMutationPermit,
+} from "./run-cancellation.js";
 import { inferScript } from "./scripted-runtime.js";
 import type { EncryptedSecretStore } from "./secrets.js";
 
@@ -227,358 +243,514 @@ export async function requireBotModelAccess(
 }
 
 export function createRunExecutor(deps: ExecutorDeps) {
+  const activeRunControllers = new Map<
+    string,
+    { fence: number; controller: AbortController; settled: Promise<void> }
+  >();
+  const abortRun = async (runId: string) => {
+    const active = activeRunControllers.get(runId);
+    active?.controller.abort();
+    try {
+      await deps.runtime.abort(runId);
+    } finally {
+      await active?.settled;
+    }
+  };
+
   return {
+    abortRun,
+
     async wakeRoutine(routineId: string, workerId: string) {
-      const routine = await deps.prisma.routine.findUnique({ where: { id: routineId } });
-      if (!routine?.active) return;
-      const bot = await deps.prisma.bot.findUnique({
-        where: { id: routine.botId },
-        include: { thread: true },
+      const run = await deps.prisma.$transaction(async (tx) => {
+        const routine = await tx.routine.findUnique({ where: { id: routineId } });
+        if (!routine?.active) return null;
+        const locked = await lockBotRunLane(tx, routine.botId, {
+          allowDeleting: true,
+          allowMissing: true,
+        });
+        if (!locked || locked.deletingAt) return null;
+        const bot = await tx.bot.findUnique({
+          where: { id: routine.botId },
+          include: { thread: true },
+        });
+        if (!bot?.thread) return null;
+        const task = await tx.task.create({
+          data: {
+            workspaceId: routine.workspaceId,
+            botId: bot.id,
+            threadId: bot.thread.id,
+            userId: routine.userId,
+            prompt: routine.prompt,
+            status: "queued",
+          },
+        });
+        const created = await tx.run.create({
+          data: {
+            workspaceId: routine.workspaceId,
+            botId: bot.id,
+            threadId: bot.thread.id,
+            taskId: task.id,
+            userId: routine.userId,
+            status: "queued",
+            trigger: "routine",
+          },
+        });
+        const now = new Date();
+        await tx.routine.update({
+          where: { id: routine.id },
+          data: {
+            lastRunAt: now,
+            nextRunAt: nextCronDate(routine.cron, now, routine.timezone),
+          },
+        });
+        return created;
       });
-      if (!bot?.thread) return;
-      const task = await deps.prisma.task.create({
-        data: {
-          workspaceId: routine.workspaceId,
-          botId: bot.id,
-          threadId: bot.thread.id,
-          userId: routine.userId,
-          prompt: routine.prompt,
-          status: "queued",
-        },
-      });
-      const run = await deps.prisma.run.create({
-        data: {
-          workspaceId: routine.workspaceId,
-          botId: bot.id,
-          threadId: bot.thread.id,
-          taskId: task.id,
-          userId: routine.userId,
-          status: "queued",
-          trigger: "routine",
-        },
-      });
-      await deps.prisma.routine.update({
-        where: { id: routine.id },
-        data: {
-          lastRunAt: new Date(),
-          nextRunAt: nextCronDate(routine.cron, new Date(), routine.timezone),
-        },
-      });
+      if (!run) return;
       await this.continueRun(run.id, workerId);
     },
 
     async continueRun(runId: string, workerId: string) {
-      const run = await deps.prisma.run.findUnique({ where: { id: runId } });
-      if (!run) return;
-      if (["completed", "failed", "cancelled"].includes(run.status)) return;
-      const approvalCheckpoint = parseOwnerApprovalCheckpoint(run.checkpoint);
-      if (run.status === "waiting_input" && approvalCheckpoint && !approvalCheckpoint.decision) {
+      const runRef = await deps.prisma.run.findUnique({
+        where: { id: runId },
+        select: { botId: true, status: true },
+      });
+      if (!runRef) return;
+      if (["completed", "failed", "cancelled"].includes(runRef.status)) return;
+      if (runRef.status === "cancelling") {
+        await finalizeRunCancellation(deps, runId, { expiredAt: new Date() });
+        await wakeNextQueuedRun(deps, runRef.botId);
         return;
       }
-      const resumeFromTakeover = run.status === "waiting_takeover" || run.checkpoint === "takeover";
-
       const leaseStartedAt = new Date();
-      if (!canAcquireRunLease(run.status as RunStatus, run.leaseExpiresAt, leaseStartedAt)) {
-        return;
-      }
-      const fence = nextFence(run.leaseFence);
-      const leased = await deps.prisma.run.updateMany({
-        where: {
-          id: runId,
-          status: run.status,
-          leaseFence: run.leaseFence,
-          ...(run.status === "leased" || run.status === "running"
-            ? { leaseExpiresAt: { lte: leaseStartedAt } }
-            : {}),
-        },
-        data: {
-          status: "leased",
-          leaseOwner: workerId,
-          leaseFence: fence,
-          leaseExpiresAt: new Date(Date.now() + 5 * 60_000),
-        },
-      });
-      if (leased.count !== 1) return;
+      const claim = await deps.prisma.$transaction(async (tx) => {
+        await lockBotRunLane(tx, runRef.botId);
+        const run = await tx.run.findUnique({ where: { id: runId } });
+        if (!run || ["completed", "failed", "cancelled"].includes(run.status)) return null;
+        const approvalCheckpoint = parseOwnerApprovalCheckpoint(run.checkpoint);
+        if (run.status === "waiting_input" && approvalCheckpoint && !approvalCheckpoint.decision) {
+          return null;
+        }
+        if (!canAcquireRunLease(run.status as RunStatus, run.leaseExpiresAt, leaseStartedAt)) {
+          return null;
+        }
+        const currentComputer = await tx.computer.findUnique({ where: { botId: run.botId } });
+        if (!currentComputer || currentComputer.bootToken) return null;
+        const occupied = await tx.run.findFirst({
+          where: {
+            botId: run.botId,
+            id: { not: run.id },
+            status: {
+              in: ["leased", "running", "cancelling", "waiting_input", "waiting_takeover"],
+            },
+          },
+          select: { id: true },
+        });
+        if (occupied) return null;
 
-      assertTransition("leased", "running");
-      const running = await deps.prisma.run.updateMany({
-        where: { id: runId, status: "leased", leaseOwner: workerId, leaseFence: fence },
-        data: { status: "running", startedAt: run.startedAt ?? new Date() },
+        const fence = nextFence(run.leaseFence);
+        const leased = await tx.run.updateMany({
+          where: {
+            id: runId,
+            status: run.status,
+            leaseFence: run.leaseFence,
+            ...(run.status === "leased" || run.status === "running"
+              ? { leaseExpiresAt: { lte: leaseStartedAt } }
+              : {}),
+          },
+          data: {
+            status: "leased",
+            leaseOwner: workerId,
+            leaseFence: fence,
+            leaseExpiresAt: new Date(leaseStartedAt.getTime() + RUN_LEASE_DURATION_MS),
+          },
+        });
+        if (leased.count !== 1) return null;
+        const computer = await tx.computer.update({
+          where: { botId: run.botId },
+          data: { operationFence: { increment: 1 }, state: "stopping" },
+          select: { operationFence: true },
+        });
+        return {
+          run,
+          fence,
+          operationFence: computer.operationFence,
+          approvalCheckpoint,
+          resumeFromTakeover: run.status === "waiting_takeover" || run.checkpoint === "takeover",
+        };
       });
-      if (running.count !== 1) return;
-      await deps.prisma.attempt.create({
-        data: { runId, fence, status: "running" },
-      });
-
+      if (!claim) return;
+      const { run, fence, operationFence, approvalCheckpoint, resumeFromTakeover } = claim;
+      const runController = new AbortController();
       const bot = await deps.prisma.bot.findUniqueOrThrow({ where: { id: run.botId } });
-      const thread = await deps.prisma.thread.findUniqueOrThrow({ where: { id: run.threadId } });
-      const messages = await deps.prisma.message.findMany({
-        where: { threadId: thread.id },
-        orderBy: { seq: "asc" },
-      });
-      const task = await deps.prisma.task.findUniqueOrThrow({ where: { id: run.taskId } });
-      const actor: Actor = {
-        userId: run.userId,
-        workspaceId: run.workspaceId,
-        email: "",
-        isDeploymentOwner: false,
-      };
-      const connectedPlugins = await deps.prisma.connection.findMany({
-        where: { userId: run.userId, workspaceId: run.workspaceId, status: "connected" },
-        select: { provider: true, displayName: true },
-      });
-      const context = {
-        operationId: runId,
+      const mutationPermit = runMutationPermit(operationFence, runId, fence);
+      const fenceContext: AdapterContext = {
+        operationId: `claim:${runId}`,
         traceId: runId,
         workspaceId: run.workspaceId,
         userId: run.userId,
-        botId: bot.id,
+        botId: run.botId,
         runId,
-        signal: new AbortController().signal,
-        connectedProviders: connectedPlugins.map((row) => row.provider),
+        signal: runController.signal,
+        mutationPermit,
       };
-
-      const modelAccess = await (async () => {
-        try {
-          await appendEvent(deps.prisma, {
-            workspaceId: run.workspaceId,
-            threadId: thread.id,
-            botId: bot.id,
-            type: "run.started",
-            runId,
-            payload: { trigger: run.trigger },
-          });
-          const workspaceDefault = await deps.prisma.userModelCredential.findFirst({
-            where: { userId: run.userId, workspaceId: run.workspaceId, isDefault: true },
-          });
-          const settings = await deps.prisma.deploymentSettings.findUnique({
-            where: { id: "default" },
-          });
-          const selection = resolveBotModelSelection(run, bot, workspaceDefault, settings);
-          const credential =
-            workspaceDefault?.provider === selection.provider
-              ? workspaceDefault
-              : await deps.prisma.userModelCredential.findFirst({
-                  where: {
-                    userId: run.userId,
-                    workspaceId: run.workspaceId,
-                    provider: selection.provider,
-                  },
-                });
-          await deps.prisma.run.update({
-            where: { id: runId },
-            data: { modelProvider: selection.provider, modelId: selection.id },
-          });
-          const resolved = await resolveModelKey(deps, run.userId, run.workspaceId, credential);
-          const apiKey = resolved.apiKey;
-          const scripted = deps.runtime.describe().capabilities.scripted;
-          await requireBotModelAccess(selection, {
-            scriptedRuntime: scripted,
-            credentialPresent: Boolean(credential),
-            apiKey,
-          });
-          return {
-            selection,
-            apiKey,
-            scripted,
-            runSecrets: [...deps.secrets, ...resolved.redact],
-          };
-        } catch (error) {
-          await failRun(deps, run, bot, workerId, fence, error);
-          return null;
-        }
-      })();
-      if (!modelAccess) return;
-      const { selection, apiKey, scripted, runSecrets } = modelAccess;
-      const discovered = deps.connector ? await deps.connector.discoverTools(context) : [];
-      const tools = [
-        ...builtinAgentTools,
-        ...discovered.filter((tool) => !builtinAgentTools.some((b) => b.name === tool.name)),
-      ];
-      const history = messages.map((m) => ({
-        role: (m.role === "user" ? "user" : m.role === "system" ? "system" : "assistant") as
-          | "user"
-          | "assistant"
-          | "system",
-        content: blocksToText(m.blocks as MessageBlock[]),
-      }));
-      const computer = await ensureComputer(deps, bot.id, context);
-
-      let assembled = "";
-      let lastProgressAt = 0;
-      const script = scripted
-        ? approvalCheckpoint?.decision
-          ? [
-              {
-                assistant:
-                  approvalCheckpoint.decision === "approve"
-                    ? "The approved action finished."
-                    : "The action was denied and was not run.",
-                complete: true,
-              },
-            ]
-          : inferScript(task.prompt, resumeFromTakeover ? "takeover" : undefined)
-        : undefined;
-
-      const executeTool = async (
-        name: string,
-        args: Record<string, unknown>,
-        executionId: string,
-      ) => {
-        if (name === "write_file") {
-          const filePath = String(args.path ?? "notes/result.txt");
-          const content = String(args.content ?? "");
-          await deps.home.writeFile(bot.id, filePath, content, context);
-          return { ok: true, path: filePath };
-        }
-        if (name === "shell") {
-          const command = String(args.command ?? args.cmd ?? "");
-          const cwd = String(args.cwd ?? (computer.kind === "desktop" ? "." : "/home/meshbot"));
-          return runSandboxCommand(deps.sandbox, computer, sandboxShellArgv(command), cwd, context);
-        }
-        if (name === "remember") {
-          await deps.memory.commit(
-            {
-              scope: "bot",
-              botId: bot.id,
-              path: String(args.path ?? "MEMORY.md"),
-              content: String(args.content ?? ""),
-              sourceRunId: runId,
-              sourceThreadId: thread.id,
-            },
-            context,
-          );
-          return { ok: true };
-        }
-        if (name === "recall_memory") {
-          const query = String(args.query ?? "").trim();
-          if (!query) return { ok: false, error: "query is required" };
-          return {
-            ok: true,
-            results: await recallAgentMemory(deps.memory, bot.id, query, context),
-          };
-        }
-        if (name === "request_takeover") return { ok: true };
-        if (name === "run_subagent") {
-          return {
-            ok: true,
-            result: String(args.task ?? "done."),
-          };
-        }
-        if (name === "spawn_bot") {
-          const spawned = await spawnBot(deps, {
-            spawnedBy: {
-              id: bot.id,
-              name: bot.name,
-              workspaceId: bot.workspaceId,
-              userId: run.userId,
-            },
-            runId,
-            name: String(args.name ?? ""),
-            title: args.title ? String(args.title) : undefined,
-            instructions: args.instructions ? String(args.instructions) : undefined,
-            prompt: args.prompt ? String(args.prompt) : undefined,
-          });
-          if ("error" in spawned) return spawned;
-          await publishMessage(deps, actor, thread.id, bot.id, runId, "bot", [
-            {
-              kind: "child_bot",
-              botId: spawned.botId,
-              name: spawned.name,
-              title: spawned.title,
-              status: "created",
-            },
-          ]);
-          await appendEvent(deps.prisma, {
-            workspaceId: run.workspaceId,
-            threadId: thread.id,
-            botId: bot.id,
-            runId: run.id,
-            type: "bot.spawned",
-            payload: { childBotId: spawned.botId, name: spawned.name },
-          });
-          return spawned;
-        }
-        if (name === "delete_bot") {
-          const removed = await deleteSpawnedBot(
-            deps,
-            {
-              spawnedByBotId: bot.id,
-              userId: run.userId,
-              workspaceId: run.workspaceId,
-              confirmName: String(args.confirm_name ?? args.confirmName ?? ""),
-              botId: args.bot_id
-                ? String(args.bot_id)
-                : args.botId
-                  ? String(args.botId)
-                  : undefined,
-            },
-            context,
-          );
-          if ("error" in removed) return removed;
-          await publishMessage(deps, actor, thread.id, bot.id, runId, "bot", [
-            {
-              kind: "child_bot",
-              botId: removed.botId,
-              name: removed.name,
-              status: "deleted",
-            },
-          ]);
-          await appendEvent(deps.prisma, {
-            workspaceId: run.workspaceId,
-            threadId: thread.id,
-            botId: bot.id,
-            runId: run.id,
-            type: "bot.deleted",
-            payload: { childBotId: removed.botId, name: removed.name },
-          });
-          return removed;
-        }
-        if (deps.connector) {
-          let result: unknown = { error: `unknown tool ${name}` };
-          for await (const event of deps.connector.execute(
-            { tool: name, args, executionId },
-            context,
-          )) {
-            if (event.type === "result") {
-              result = event.data;
-              const logIds = collectLogIds(event.data);
-              for (const logId of logIds) {
-                await appendEvent(deps.prisma, {
-                  workspaceId: run.workspaceId,
-                  threadId: thread.id,
-                  botId: bot.id,
-                  runId: run.id,
-                  type: "effect.recorded",
-                  payload: { tool: name, logId },
-                });
-              }
-            }
-            if (event.type === "error") result = { error: event.message };
-          }
-          return result;
-        }
-        return { error: `unknown tool ${name}` };
-      };
-      const executeWithEffect = withEffectLifecycle(deps, run, executeTool);
-      const applyTool = withOwnerApproval(
+      await deps.sandbox.quiesce(run.botId, fenceContext);
+      const activated = await deps.prisma.$transaction(async (tx) => {
+        await lockBotRunLane(tx, run.botId);
+        const computer = await tx.computer.findUnique({ where: { botId: run.botId } });
+        if (computer?.operationFence !== operationFence) return false;
+        assertTransition("leased", "running");
+        const running = await tx.run.updateMany({
+          where: {
+            id: runId,
+            status: "leased",
+            leaseOwner: workerId,
+            leaseFence: fence,
+            leaseExpiresAt: { gt: new Date() },
+          },
+          data: { status: "running", startedAt: run.startedAt ?? new Date() },
+        });
+        if (running.count !== 1) return false;
+        await tx.computer.update({
+          where: { botId: run.botId },
+          data: { state: "stopped", controlHolder: "none" },
+        });
+        await tx.attempt.create({ data: { runId, fence, status: "running" } });
+        return true;
+      });
+      if (!activated) return;
+      let settleRun!: () => void;
+      const settled = new Promise<void>((resolve) => {
+        settleRun = resolve;
+      });
+      const registered = activeRunControllers.get(runId);
+      if (registered && registered.fence >= fence) {
+        runController.abort();
+        settleRun();
+        return;
+      }
+      registered?.controller.abort();
+      activeRunControllers.set(runId, { fence, controller: runController, settled });
+      const stopLeaseMonitor = await startRunLeaseMonitor(
         deps,
-        run,
-        { name: bot.name, notifyOnFinish: bot.notifyOnFinish },
-        runSecrets,
-        approvalCheckpoint,
-        { owner: workerId, fence },
-        executeWithEffect,
+        runId,
+        workerId,
+        fence,
+        runController,
       );
-
-      const pluginLine =
-        connectedPlugins.length > 0
-          ? `Connected plugins: ${connectedPlugins.map((row) => `${row.displayName} (${row.provider})`).join(", ")}. Use those plugin tools when the user asks about those apps.`
-          : "No plugins are connected yet.";
+      if (!stopLeaseMonitor) {
+        if (activeRunControllers.get(runId)?.controller === runController) {
+          activeRunControllers.delete(runId);
+        }
+        await finalizeRunCancellation(deps, runId, {
+          leaseOwner: workerId,
+          leaseFence: fence,
+        });
+        await wakeNextQueuedRun(deps, run.botId);
+        settleRun();
+        return;
+      }
 
       try {
+        const thread = await deps.prisma.thread.findUniqueOrThrow({ where: { id: run.threadId } });
+        const messages = await deps.prisma.message.findMany({
+          where: { threadId: thread.id },
+          orderBy: { seq: "asc" },
+        });
+        const task = await deps.prisma.task.findUniqueOrThrow({ where: { id: run.taskId } });
+        const actor: Actor = {
+          userId: run.userId,
+          workspaceId: run.workspaceId,
+          email: "",
+          isDeploymentOwner: false,
+        };
+        const connectedPlugins = await deps.prisma.connection.findMany({
+          where: { userId: run.userId, workspaceId: run.workspaceId, status: "connected" },
+          select: { provider: true, displayName: true },
+        });
+        const context = {
+          operationId: runId,
+          traceId: runId,
+          workspaceId: run.workspaceId,
+          userId: run.userId,
+          botId: bot.id,
+          runId,
+          signal: runController.signal,
+          connectedProviders: connectedPlugins.map((row) => row.provider),
+          mutationPermit,
+        };
+
+        const modelAccess = await (async () => {
+          try {
+            await appendEvent(deps.prisma, {
+              workspaceId: run.workspaceId,
+              threadId: thread.id,
+              botId: bot.id,
+              type: "run.started",
+              runId,
+              payload: { trigger: run.trigger },
+            });
+            const workspaceDefault = await deps.prisma.userModelCredential.findFirst({
+              where: { userId: run.userId, workspaceId: run.workspaceId, isDefault: true },
+            });
+            const settings = await deps.prisma.deploymentSettings.findUnique({
+              where: { id: "default" },
+            });
+            const selection = resolveBotModelSelection(run, bot, workspaceDefault, settings);
+            const credential =
+              workspaceDefault?.provider === selection.provider
+                ? workspaceDefault
+                : await deps.prisma.userModelCredential.findFirst({
+                    where: {
+                      userId: run.userId,
+                      workspaceId: run.workspaceId,
+                      provider: selection.provider,
+                    },
+                  });
+            await deps.prisma.run.update({
+              where: { id: runId },
+              data: { modelProvider: selection.provider, modelId: selection.id },
+            });
+            const resolved = await resolveModelKey(deps, run.userId, run.workspaceId, credential);
+            const apiKey = resolved.apiKey;
+            const scripted = deps.runtime.describe().capabilities.scripted;
+            await requireBotModelAccess(selection, {
+              scriptedRuntime: scripted,
+              credentialPresent: Boolean(credential),
+              apiKey,
+            });
+            return {
+              selection,
+              apiKey,
+              scripted,
+              runSecrets: [...deps.secrets, ...resolved.redact],
+            };
+          } catch (error) {
+            await failRun(deps, run, bot, workerId, fence, error);
+            return null;
+          }
+        })();
+        if (!modelAccess) return;
+        const { selection, apiKey, scripted, runSecrets } = modelAccess;
+        const discovered = deps.connector ? await deps.connector.discoverTools(context) : [];
+        const tools = [
+          ...builtinAgentTools,
+          ...discovered.filter((tool) => !builtinAgentTools.some((b) => b.name === tool.name)),
+        ];
+        const history = messages.map((m) => ({
+          role: (m.role === "user" ? "user" : m.role === "system" ? "system" : "assistant") as
+            | "user"
+            | "assistant"
+            | "system",
+          content: blocksToText(m.blocks as MessageBlock[]),
+        }));
+        if (!(await currentRunLease(deps, runId, workerId, fence, operationFence))) return;
+        const computer = await ensureComputer(deps, bot.id, context);
+        if (
+          runController.signal.aborted ||
+          !(await currentRunLease(deps, runId, workerId, fence, operationFence))
+        ) {
+          return;
+        }
+
+        let assembled = "";
+        let lastProgressAt = 0;
+        const script = scripted
+          ? approvalCheckpoint?.decision
+            ? [
+                {
+                  assistant:
+                    approvalCheckpoint.decision === "approve"
+                      ? "The approved action finished."
+                      : "The action was denied and was not run.",
+                  complete: true,
+                },
+              ]
+            : inferScript(task.prompt, resumeFromTakeover ? "takeover" : undefined)
+          : undefined;
+
+        const executeTool = async (
+          name: string,
+          args: Record<string, unknown>,
+          executionId: string,
+        ) => {
+          if (
+            runController.signal.aborted ||
+            !(await currentRunLease(deps, runId, workerId, fence, operationFence))
+          ) {
+            return { error: "run is no longer active", executionId };
+          }
+          if (name === "write_file") {
+            const filePath = String(args.path ?? "notes/result.txt");
+            const content = String(args.content ?? "");
+            await deps.home.writeFile(bot.id, filePath, content, context);
+            return { ok: true, path: filePath };
+          }
+          if (name === "shell") {
+            const command = String(args.command ?? args.cmd ?? "");
+            const cwd = String(args.cwd ?? (computer.kind === "desktop" ? "." : "/home/meshbot"));
+            return runSandboxCommand(
+              deps.sandbox,
+              computer,
+              sandboxShellArgv(command),
+              cwd,
+              context,
+            );
+          }
+          if (name === "remember") {
+            await deps.memory.commit(
+              {
+                scope: "bot",
+                botId: bot.id,
+                path: String(args.path ?? "MEMORY.md"),
+                content: String(args.content ?? ""),
+                sourceRunId: runId,
+                sourceThreadId: thread.id,
+              },
+              context,
+            );
+            return { ok: true };
+          }
+          if (name === "recall_memory") {
+            const query = String(args.query ?? "").trim();
+            if (!query) return { ok: false, error: "query is required" };
+            return {
+              ok: true,
+              results: await recallAgentMemory(deps.memory, bot.id, query, context),
+            };
+          }
+          if (name === "request_takeover") return { ok: true };
+          if (name === "run_subagent") {
+            return {
+              ok: true,
+              result: String(args.task ?? "done."),
+            };
+          }
+          if (name === "spawn_bot") {
+            const spawned = await spawnBot(deps, {
+              spawnedBy: {
+                id: bot.id,
+                name: bot.name,
+                workspaceId: bot.workspaceId,
+                userId: run.userId,
+              },
+              runId,
+              name: String(args.name ?? ""),
+              title: args.title ? String(args.title) : undefined,
+              instructions: args.instructions ? String(args.instructions) : undefined,
+              prompt: args.prompt ? String(args.prompt) : undefined,
+            });
+            if ("error" in spawned) return spawned;
+            await publishMessage(deps, actor, thread.id, bot.id, runId, "bot", [
+              {
+                kind: "child_bot",
+                botId: spawned.botId,
+                name: spawned.name,
+                title: spawned.title,
+                status: "created",
+              },
+            ]);
+            await appendEvent(deps.prisma, {
+              workspaceId: run.workspaceId,
+              threadId: thread.id,
+              botId: bot.id,
+              runId: run.id,
+              type: "bot.spawned",
+              payload: { childBotId: spawned.botId, name: spawned.name },
+            });
+            return spawned;
+          }
+          if (name === "delete_bot") {
+            const removed = await deleteSpawnedBot(
+              { ...deps, abortRun },
+              {
+                spawnedByBotId: bot.id,
+                userId: run.userId,
+                workspaceId: run.workspaceId,
+                confirmName: String(args.confirm_name ?? args.confirmName ?? ""),
+                botId: args.bot_id
+                  ? String(args.bot_id)
+                  : args.botId
+                    ? String(args.botId)
+                    : undefined,
+              },
+              context,
+            );
+            if ("error" in removed) return removed;
+            await publishMessage(deps, actor, thread.id, bot.id, runId, "bot", [
+              {
+                kind: "child_bot",
+                botId: removed.botId,
+                name: removed.name,
+                status: "deleted",
+              },
+            ]);
+            await appendEvent(deps.prisma, {
+              workspaceId: run.workspaceId,
+              threadId: thread.id,
+              botId: bot.id,
+              runId: run.id,
+              type: "bot.deleted",
+              payload: { childBotId: removed.botId, name: removed.name },
+            });
+            return removed;
+          }
+          if (deps.connector) {
+            let result: unknown = { error: `unknown tool ${name}` };
+            for await (const event of deps.connector.execute(
+              { tool: name, args, executionId },
+              context,
+            )) {
+              if (event.type === "result") {
+                result = event.data;
+                const logIds = collectLogIds(event.data);
+                for (const logId of logIds) {
+                  await appendEvent(deps.prisma, {
+                    workspaceId: run.workspaceId,
+                    threadId: thread.id,
+                    botId: bot.id,
+                    runId: run.id,
+                    type: "effect.recorded",
+                    payload: { tool: name, logId },
+                  });
+                }
+              }
+              if (event.type === "error") result = { error: event.message };
+            }
+            return result;
+          }
+          return { error: `unknown tool ${name}` };
+        };
+        const executeWithEffect = withEffectLifecycle(
+          deps,
+          run,
+          { owner: workerId, fence, operationFence },
+          executeTool,
+        );
+        const applyTool = withOwnerApproval(
+          deps,
+          run,
+          { name: bot.name, notifyOnFinish: bot.notifyOnFinish },
+          runSecrets,
+          approvalCheckpoint,
+          { owner: workerId, fence, operationFence },
+          runController.signal,
+          executeWithEffect,
+        );
+
+        const pluginLine =
+          connectedPlugins.length > 0
+            ? `Connected plugins: ${connectedPlugins.map((row) => `${row.displayName} (${row.provider})`).join(", ")}. Use those plugin tools when the user asks about those apps.`
+            : "No plugins are connected yet.";
+
         const approvalInstruction = approvalCheckpoint?.decision
-          ? await resumeOwnerApproval(deps, run, approvalCheckpoint, runSecrets, executeTool)
+          ? await resumeOwnerApproval(
+              deps,
+              run,
+              approvalCheckpoint,
+              runSecrets,
+              { owner: workerId, fence, operationFence },
+              executeTool,
+            )
           : "";
         for await (const event of deps.runtime.run(
           {
@@ -614,9 +786,12 @@ export function createRunExecutor(deps: ExecutorDeps) {
         )) {
           const still = await deps.prisma.run.findUnique({ where: { id: runId } });
           if (
+            runController.signal.aborted ||
             still?.status !== "running" ||
             still.leaseOwner !== workerId ||
             still.leaseFence !== fence ||
+            !still.leaseExpiresAt ||
+            still.leaseExpiresAt.getTime() <= Date.now() ||
             shouldYieldToOwnerApproval(run.checkpoint, still.checkpoint)
           ) {
             return;
@@ -646,55 +821,118 @@ export function createRunExecutor(deps: ExecutorDeps) {
               payload: { text: event.text },
             });
           } else if (event.type === "ask") {
-            await publishMessage(deps, actor, thread.id, bot.id, runId, "bot", [
+            if (
+              !(await quiesceRunOperations(deps, run, {
+                leaseOwner: workerId,
+                leaseFence: fence,
+              }))
+            ) {
+              return;
+            }
+            const blocks: MessageBlock[] = [
               { kind: "ask", text: event.text, detail: event.detail },
-            ]);
-            await deps.prisma.run.update({
-              where: { id: runId },
-              data: { status: "waiting_input", checkpoint: null },
+            ];
+            const waiting = await deps.prisma.$transaction(async (tx) => {
+              const changed = await tx.run.updateMany({
+                where: {
+                  id: runId,
+                  status: "running",
+                  leaseOwner: workerId,
+                  leaseFence: fence,
+                  leaseExpiresAt: { gt: new Date() },
+                },
+                data: { status: "waiting_input", checkpoint: null },
+              });
+              if (changed.count !== 1) return false;
+              await publishMessageInTransaction(
+                tx,
+                run.workspaceId,
+                thread.id,
+                bot.id,
+                runId,
+                "bot",
+                blocks,
+              );
+              return true;
             });
-            await notifyRun(deps, run, {
-              kind: "help",
-              title: `${bot.name} needs an answer`,
-              body: event.text,
-              botId: bot.id,
-              threadId: thread.id,
-            });
+            if (!waiting) return;
+            if (await runHasStatus(deps.prisma, runId, "waiting_input")) {
+              await notifyRun(
+                deps,
+                run,
+                {
+                  kind: "help",
+                  title: `${bot.name} needs an answer`,
+                  body: event.text,
+                  botId: bot.id,
+                  threadId: thread.id,
+                },
+                runController.signal,
+              );
+            }
             return;
           } else if (event.type === "takeover") {
-            await deps.prisma.$transaction([
-              deps.prisma.computer.updateMany({
+            const waiting = await deps.prisma.$transaction(async (tx) => {
+              const changed = await tx.run.updateMany({
+                where: {
+                  id: runId,
+                  status: "running",
+                  leaseOwner: workerId,
+                  leaseFence: fence,
+                  leaseExpiresAt: { gt: new Date() },
+                },
+                data: { status: "waiting_takeover", checkpoint: "takeover" },
+              });
+              if (changed.count !== 1) return false;
+              await tx.computer.updateMany({
                 where: { botId: bot.id },
                 data: { state: "running", controlHolder: "none", controlRunId: null },
-              }),
-              deps.prisma.run.update({
-                where: { id: runId },
-                data: { status: "waiting_takeover", checkpoint: "takeover" },
-              }),
-            ]);
-            if (assembled.trim()) {
-              await publishMessage(deps, actor, thread.id, bot.id, runId, "bot", [
-                { kind: "text", text: assembled },
-              ]);
+              });
+              if (assembled.trim()) {
+                await publishMessageInTransaction(
+                  tx,
+                  run.workspaceId,
+                  thread.id,
+                  bot.id,
+                  runId,
+                  "bot",
+                  [{ kind: "text", text: assembled }],
+                );
+              }
+              await publishMessageInTransaction(
+                tx,
+                run.workspaceId,
+                thread.id,
+                bot.id,
+                runId,
+                "bot",
+                [{ kind: "computer", state: "Ready", text: event.reason }],
+              );
+              await appendEventInTransaction(tx, {
+                workspaceId: run.workspaceId,
+                threadId: thread.id,
+                botId: bot.id,
+                type: "computer.takeover.requested",
+                runId,
+                payload: { reason: event.reason },
+              });
+              return true;
+            });
+            if (!waiting) return;
+            if (await runHasStatus(deps.prisma, runId, "waiting_takeover")) {
+              await notifyRun(
+                deps,
+                run,
+                {
+                  kind: "takeover",
+                  title: `${bot.name} needs you on the screen`,
+                  body: event.reason,
+                  botId: bot.id,
+                  threadId: thread.id,
+                },
+                runController.signal,
+              );
             }
-            await publishMessage(deps, actor, thread.id, bot.id, runId, "bot", [
-              { kind: "computer", state: "Ready", text: event.reason },
-            ]);
-            await appendEvent(deps.prisma, {
-              workspaceId: run.workspaceId,
-              threadId: thread.id,
-              botId: bot.id,
-              type: "computer.takeover.requested",
-              runId,
-              payload: { reason: event.reason },
-            });
-            await notifyRun(deps, run, {
-              kind: "takeover",
-              title: `${bot.name} needs you on the screen`,
-              body: event.reason,
-              botId: bot.id,
-              threadId: thread.id,
-            });
             return;
           } else if (event.type === "tool") {
             if (scripted) {
@@ -760,9 +998,12 @@ export function createRunExecutor(deps: ExecutorDeps) {
 
         const afterRuntime = await deps.prisma.run.findUnique({ where: { id: runId } });
         if (
+          runController.signal.aborted ||
           afterRuntime?.status !== "running" ||
           afterRuntime.leaseOwner !== workerId ||
           afterRuntime.leaseFence !== fence ||
+          !afterRuntime.leaseExpiresAt ||
+          afterRuntime.leaseExpiresAt.getTime() <= Date.now() ||
           shouldYieldToOwnerApproval(run.checkpoint, afterRuntime.checkpoint)
         ) {
           return;
@@ -770,9 +1011,11 @@ export function createRunExecutor(deps: ExecutorDeps) {
 
         for (const turn of script ?? []) {
           for (const file of turn.files ?? []) {
+            if (!(await currentRunLease(deps, runId, workerId, fence, operationFence))) return;
             await deps.home.writeFile(bot.id, file.path, file.content, context);
           }
           for (const mem of turn.memory ?? []) {
+            if (!(await currentRunLease(deps, runId, workerId, fence, operationFence))) return;
             await deps.memory.commit(
               {
                 scope: mem.scope,
@@ -807,48 +1050,39 @@ export function createRunExecutor(deps: ExecutorDeps) {
               status: "running",
               leaseOwner: workerId,
               leaseFence: fence,
+              leaseExpiresAt: { gt: new Date() },
             },
             data: { status: "completed", checkpoint: null, completedAt: new Date() },
           });
           if (completed.count !== 1) return null;
-
-          const last = await tx.message.findFirst({
-            where: { threadId: thread.id },
-            orderBy: { seq: "desc" },
-            select: { seq: true },
+          await tx.computer.update({
+            where: { botId: bot.id },
+            data: { operationFence: { increment: 1 } },
           });
-          const message = await tx.message.create({
-            data: {
-              threadId: thread.id,
-              seq: (last?.seq ?? -1) + 1,
-              role: "bot",
-              runId,
-              blocks: blocks as never,
-            },
+
+          const message = await appendMessageInTransaction(tx, {
+            workspaceId: run.workspaceId,
+            threadId: thread.id,
+            botId: bot.id,
+            role: "bot",
+            runId,
+            blocks,
           });
           await tx.task.update({
             where: { id: run.taskId },
             data: { status: "completed" },
           });
+          await appendEventInTransaction(tx, {
+            workspaceId: run.workspaceId,
+            threadId: thread.id,
+            botId: bot.id,
+            type: "run.completed",
+            runId,
+            payload: {},
+          });
           return message;
         });
         if (!completion) return;
-        await appendEvent(deps.prisma, {
-          workspaceId: run.workspaceId,
-          threadId: thread.id,
-          botId: bot.id,
-          type: "thread.message.created",
-          runId,
-          payload: { messageId: completion.id, role: "bot", blocks },
-        });
-        await appendEvent(deps.prisma, {
-          workspaceId: run.workspaceId,
-          threadId: thread.id,
-          botId: bot.id,
-          type: "run.completed",
-          runId,
-          payload: {},
-        });
         await deps.prisma.bot.update({ where: { id: bot.id }, data: { updatedAt: new Date() } });
         if (bot.notifyOnFinish) {
           await notifyRun(deps, run, {
@@ -861,6 +1095,20 @@ export function createRunExecutor(deps: ExecutorDeps) {
         }
       } catch (error) {
         await failRun(deps, run, bot, workerId, fence, error);
+      } finally {
+        await stopLeaseMonitor();
+        try {
+          await finalizeRunCancellation(deps, runId, {
+            leaseOwner: workerId,
+            leaseFence: fence,
+          });
+        } finally {
+          if (activeRunControllers.get(runId)?.controller === runController) {
+            activeRunControllers.delete(runId);
+          }
+          await wakeNextQueuedRun(deps, run.botId);
+          settleRun();
+        }
       }
     },
   };
@@ -881,24 +1129,33 @@ async function failRun(
   error: unknown,
 ) {
   const message = error instanceof Error ? error.message : String(error);
-  const failed = await deps.prisma.run.updateMany({
-    where: {
-      id: run.id,
-      status: "running",
-      leaseOwner: workerId,
-      leaseFence: fence,
-    },
-    data: { status: "failed", error: message, completedAt: new Date() },
+  const failed = await deps.prisma.$transaction(async (tx) => {
+    const changed = await tx.run.updateMany({
+      where: {
+        id: run.id,
+        status: "running",
+        leaseOwner: workerId,
+        leaseFence: fence,
+        leaseExpiresAt: { gt: new Date() },
+      },
+      data: { status: "failed", error: message, completedAt: new Date() },
+    });
+    if (changed.count !== 1) return false;
+    await tx.computer.update({
+      where: { botId: bot.id },
+      data: { operationFence: { increment: 1 } },
+    });
+    await appendEventInTransaction(tx, {
+      workspaceId: run.workspaceId,
+      threadId: run.threadId,
+      botId: bot.id,
+      type: "run.failed",
+      runId: run.id,
+      payload: { error: message },
+    });
+    return true;
   });
-  if (failed.count !== 1) return;
-  await appendEvent(deps.prisma, {
-    workspaceId: run.workspaceId,
-    threadId: run.threadId,
-    botId: bot.id,
-    type: "run.failed",
-    runId: run.id,
-    payload: { error: message },
-  });
+  if (!failed) return;
   if (bot.notifyOnFinish) {
     await notifyRun(deps, run, {
       kind: "failure",
@@ -914,6 +1171,7 @@ async function notifyRun(
   deps: ExecutorDeps,
   run: { workspaceId: string; userId: string; botId: string; threadId: string },
   message: NotificationMessage,
+  signal = new AbortController().signal,
 ) {
   if (!deps.notifications) return;
   await deps.notifications
@@ -923,7 +1181,7 @@ async function notifyRun(
       workspaceId: run.workspaceId,
       userId: run.userId,
       botId: run.botId,
-      signal: new AbortController().signal,
+      signal,
     })
     .catch(() => undefined);
 }
@@ -937,24 +1195,45 @@ async function publishMessage(
   role: "user" | "bot" | "system",
   blocks: MessageBlock[],
 ) {
-  const last = await deps.prisma.message.findFirst({
-    where: { threadId },
-    orderBy: { seq: "desc" },
+  return deps.prisma.$transaction(async (tx) => {
+    const thread = await tx.thread.findUniqueOrThrow({ where: { id: threadId } });
+    return publishMessageInTransaction(
+      tx,
+      thread.workspaceId,
+      threadId,
+      botId,
+      runId,
+      role,
+      blocks,
+    );
   });
-  const seq = (last?.seq ?? -1) + 1;
-  const message = await deps.prisma.message.create({
-    data: { threadId, seq, role, blocks, runId },
-  });
-  await appendEvent(deps.prisma, {
-    workspaceId: (await deps.prisma.thread.findUniqueOrThrow({ where: { id: threadId } }))
-      .workspaceId,
+}
+
+async function publishMessageInTransaction(
+  tx: Prisma.TransactionClient,
+  workspaceId: string,
+  threadId: string,
+  botId: string,
+  runId: string,
+  role: "user" | "bot" | "system",
+  blocks: MessageBlock[],
+) {
+  return appendMessageInTransaction(tx, {
+    workspaceId,
     threadId,
     botId,
-    type: "thread.message.created",
     runId,
-    payload: { messageId: message.id, role, blocks },
+    role,
+    blocks,
   });
-  return message;
+}
+
+async function runHasStatus(prisma: PrismaClient, runId: string, status: RunStatus) {
+  return (
+    (await prisma.run.count({
+      where: { id: runId, status },
+    })) === 1
+  );
 }
 
 type ApprovalRun = {
@@ -965,7 +1244,7 @@ type ApprovalRun = {
   threadId: string;
 };
 
-type RunLease = { owner: string; fence: number };
+type RunLease = { owner: string; fence: number; operationFence: number };
 
 function withOwnerApproval(
   deps: ExecutorDeps,
@@ -974,6 +1253,7 @@ function withOwnerApproval(
   runSecrets: string[],
   checkpoint: { effectId: string; decision?: "approve" | "deny" } | null,
   lease: RunLease,
+  signal: AbortSignal,
   execute: (name: string, args: Record<string, unknown>, executionId: string) => Promise<unknown>,
 ) {
   return async (name: string, args: Record<string, unknown>, executionId: string) => {
@@ -1013,7 +1293,7 @@ function withOwnerApproval(
       };
     }
 
-    return requestOwnerApproval(deps, run, bot, runSecrets, lease, name, args, executionId);
+    return requestOwnerApproval(deps, run, bot, runSecrets, lease, signal, name, args, executionId);
   };
 }
 
@@ -1023,6 +1303,7 @@ async function requestOwnerApproval(
   bot: { name: string; notifyOnFinish: boolean },
   runSecrets: string[],
   lease: RunLease,
+  signal: AbortSignal,
   name: string,
   args: Record<string, unknown>,
   executionId: string,
@@ -1037,6 +1318,14 @@ async function requestOwnerApproval(
   ];
 
   try {
+    if (
+      !(await quiesceRunOperations(deps, run, {
+        leaseOwner: lease.owner,
+        leaseFence: lease.fence,
+      }))
+    ) {
+      return { error: "run is no longer waiting for this action", executionId };
+    }
     const outcome = await deps.prisma.$transaction(async (tx) => {
       const current = await tx.run.findFirst({
         where: {
@@ -1048,6 +1337,7 @@ async function requestOwnerApproval(
           status: "running",
           leaseOwner: lease.owner,
           leaseFence: lease.fence,
+          leaseExpiresAt: { gt: new Date() },
         },
         select: { id: true },
       });
@@ -1079,24 +1369,19 @@ async function requestOwnerApproval(
           status: "running",
           leaseOwner: lease.owner,
           leaseFence: lease.fence,
+          leaseExpiresAt: { gt: new Date() },
         },
         data: { status: "waiting_input", checkpoint: ownerApprovalCheckpoint(effect.id) },
       });
       if (waiting.count !== 1) throw new Error("approval run changed before it could pause");
 
-      const last = await tx.message.findFirst({
-        where: { threadId: run.threadId },
-        orderBy: { seq: "desc" },
-        select: { seq: true },
-      });
-      const message = await tx.message.create({
-        data: {
-          threadId: run.threadId,
-          seq: (last?.seq ?? -1) + 1,
-          role: "bot",
-          runId: run.id,
-          blocks: blocks as never,
-        },
+      const message = await appendMessageInTransaction(tx, {
+        workspaceId: run.workspaceId,
+        threadId: run.threadId,
+        botId: run.botId,
+        role: "bot",
+        runId: run.id,
+        blocks,
       });
       return { state: "created" as const, effectId: effect.id, messageId: message.id };
     });
@@ -1105,21 +1390,20 @@ async function requestOwnerApproval(
       return { error: "run is no longer waiting for this action", executionId };
     }
     if (outcome.state === "created") {
-      await appendEvent(deps.prisma, {
-        workspaceId: run.workspaceId,
-        threadId: run.threadId,
-        botId: run.botId,
-        type: "thread.message.created",
-        runId: run.id,
-        payload: { messageId: outcome.messageId, role: "bot", blocks },
-      }).catch(() => undefined);
-      await notifyRun(deps, run, {
-        kind: "help",
-        title: `${bot.name} needs approval`,
-        body: blocks[0]?.kind === "ask" ? blocks[0].text : "Approval needed",
-        botId: run.botId,
-        threadId: run.threadId,
-      });
+      if (!signal.aborted && (await runHasStatus(deps.prisma, run.id, "waiting_input"))) {
+        await notifyRun(
+          deps,
+          run,
+          {
+            kind: "help",
+            title: `${bot.name} needs approval`,
+            body: blocks[0]?.kind === "ask" ? blocks[0].text : "Approval needed",
+            botId: run.botId,
+            threadId: run.threadId,
+          },
+          signal,
+        );
+      }
     }
     return ownerApprovalRequired(outcome.effectId);
   } catch (error) {
@@ -1138,6 +1422,7 @@ async function resumeOwnerApproval(
   run: ApprovalRun,
   checkpoint: { effectId: string; decision?: "approve" | "deny" },
   runSecrets: string[],
+  lease: RunLease,
   execute: (name: string, args: Record<string, unknown>, executionId: string) => Promise<unknown>,
 ): Promise<string> {
   const effect = await deps.prisma.externalEffect.findFirst({
@@ -1181,16 +1466,42 @@ async function resumeOwnerApproval(
     throw new Error("approved action changed before validation");
   }
 
-  const claimed = await deps.prisma.externalEffect.updateMany({
-    where: {
-      id: effect.id,
-      runId: run.id,
-      workspaceId: run.workspaceId,
-      status: "approved",
-    },
-    data: { status: "intended" },
+  const claimState = await deps.prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "runs" WHERE "id" = ${run.id} FOR UPDATE`;
+    const current = await tx.run.findFirst({
+      where: {
+        id: run.id,
+        workspaceId: run.workspaceId,
+        status: "running",
+        leaseOwner: lease.owner,
+        leaseFence: lease.fence,
+        leaseExpiresAt: { gt: new Date() },
+      },
+      select: { id: true },
+    });
+    if (!current) {
+      await tx.externalEffect.updateMany({
+        where: { id: effect.id, status: "approved" },
+        data: {
+          status: "failed",
+          result: { error: "run stopped before approved action dispatch" },
+        },
+      });
+      return "stale" as const;
+    }
+    const claimed = await tx.externalEffect.updateMany({
+      where: {
+        id: effect.id,
+        runId: run.id,
+        workspaceId: run.workspaceId,
+        status: "approved",
+      },
+      data: { status: "intended" },
+    });
+    return claimed.count === 1 ? ("claimed" as const) : ("changed" as const);
   });
-  if (claimed.count !== 1) {
+  if (claimState === "stale") throw new Error("approved action was stopped before dispatch");
+  if (claimState !== "claimed") {
     const current = await deps.prisma.externalEffect.findUnique({ where: { id: effect.id } });
     if (current?.status === "completed") return approvedEffectInstruction(effect.kind, effect.id);
     throw new Error("approved action outcome is ambiguous; review before retrying");
@@ -1211,25 +1522,101 @@ async function resumeOwnerApproval(
     throw new Error(`approved action outcome is ambiguous: ${error}`);
   }
 
-  let receipt: { id: string };
   try {
-    receipt = await settleApprovedEffect(deps, run, effect.id, effect.kind, result);
+    await settleApprovedEffect(deps, run, effect.id, effect.kind, result);
   } catch (error) {
     await markProtectedEffectAmbiguous(deps, effect.id, error);
     throw error;
   }
-  const blocks: MessageBlock[] = [
-    { kind: "meta", text: `Approved ${effect.kind} finished. Evidence: ${effect.id}.` },
-  ];
-  await appendEvent(deps.prisma, {
-    workspaceId: run.workspaceId,
-    threadId: run.threadId,
-    botId: run.botId,
-    type: "thread.message.created",
-    runId: run.id,
-    payload: { messageId: receipt.id, role: "bot", blocks },
-  }).catch(() => undefined);
   return approvedEffectInstruction(effect.kind, effect.id);
+}
+
+async function currentRunLease(
+  deps: ExecutorDeps,
+  runId: string,
+  owner: string,
+  fence: number,
+  operationFence: number,
+): Promise<boolean> {
+  const current = await deps.prisma.run.findFirst({
+    where: {
+      id: runId,
+      status: "running",
+      leaseOwner: owner,
+      leaseFence: fence,
+      leaseExpiresAt: { gt: new Date() },
+      bot: { computer: { operationFence } },
+    },
+    select: { id: true },
+  });
+  return Boolean(current);
+}
+
+async function wakeNextQueuedRun(deps: ExecutorDeps, botId: string) {
+  if (!deps.wakeup) return;
+  const occupied = await deps.prisma.run.findFirst({
+    where: {
+      botId,
+      status: { in: ["leased", "running", "cancelling", "waiting_input", "waiting_takeover"] },
+    },
+    select: { id: true },
+  });
+  if (occupied) return;
+  const next = await deps.prisma.run.findFirst({
+    where: { botId, status: "queued" },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    select: { id: true },
+  });
+  if (!next) return;
+  await deps.wakeup.enqueue({
+    name: "run.continue",
+    payload: { runId: next.id },
+    jobKey: `run.continue:${next.id}`,
+  });
+}
+
+async function startRunLeaseMonitor(
+  deps: ExecutorDeps,
+  runId: string,
+  owner: string,
+  fence: number,
+  controller: AbortController,
+): Promise<(() => Promise<void>) | undefined> {
+  const renew = async () => {
+    const now = new Date();
+    const renewed = await deps.prisma.run.updateMany({
+      where: {
+        id: runId,
+        status: "running",
+        leaseOwner: owner,
+        leaseFence: fence,
+        leaseExpiresAt: { gt: now },
+      },
+      data: { leaseExpiresAt: new Date(now.getTime() + RUN_LEASE_DURATION_MS) },
+    });
+    if (renewed.count !== 1) controller.abort();
+    return renewed.count === 1;
+  };
+
+  if (!(await renew())) return undefined;
+  let stopped = false;
+  let pending: Promise<void> | undefined;
+  const timer = setInterval(() => {
+    if (stopped || pending) return;
+    pending = renew()
+      .then(() => undefined)
+      .catch(() => controller.abort())
+      .finally(() => {
+        pending = undefined;
+      });
+  }, RUN_LEASE_HEARTBEAT_MS);
+  timer.unref();
+
+  return async () => {
+    stopped = true;
+    clearInterval(timer);
+    await pending;
+  };
 }
 
 function approvedEffectInstruction(kind: string, effectId: string): string {
@@ -1266,20 +1653,13 @@ async function settleApprovedEffect(
     });
     if (completed.count !== 1) throw new Error("approved action could not be settled safely");
 
-    const last = await tx.message.findFirst({
-      where: { threadId: run.threadId },
-      orderBy: { seq: "desc" },
-      select: { seq: true },
-    });
-    return tx.message.create({
-      data: {
-        threadId: run.threadId,
-        seq: (last?.seq ?? -1) + 1,
-        role: "bot",
-        runId: run.id,
-        blocks: blocks as never,
-      },
-      select: { id: true },
+    return appendMessageInTransaction(tx, {
+      workspaceId: run.workspaceId,
+      threadId: run.threadId,
+      botId: run.botId,
+      role: "bot",
+      runId: run.id,
+      blocks,
     });
   });
 }
@@ -1516,16 +1896,17 @@ async function recordEffect(
 }
 
 async function completeEffect(deps: ExecutorDeps, effectId: string, result: unknown) {
-  await deps.prisma.externalEffect.update({
-    where: { id: effectId },
+  const completed = await deps.prisma.externalEffect.updateMany({
+    where: { id: effectId, status: "intended" },
     data: { status: "completed", result: result as never },
   });
+  if (completed.count !== 1) throw new Error("effect changed before completion");
 }
 
 async function failEffect(deps: ExecutorDeps, effectId: string, error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
-  await deps.prisma.externalEffect.update({
-    where: { id: effectId },
+  await deps.prisma.externalEffect.updateMany({
+    where: { id: effectId, status: "intended" },
     data: { status: "failed", result: { error: message } },
   });
 }
@@ -1533,9 +1914,13 @@ async function failEffect(deps: ExecutorDeps, effectId: string, error: unknown) 
 function withEffectLifecycle(
   deps: ExecutorDeps,
   run: { id: string; workspaceId: string },
+  lease: RunLease,
   execute: (name: string, args: Record<string, unknown>, executionId: string) => Promise<unknown>,
 ) {
   return async (name: string, args: Record<string, unknown>, executionId: string) => {
+    if (!(await currentRunLease(deps, run.id, lease.owner, lease.fence, lease.operationFence))) {
+      return { error: "run is no longer active", executionId };
+    }
     const applied = await recordEffect(deps, run, name, executionId, args);
     if (applied.blocked) {
       return {
@@ -1585,46 +1970,11 @@ function effectError(result: unknown): string | undefined {
 async function ensureComputer(
   deps: ExecutorDeps,
   botId: string,
-  context: {
-    operationId: string;
-    traceId: string;
-    workspaceId: string;
-    userId: string;
-    botId?: string;
-    runId?: string;
-    signal: AbortSignal;
-  },
+  context: AdapterContext,
 ): Promise<ComputerRef> {
-  const homePath = resolveAgentHomePath(deps.home, botId, deps.dataDir ?? "./data");
-  await mkdir(homePath, { recursive: true });
-  const existing = await deps.prisma.computer.findUnique({ where: { botId } });
-  await deps.prisma.computer.updateMany({
-    where: { botId },
-    data: { state: "booting" },
-  });
-  try {
-    const ref = await deps.sandbox.provision(
-      { botId, homePath, providerRef: existing?.providerRef ?? undefined },
-      context,
-    );
-    await deps.prisma.computer.updateMany({
-      where: { botId },
-      data: {
-        state: "running",
-        providerRef: ref.providerRef,
-        kind: ref.kind,
-        controlHolder: "bot",
-      },
-    });
-    scheduleComputerSleep(deps.wakeup, botId);
-    return ref;
-  } catch (error) {
-    await deps.prisma.computer.updateMany({
-      where: { botId },
-      data: { state: "error" },
-    });
-    throw error;
-  }
+  const ref = await provisionComputer(deps, botId, context, "bot");
+  scheduleComputerSleep(deps.wakeup, botId);
+  return ref;
 }
 
 async function runSandboxCommand(
@@ -1632,25 +1982,47 @@ async function runSandboxCommand(
   computer: ComputerRef,
   argv: string[],
   cwd: string,
-  context: {
-    operationId: string;
-    traceId: string;
-    workspaceId: string;
-    userId: string;
-    botId?: string;
-    runId?: string;
-    signal: AbortSignal;
-  },
+  context: AdapterContext,
 ) {
-  let stdout = "";
-  let stderr = "";
+  const stdout: Buffer[] = [];
+  const stderr: Buffer[] = [];
+  let outputBytes = 0;
+  let outputExceeded = false;
   let code: number | undefined;
-  for await (const event of sandbox.execute(computer, { argv, cwd }, context)) {
-    if (event.type === "stdout") stdout += event.data;
-    if (event.type === "stderr") stderr += event.data;
+  const commandController = new AbortController();
+  const signal = AbortSignal.any([context.signal, commandController.signal]);
+  const append = (target: Buffer[], value: string) => {
+    const buffer = Buffer.from(value);
+    const remaining = SANDBOX_COMMAND_MAX_OUTPUT_BYTES - outputBytes;
+    if (remaining > 0) target.push(buffer.subarray(0, remaining));
+    outputBytes += Math.min(remaining, buffer.length);
+    outputExceeded ||= buffer.length > remaining;
+  };
+  for await (const event of sandbox.execute(
+    computer,
+    {
+      argv,
+      cwd,
+      timeoutMs: SANDBOX_COMMAND_TIMEOUT_MS,
+      maxOutputBytes: SANDBOX_COMMAND_MAX_OUTPUT_BYTES,
+    },
+    { ...context, signal },
+  )) {
+    if (event.type === "stdout") append(stdout, event.data);
+    if (event.type === "stderr") append(stderr, event.data);
     if (event.type === "exit") code = event.code;
+    if (outputExceeded) {
+      commandController.abort("command output limit exceeded");
+      break;
+    }
   }
-  return sandboxCommandResult(stdout, stderr, code);
+  const output = limitCommandOutput(
+    Buffer.concat(stdout).toString("utf8"),
+    Buffer.concat(stderr).toString("utf8"),
+    SANDBOX_COMMAND_MAX_OUTPUT_BYTES,
+    outputExceeded ? "command output limit exceeded" : "",
+  );
+  return sandboxCommandResult(output.stdout, output.stderr, outputExceeded ? 1 : code);
 }
 
 async function resolveModelKey(

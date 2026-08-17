@@ -177,3 +177,12 @@ Empty — first pass.
 - [x] Fail E2B command execution closed while its SDK cannot preserve exact argv semantics.
 - [x] Treat missing or nonzero exits as failed protected effects.
 - [x] Pass focused, type, lint, fast, database, browser, and independent review gates.
+
+## Run cancellation and resource bounds subtask
+
+- [x] Retain one combined abort signal from Stop through runtime, tools, and sandboxes.
+- [x] Renew active leases and recover queued plus expired leased/running work without duplication.
+- [x] Fence every tool, approved-effect, and wait-state transition against cancellation or lease loss.
+- [x] Bound command runtime and combined output in the executor, desktop adapter, and Docker supervisor.
+- [x] Keep cancelled tasks terminal and record cancellation evidence without stale completion.
+- [x] Pass race, timeout, output, type, lint, fast, database, browser, and independent review gates.

@@ -44,7 +44,7 @@ export class PiAgentRuntime implements AgentRuntime {
     ensureGateway();
     const controller = new AbortController();
     running.set(request.runId, controller);
-    const signal = context.signal ?? controller.signal;
+    const signal = AbortSignal.any([context.signal, controller.signal]);
     const queue = createQueue();
 
     const work = (async () => {

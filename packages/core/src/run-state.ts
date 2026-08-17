@@ -1,12 +1,31 @@
 import type { RunStatus } from "@meshbot/contracts";
 
-const ACTIVE: RunStatus[] = ["queued", "leased", "running", "waiting_input", "waiting_takeover"];
+const ACTIVE: RunStatus[] = [
+  "queued",
+  "leased",
+  "running",
+  "cancelling",
+  "waiting_input",
+  "waiting_takeover",
+];
 const TERMINAL: RunStatus[] = ["completed", "failed", "cancelled"];
+
+export const RUN_LEASE_DURATION_MS = 5 * 60_000;
+export const RUN_LEASE_HEARTBEAT_MS = 5_000;
 
 const allowed: Record<RunStatus, RunStatus[]> = {
   queued: ["leased", "cancelled"],
-  leased: ["running", "queued", "cancelled"],
-  running: ["waiting_input", "waiting_takeover", "completed", "failed", "cancelled", "leased"],
+  leased: ["running", "queued", "cancelling", "cancelled"],
+  running: [
+    "waiting_input",
+    "waiting_takeover",
+    "completed",
+    "failed",
+    "cancelling",
+    "cancelled",
+    "leased",
+  ],
+  cancelling: ["cancelled"],
   waiting_input: ["queued", "cancelled"],
   waiting_takeover: ["queued", "cancelled"],
   completed: [],

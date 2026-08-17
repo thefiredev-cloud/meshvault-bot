@@ -1,6 +1,12 @@
 import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import type {
+  AdapterContext,
+  AgentRunRequest,
+  AgentRuntime,
+  AgentRuntimeEvent,
+} from "@meshbot/adapter-kit";
 import {
   DesktopSandboxProvider,
   FakeSandboxProvider,
@@ -8,8 +14,10 @@ import {
   recallAgentMemory,
 } from "@meshbot/adapters";
 import { createAuth, ownerBootstrapId } from "@meshbot/auth";
+import { RUN_LEASE_HEARTBEAT_MS } from "@meshbot/core";
+import { createRepos } from "@meshbot/db";
 import { MarkdownMemoryStore } from "@meshbot/memory";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };
 
@@ -451,24 +459,57 @@ describeJourneys("required product journeys", () => {
       userId: "u",
       signal: new AbortController().signal,
     };
+    const lifecycleContext = (botId: string, operationFence: number) => ({
+      ...ctx,
+      botId,
+      mutationPermit: { purpose: "lifecycle" as const, operationFence },
+    });
+    const runContext = (botId: string) => {
+      const runId = `run-${botId}`;
+      return {
+        ...ctx,
+        botId,
+        runId,
+        mutationPermit: {
+          purpose: "run" as const,
+          operationFence: 2,
+          runId,
+          runLeaseFence: 1,
+        },
+      };
+    };
     const fake = new FakeSandboxProvider();
     const managed = new ManagedSandboxEmulator();
     const desktop = new DesktopSandboxProvider();
-    const a = await fake.provision({ botId: "ja", homePath: "/tmp/ja" }, ctx);
-    const b = await managed.provision({ botId: "jb", homePath: "/tmp/jb" }, ctx);
-    const c = await desktop.provision({ botId: "jc", homePath: "/tmp/jc" }, ctx);
+    const a = await fake.provision({ botId: "ja", homePath: "/tmp/ja" }, lifecycleContext("ja", 1));
+    const b = await managed.provision(
+      { botId: "jb", homePath: "/tmp/jb" },
+      lifecycleContext("jb", 1),
+    );
+    const c = await desktop.provision(
+      { botId: "jc", homePath: "/tmp/jc" },
+      lifecycleContext("jc", 1),
+    );
     let out = "";
-    for await (const event of fake.execute(a, { argv: ["echo", "same-task"] }, ctx)) {
+    for await (const event of fake.execute(a, { argv: ["echo", "same-task"] }, runContext("ja"))) {
       if (event.type === "stdout") out += event.data;
     }
-    for await (const event of managed.execute(b, { argv: ["echo", "same-task"] }, ctx)) {
+    for await (const event of managed.execute(
+      b,
+      { argv: ["echo", "same-task"] },
+      runContext("jb"),
+    )) {
       if (event.type === "stdout") out += event.data;
     }
-    for await (const event of desktop.execute(c, { argv: ["echo", "same-task"] }, ctx)) {
+    for await (const event of desktop.execute(
+      c,
+      { argv: ["echo", "same-task"] },
+      runContext("jc"),
+    )) {
       if (event.type === "stdout") out += event.data;
     }
     expect(out.match(/same-task/g)?.length).toBe(3);
-    await desktop.destroy(c, ctx);
+    await desktop.destroy(c, lifecycleContext("jc", 3));
   });
 
   it("7: owner approval is isolated, single-use, and inline", async () => {
@@ -810,6 +851,47 @@ describeJourneys("required product journeys", () => {
     expect(existsSync(home)).toBe(false);
   });
 
+  it("12a: a tombstoned parent cannot create or initialize a child", async () => {
+    const email = `spawn-tombstone-j-${stamp}@meshbot.test`;
+    const cookie = await signup(app, email, "Spawn Tombstone");
+    const parent = await rpc<Bot>(app, cookie, "bots/create", {
+      name: "Stopping Chief",
+      title: "",
+      description: "",
+      instructions: "",
+      notifyOnFinish: true,
+    });
+    const parentRow = await prisma.bot.update({
+      where: { id: parent.id },
+      data: { deletingAt: new Date() },
+    });
+
+    await expect(
+      createRepos(prisma).createBot(
+        {
+          userId: parentRow.userId,
+          workspaceId: parentRow.workspaceId,
+          email,
+          isDeploymentOwner: false,
+        },
+        {
+          name: "Never Visible",
+          title: "",
+          description: "",
+          instructions: "",
+          notifyOnFinish: true,
+          parentBotId: parent.id,
+          initial: {
+            creatorName: parent.name,
+            sourceRunId: `source-${stamp}`,
+            prompt: "do not run",
+          },
+        },
+      ),
+    ).rejects.toThrow();
+    expect(await prisma.bot.count({ where: { parentBotId: parent.id } })).toBe(0);
+  });
+
   it("12: a bot can spawn a regular bot and must confirm the name to delete it", async () => {
     const cookie = await signup(app, `spawn-j-${stamp}@meshbot.test`, "Spawn");
     const parent = await rpc<Bot>(app, cookie, "bots/create", {
@@ -1014,7 +1096,361 @@ describeJourneys("required product journeys", () => {
       ]),
     );
   });
+
+  it("16: one bot run renews its lease and cancellation reaches the live runtime", async () => {
+    const runtime = new BlockingRuntime();
+    const { createApp } = await import("../../../apps/api/src/app.ts");
+    const isolated = await createApp({
+      databaseUrl: process.env.DATABASE_URL!,
+      dataDir: mkdtempSync(path.join(tmpdir(), "meshbot-run-fence-")),
+      wakeupDriver: "memory",
+      sandboxProvider: "fake",
+      runtime,
+    });
+    try {
+      const cookie = await signup(isolated.app, `run-fence-j-${stamp}@meshbot.test`, "Run Fence");
+      const bot = await rpc<Bot>(isolated.app, cookie, "bots/create", {
+        name: "Chief",
+        title: "",
+        description: "",
+        instructions: "",
+        notifyOnFinish: false,
+      });
+
+      const first = await rpc<{ runId: string }>(isolated.app, cookie, "threads/send", {
+        botId: bot.id,
+        text: "block first run",
+      });
+      await waitUntil(async () => runtime.started.has(first.runId));
+      const initialLease = await isolated.prisma.run.findUniqueOrThrow({
+        where: { id: first.runId },
+        select: { leaseExpiresAt: true },
+      });
+      expect(initialLease.leaseExpiresAt).not.toBeNull();
+      await new Promise((resolve) => setTimeout(resolve, RUN_LEASE_HEARTBEAT_MS + 250));
+      const renewedLease = await isolated.prisma.run.findUniqueOrThrow({
+        where: { id: first.runId },
+        select: { leaseExpiresAt: true },
+      });
+      expect(renewedLease.leaseExpiresAt!.getTime()).toBeGreaterThan(
+        initialLease.leaseExpiresAt!.getTime(),
+      );
+
+      const second = await rpc<{ runId: string }>(isolated.app, cookie, "threads/send", {
+        botId: bot.id,
+        text: "replace first run",
+      });
+      await waitUntil(
+        async () => runtime.started.has(second.runId) && runtime.signalAborted.has(first.runId),
+      );
+      expect(runtime.abortCalls.has(first.runId)).toBe(true);
+      expect(await runState(isolated.prisma, first.runId)).toMatchObject({
+        run: "cancelled",
+        task: "cancelled",
+        attempt: "cancelled",
+      });
+      expect(
+        await isolated.prisma.run.count({
+          where: {
+            botId: bot.id,
+            status: {
+              in: ["leased", "running", "cancelling", "waiting_input", "waiting_takeover"],
+            },
+          },
+        }),
+      ).toBe(1);
+
+      const intended = await isolated.prisma.externalEffect.create({
+        data: {
+          workspaceId: (
+            await isolated.prisma.run.findUniqueOrThrow({ where: { id: second.runId } })
+          ).workspaceId,
+          runId: second.runId,
+          kind: "destination.write",
+          idempotencyKey: `${second.runId}:in-flight-test`,
+          status: "intended",
+          request: { body: "may have started" },
+        },
+      });
+      await rpc(isolated.app, cookie, "threads/stop", { botId: bot.id });
+      await waitUntil(
+        async () =>
+          runtime.signalAborted.has(second.runId) &&
+          (await isolated.prisma.run.findUnique({ where: { id: second.runId } }))?.status ===
+            "cancelled",
+      );
+      expect(await runState(isolated.prisma, second.runId)).toMatchObject({
+        run: "cancelled",
+        task: "cancelled",
+        attempt: "cancelled",
+      });
+      expect(
+        (await isolated.prisma.externalEffect.findUniqueOrThrow({ where: { id: intended.id } }))
+          .status,
+      ).toBe("ambiguous");
+
+      const third = await rpc<{ runId: string }>(isolated.app, cookie, "threads/send", {
+        botId: bot.id,
+        text: "detect remote cancellation",
+      });
+      await waitUntil(async () => runtime.started.has(third.runId));
+      const thirdRun = await isolated.prisma.run.findUniqueOrThrow({ where: { id: third.runId } });
+      await isolated.prisma.$transaction([
+        isolated.prisma.run.update({
+          where: { id: third.runId },
+          data: { status: "cancelled", completedAt: new Date() },
+        }),
+        isolated.prisma.task.update({
+          where: { id: thirdRun.taskId },
+          data: { status: "cancelled" },
+        }),
+        isolated.prisma.attempt.updateMany({
+          where: { runId: third.runId, status: "running" },
+          data: { status: "cancelled", finishedAt: new Date() },
+        }),
+      ]);
+      await waitUntil(async () => runtime.signalAborted.has(third.runId));
+      expect(runtime.abortCalls.has(third.runId)).toBe(false);
+      expect(
+        await isolated.prisma.event.count({
+          where: { runId: { in: [first.runId, second.runId] }, type: "run.cancelled" },
+        }),
+      ).toBe(2);
+
+      const doomed = await rpc<Bot>(isolated.app, cookie, "bots/create", {
+        name: "Doomed",
+        title: "",
+        description: "",
+        instructions: "",
+        notifyOnFinish: false,
+      });
+      const doomedRun = await rpc<{ runId: string }>(isolated.app, cookie, "threads/send", {
+        botId: doomed.id,
+        text: "block until bot deletion",
+      });
+      await waitUntil(async () => runtime.started.has(doomedRun.runId));
+      await rpc(isolated.app, cookie, "bots/remove", { botId: doomed.id });
+      expect(runtime.signalAborted.has(doomedRun.runId)).toBe(true);
+      expect(await isolated.prisma.bot.findUnique({ where: { id: doomed.id } })).toBeNull();
+
+      const retried = await rpc<Bot>(isolated.app, cookie, "bots/create", {
+        name: "Retry cleanup",
+        title: "",
+        description: "",
+        instructions: "",
+        notifyOnFinish: false,
+      });
+      await rpc(isolated.app, cookie, "computer/boot", { botId: retried.id });
+      const destroySpy = vi
+        .spyOn(isolated.sandbox, "destroy")
+        .mockRejectedValueOnce(new Error("injected cleanup failure"));
+      expect((await raw(isolated.app, cookie, "bots/remove", { botId: retried.id })).status).toBe(
+        500,
+      );
+      const retained = await isolated.prisma.bot.findUniqueOrThrow({
+        where: { id: retried.id },
+        include: { computer: true },
+      });
+      expect(retained.deletingAt).not.toBeNull();
+      expect(retained.computer?.providerRef).toBeTruthy();
+      expect(
+        (
+          await raw(isolated.app, cookie, "threads/send", {
+            botId: retried.id,
+            text: "must not enter during cleanup",
+          })
+        ).status,
+      ).toBeGreaterThanOrEqual(400);
+      expect(await isolated.prisma.run.count({ where: { botId: retried.id } })).toBe(0);
+      await rpc(isolated.app, cookie, "bots/remove", { botId: retried.id });
+      destroySpy.mockRestore();
+      expect(await isolated.prisma.bot.findUnique({ where: { id: retried.id } })).toBeNull();
+    } finally {
+      await isolated.stop();
+    }
+  }, 30_000);
+
+  it("16a: cancellation drains a late boot before replacement work starts", async () => {
+    const runtime = new BlockingRuntime();
+    const { createApp } = await import("../../../apps/api/src/app.ts");
+    const isolated = await createApp({
+      databaseUrl: process.env.DATABASE_URL!,
+      dataDir: mkdtempSync(path.join(tmpdir(), "meshbot-late-boot-")),
+      wakeupDriver: "memory",
+      sandboxProvider: "fake",
+      runtime,
+    });
+    try {
+      const cookie = await signup(isolated.app, `late-boot-j-${stamp}@meshbot.test`, "Late Boot");
+      const bot = await rpc<Bot>(isolated.app, cookie, "bots/create", {
+        name: "Late boot",
+        title: "",
+        description: "",
+        instructions: "",
+        notifyOnFinish: false,
+      });
+      const originalProvision = isolated.sandbox.provision.bind(isolated.sandbox);
+      let releaseBoot!: () => void;
+      let markBootCreated!: () => void;
+      const bootCreated = new Promise<void>((resolve) => {
+        markBootCreated = resolve;
+      });
+      const bootGate = new Promise<void>((resolve) => {
+        releaseBoot = resolve;
+      });
+      const provisionSpy = vi
+        .spyOn(isolated.sandbox, "provision")
+        .mockImplementation(async (request, context) => {
+          const ref = await originalProvision(request, context);
+          if (request.botId === bot.id) {
+            markBootCreated();
+            await bootGate;
+          }
+          return ref;
+        });
+      const quiesceSpy = vi.spyOn(isolated.sandbox, "quiesce");
+
+      const run = await rpc<{ runId: string }>(isolated.app, cookie, "threads/send", {
+        botId: bot.id,
+        text: "wait for the computer",
+      });
+      await bootCreated;
+      const stopRun = rpc(isolated.app, cookie, "threads/stop", { botId: bot.id });
+      await waitUntil(
+        async () =>
+          (await isolated.prisma.run.findUnique({ where: { id: run.runId } }))?.status ===
+          "cancelling",
+      );
+      releaseBoot();
+      await stopRun;
+      await waitUntil(async () => {
+        const computer = await isolated.prisma.computer.findUnique({ where: { botId: bot.id } });
+        return computer?.bootToken === null && computer.state === "stopped";
+      });
+      expect(await runState(isolated.prisma, run.runId)).toMatchObject({
+        run: "cancelled",
+        task: "cancelled",
+        attempt: "cancelled",
+      });
+      expect(
+        quiesceSpy.mock.calls.some(
+          ([calledBotId, context]) =>
+            calledBotId === bot.id && context.operationId.startsWith("boot-cleanup:"),
+        ),
+      ).toBe(true);
+      provisionSpy.mockRestore();
+      quiesceSpy.mockRestore();
+
+      const replacement = await rpc<{ runId: string }>(isolated.app, cookie, "threads/send", {
+        botId: bot.id,
+        text: "replacement run",
+      });
+      await waitUntil(async () => runtime.started.has(replacement.runId));
+      await rpc(isolated.app, cookie, "threads/stop", { botId: bot.id });
+    } finally {
+      await isolated.stop();
+    }
+  }, 30_000);
+
+  it("17: Stop closes pending approval and scoped takeover control", async () => {
+    const cookie = await signup(app, `stop-boundaries-j-${stamp}@meshbot.test`, "Stop Boundaries");
+    const approvalBot = await rpc<Bot>(app, cookie, "bots/create", {
+      name: "Approval bot",
+      title: "",
+      description: "",
+      instructions: "",
+      notifyOnFinish: false,
+    });
+    const approvalRun = await rpc<{ runId: string }>(app, cookie, "threads/send", {
+      botId: approvalBot.id,
+      text: "write a pending note to the destination crm",
+    });
+    await waitFor(
+      app,
+      cookie,
+      approvalBot.id,
+      (snap) => snap.run?.id === approvalRun.runId && snap.run.status === "waiting_input",
+    );
+    const pending = await prisma.externalEffect.findFirstOrThrow({
+      where: { runId: approvalRun.runId },
+    });
+    await rpc(app, cookie, "threads/stop", { botId: approvalBot.id });
+    expect((await prisma.run.findUniqueOrThrow({ where: { id: approvalRun.runId } })).status).toBe(
+      "cancelled",
+    );
+    expect(
+      (await prisma.externalEffect.findUniqueOrThrow({ where: { id: pending.id } })).status,
+    ).toBe("failed");
+
+    const takeoverBot = await rpc<Bot>(app, cookie, "bots/create", {
+      name: "Takeover bot",
+      title: "",
+      description: "",
+      instructions: "",
+      notifyOnFinish: false,
+    });
+    const takeoverRun = await rpc<{ runId: string }>(app, cookie, "threads/send", {
+      botId: takeoverBot.id,
+      text: "sign in and wait for takeover",
+    });
+    await waitFor(
+      app,
+      cookie,
+      takeoverBot.id,
+      (snap) => snap.run?.id === takeoverRun.runId && snap.run.status === "waiting_takeover",
+    );
+    await rpc(app, cookie, "computer/takeover", { botId: takeoverBot.id });
+    expect(
+      await rpc<{ controlHolder: string }>(app, cookie, "computer/status", {
+        botId: takeoverBot.id,
+      }),
+    ).toMatchObject({ controlHolder: "user" });
+    await rpc(app, cookie, "threads/stop", { botId: takeoverBot.id });
+    expect(
+      await rpc<{ controlHolder: string }>(app, cookie, "computer/status", {
+        botId: takeoverBot.id,
+      }),
+    ).toMatchObject({ controlHolder: "none" });
+    expect((await prisma.run.findUniqueOrThrow({ where: { id: takeoverRun.runId } })).status).toBe(
+      "cancelled",
+    );
+    expect((await raw(app, cookie, "computer/release", { botId: takeoverBot.id })).status).toBe(
+      400,
+    );
+  });
 });
+
+class BlockingRuntime implements AgentRuntime {
+  readonly started = new Set<string>();
+  readonly signalAborted = new Set<string>();
+  readonly abortCalls = new Set<string>();
+
+  describe() {
+    return {
+      id: "blocking-test",
+      contractVersion: "1",
+      adapterVersion: "test",
+      capabilities: { streaming: true, compaction: false, tools: false, scripted: true },
+    };
+  }
+
+  async abort(runId: string) {
+    this.abortCalls.add(runId);
+  }
+
+  async *run(request: AgentRunRequest, context: AdapterContext): AsyncIterable<AgentRuntimeEvent> {
+    this.started.add(request.runId);
+    await new Promise<void>((resolve) => {
+      const stopped = () => {
+        context.signal.removeEventListener("abort", stopped);
+        this.signalAborted.add(request.runId);
+        resolve();
+      };
+      context.signal.addEventListener("abort", stopped, { once: true });
+      if (context.signal.aborted) stopped();
+    });
+  }
+}
 
 type Me = { workspaceId: string; userId: string; canChooseHostComputer: boolean };
 type Bot = {
@@ -1029,6 +1465,19 @@ type Snap = {
   run: { id: string; status: string } | null;
   computer: { controlHolder: string };
 };
+
+async function runState(
+  prisma: Awaited<ReturnType<typeof import("../../../apps/api/src/app.ts").createApp>>["prisma"],
+  runId: string,
+) {
+  const run = await prisma.run.findUniqueOrThrow({ where: { id: runId } });
+  const task = await prisma.task.findUniqueOrThrow({ where: { id: run.taskId } });
+  const attempt = await prisma.attempt.findFirstOrThrow({
+    where: { runId },
+    orderBy: { startedAt: "desc" },
+  });
+  return { run: run.status, task: task.status, attempt: attempt.status };
+}
 
 async function signup(app: App, email: string, name: string) {
   const res = await signupResponse(app, email, name);
