@@ -5,8 +5,10 @@ import {
   DesktopSandboxProvider,
   FakeSandboxProvider,
   ManagedSandboxEmulator,
+  recallAgentMemory,
 } from "@meshbot/adapters";
 import { createAuth, ownerBootstrapId } from "@meshbot/auth";
+import { MarkdownMemoryStore } from "@meshbot/memory";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };
@@ -279,6 +281,44 @@ describeJourneys("required product journeys", () => {
     expect(bobList.map((b) => b.id)).not.toContain(chief.id);
     const forbidden = await raw(app, bob, "bots/get", { botId: chief.id });
     expect(forbidden.status).toBeGreaterThanOrEqual(400);
+
+    const memory = new MarkdownMemoryStore(prisma);
+    const adaContext = {
+      operationId: `memory-${stamp}`,
+      traceId: `memory-${stamp}`,
+      workspaceId: adaMe.workspaceId,
+      userId: adaMe.userId,
+      signal: new AbortController().signal,
+    };
+    await memory.commit(
+      { scope: "bot", botId: chief.id, path: "recall-chief.md", content: "recall needle chief" },
+      adaContext,
+    );
+    await memory.commit(
+      { scope: "bot", botId: coder.id, path: "recall-coder.md", content: "recall needle coder" },
+      adaContext,
+    );
+    await memory.commit(
+      { scope: "user", path: "recall-user.md", content: "recall needle account" },
+      adaContext,
+    );
+    await memory.commit(
+      {
+        scope: "bot",
+        botId: bobBot.id,
+        path: "recall-bob.md",
+        content: "recall needle outsider",
+      },
+      {
+        ...adaContext,
+        workspaceId: bobMe.workspaceId,
+        userId: bobMe.userId,
+      },
+    );
+    expect(await recallAgentMemory(memory, chief.id, "recall needle", adaContext)).toEqual([
+      expect.objectContaining({ scope: "bot", path: "recall-chief.md" }),
+      expect.objectContaining({ scope: "user", path: "recall-user.md" }),
+    ]);
 
     await sendAndWait(
       app,

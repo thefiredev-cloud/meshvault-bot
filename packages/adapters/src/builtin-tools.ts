@@ -52,6 +52,17 @@ export const builtinAgentTools: ConnectorTool[] = [
     },
   },
   {
+    name: "recall_memory",
+    description: "Search this bot's durable memory and the user's account memory.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: { type: "string", minLength: 1, maxLength: 500 },
+      },
+      required: ["query"],
+    },
+  },
+  {
     name: "run_subagent",
     description:
       "Run a short-lived helper inside this turn only. It is not a bot: no list entry, no thread, no computer of its own, and it disappears when this turn ends. Never call this because the user asked to create a bot — that is spawn_bot, and spawn_bot alone.",

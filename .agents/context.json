@@ -287,6 +287,22 @@
       ],
       "worked": "Signup now fails closed, reads its live database policy, and never assigns deployment ownership from a public signup. A one-shot local secret reserves the owner before listen; a hidden durable marker recovers only a fully provisioned bootstrap user after a crash, while atomic CAS cleanup removes incomplete debris without crossing process ownership. Environment values seed only a new database row, stale values cannot reopen signup, and invalid flags close it. The upgrade proof converted an old true-plus-empty row to false and installed a false default plus nullable marker. Focused tests passed 12 of 12; verify:fast passed 227 tests with 20 expected skips; lint checked 232 files; all 19 checks passed; the full fresh-Postgres gate passed 242 tests with 5 expected skips and both Chromium journeys. No service was deployed or restarted.",
       "failed": "Mailbox verification remains required before signup can be enabled safely on the public Internet; no approved sender is wired. The Better Auth low-entropy warning came only from the fixed verification secret, while production secret validation remains enforced."
+    },
+    {
+      "at": "2026-08-16",
+      "paths": [
+        "packages/adapter-kit/src/types.ts",
+        "packages/adapters/src/builtin-tools.ts",
+        "packages/adapters/src/executor.ts",
+        "packages/adapters/src/executor.test.ts",
+        "packages/adapters/src/index.test.ts",
+        "packages/memory/src/index.ts",
+        "packages/testkit/src/journeys.test.ts",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Bots now have one recall_memory tool beside remember. The executor searches current-bot and account scopes separately, labels results, and returns at most five per scope. The Markdown store performs case-insensitive matching and applies the requested limit in Postgres before documents reach Node. A focused mock proves exact query shapes and caps; the real two-user Postgres journey proves current-bot plus account recall while excluding a sibling bot and another user. Focused tests passed 24 of 24; verify:fast passed 228 tests with 20 expected skips; lint checked 232 files; all 19 checks passed; the full fresh-Postgres gate passed 243 tests with 5 expected skips and both Chromium journeys. Independent review found no remaining high or medium issue. No service was deployed or restarted.",
+      "failed": "The first version sliced results only after the store loaded and scanned all scoped documents. Independent review caught the unbounded work; database-side filtering and take fixed it before commit."
     }
   ]
 }

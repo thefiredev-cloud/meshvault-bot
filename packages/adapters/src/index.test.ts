@@ -81,6 +81,7 @@ describe("builtin tools", () => {
         "write_file",
         "shell",
         "remember",
+        "recall_memory",
         "request_takeover",
         "run_subagent",
         "spawn_bot",

@@ -48,22 +48,29 @@ export class MarkdownMemoryStore implements MemoryStore {
     request: MemorySearchRequest,
     context: AdapterContext,
   ): Promise<MemorySearchResult[]> {
+    const query = request.query.trim().slice(0, 500);
+    if (!query) return [];
+    const limit = request.limit ? Math.min(50, Math.max(1, Math.floor(request.limit))) : undefined;
     const documents = await this.prisma.memoryDocument.findMany({
       where: {
         workspaceId: context.workspaceId,
         userId: context.userId,
         ...(request.scope === "all" ? {} : { scope: request.scope }),
         ...(request.botId ? { botId: request.botId } : {}),
+        OR: [
+          { content: { contains: query, mode: "insensitive" } },
+          { path: { contains: query, mode: "insensitive" } },
+        ],
       },
+      ...(limit ? { take: limit } : {}),
+      orderBy: { updatedAt: "desc" },
     });
-    const q = request.query.toLowerCase();
-    return documents
-      .filter((doc) => doc.content.toLowerCase().includes(q) || doc.path.toLowerCase().includes(q))
-      .map((doc) => ({
-        path: doc.path,
-        snippet: snippet(doc.content, q),
-        score: 1,
-      }));
+    const q = query.toLowerCase();
+    return documents.map((doc) => ({
+      path: doc.path,
+      snippet: snippet(doc.content, q),
+      score: 1,
+    }));
   }
 
   async commit(request: MemoryCommitRequest, context: AdapterContext): Promise<MemoryRevision> {

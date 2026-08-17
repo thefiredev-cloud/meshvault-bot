@@ -1,5 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import {
+  type AdapterContext,
   type AgentHomeStore,
   type AgentRuntime,
   type ComputerRef,
@@ -77,6 +78,24 @@ const OWNER_APPROVAL_ACTIONS = [
 
 export function requiresOwnerApproval(name: string): boolean {
   return OWNER_APPROVAL_TOOLS.has(name);
+}
+
+export async function recallAgentMemory(
+  memory: MemoryStore,
+  botId: string,
+  query: string,
+  context: AdapterContext,
+) {
+  const boundedQuery = query.trim().slice(0, 500);
+  if (!boundedQuery) return [];
+  const [botResults, userResults] = await Promise.all([
+    memory.search({ query: boundedQuery, scope: "bot", botId, limit: 5 }, context),
+    memory.search({ query: boundedQuery, scope: "user", limit: 5 }, context),
+  ]);
+  return [
+    ...botResults.slice(0, 5).map((result) => ({ scope: "bot" as const, ...result })),
+    ...userResults.slice(0, 5).map((result) => ({ scope: "user" as const, ...result })),
+  ];
 }
 
 export function resolveBotModelSelection(
@@ -360,6 +379,14 @@ export function createRunExecutor(deps: ExecutorDeps) {
             context,
           );
           return { ok: true };
+        }
+        if (name === "recall_memory") {
+          const query = String(args.query ?? "").trim();
+          if (!query) return { ok: false, error: "query is required" };
+          return {
+            ok: true,
+            results: await recallAgentMemory(deps.memory, bot.id, query, context),
+          };
         }
         if (name === "request_takeover") return { ok: true };
         if (name === "run_subagent") {

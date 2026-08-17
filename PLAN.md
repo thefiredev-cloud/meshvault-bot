@@ -160,3 +160,11 @@ Empty — first pass.
 - [x] Prove policy changes apply without restart and public signup cannot claim ownership.
 - [x] Apply the migration and pass the focused, fast, type, lint, and full verification gates.
 - [ ] Add an approved mailbox-verification sender before enabling signup on the public Internet.
+
+## Persistent memory recall subtask
+
+- [x] Expose one bounded recall tool beside the existing durable-memory writer.
+- [x] Search bot and user memory separately so bot filtering cannot hide account memory.
+- [x] Label each result by scope and cap each scope at five matches.
+- [x] Prove scope isolation and caps with focused executor and database journey tests.
+- [x] Pass focused tests and the repository verification gates.

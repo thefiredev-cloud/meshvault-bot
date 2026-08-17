@@ -1,10 +1,47 @@
+import type { AdapterContext, MemorySearchRequest, MemoryStore } from "@meshbot/adapter-kit";
 import { describe, expect, it } from "vitest";
 import {
   approvalActionDetail,
+  recallAgentMemory,
   requireBotModelAccess,
   requiresOwnerApproval,
   resolveBotModelSelection,
 } from "./executor.js";
+
+describe("persistent memory recall", () => {
+  it("searches bot and user scopes separately and caps each scope", async () => {
+    const calls: MemorySearchRequest[] = [];
+    const memory = {
+      search: async (request: MemorySearchRequest) => {
+        calls.push(request);
+        return Array.from({ length: 7 }, (_, index) => ({
+          path: `${request.scope}/${index}.md`,
+          snippet: `match ${index}`,
+          score: 1,
+        }));
+      },
+    } as unknown as MemoryStore;
+    const context: AdapterContext = {
+      operationId: "op-1",
+      traceId: "trace-1",
+      workspaceId: "workspace-1",
+      userId: "user-1",
+      signal: new AbortController().signal,
+    };
+
+    const results = await recallAgentMemory(memory, "bot-1", "  prior work  ", context);
+
+    expect(calls).toEqual([
+      { query: "prior work", scope: "bot", botId: "bot-1", limit: 5 },
+      { query: "prior work", scope: "user", limit: 5 },
+    ]);
+    expect(results).toHaveLength(10);
+    expect(results.map(({ scope }) => scope)).toEqual([
+      ...Array(5).fill("bot"),
+      ...Array(5).fill("user"),
+    ]);
+  });
+});
 
 const none = { modelProvider: null, modelId: null };
 const knownModels = new Set([

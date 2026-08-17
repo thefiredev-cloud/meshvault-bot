@@ -121,6 +121,7 @@ export interface MemorySearchRequest {
   query: string;
   scope: "bot" | "user" | "all";
   botId?: string;
+  limit?: number;
 }
 
 export interface MemorySearchResult {
