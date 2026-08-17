@@ -80,8 +80,10 @@ export class DesktopSandboxProvider implements SandboxProvider {
       return;
     }
     await mkdir(cwd, { recursive: true });
+    const environment = desktopCommandEnvironment(box.home);
+    await mkdir(environment.TMPDIR!, { recursive: true });
     const argv = request.argv.length ? request.argv : ["echo", "ready"];
-    const result = await runCommand(argv, cwd);
+    const result = await runCommand(argv, cwd, environment);
     if (result.stdout) yield { type: "stdout", data: result.stdout };
     if (result.stderr) yield { type: "stderr", data: result.stderr };
     yield { type: "exit", code: result.code };
@@ -167,12 +169,28 @@ function allowedPath(target: string, roots: string[]) {
   });
 }
 
+export function desktopCommandEnvironment(
+  home: string,
+  source: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
+  const environment: NodeJS.ProcessEnv = {
+    HOME: home,
+    PATH: source.PATH ?? "/usr/bin:/bin",
+    TMPDIR: path.join(home, ".tmp"),
+  };
+  for (const key of ["LANG", "LC_ALL", "LC_CTYPE", "LOGNAME", "SHELL", "USER"] as const) {
+    if (source[key]) environment[key] = source[key];
+  }
+  return environment;
+}
+
 function runCommand(
   argv: string[],
   cwd: string,
+  env: NodeJS.ProcessEnv,
 ): Promise<{ stdout: string; stderr: string; code: number }> {
   return new Promise((resolve) => {
-    const child = spawn(argv[0]!, argv.slice(1), { cwd, env: process.env });
+    const child = spawn(argv[0]!, argv.slice(1), { cwd, env });
     let stdout = "";
     let stderr = "";
     child.stdout?.on("data", (chunk: Buffer) => {
@@ -189,7 +207,7 @@ function runCommand(
       resolve({ stdout: "", stderr: error.message, code: 1 });
     });
     child.on("close", (code) => {
-      resolve({ stdout, stderr, code: code ?? 0 });
+      resolve({ stdout, stderr, code: code ?? 1 });
     });
   });
 }

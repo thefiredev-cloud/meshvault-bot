@@ -449,8 +449,8 @@ function parametersFor(tool: ConnectorTool) {
   }
   if (tool.name === "shell") {
     return Type.Object({
-      command: Type.String(),
-      cwd: Type.String(),
+      command: Type.String({ minLength: 1, maxLength: 800 }),
+      cwd: Type.String({ minLength: 1, maxLength: 200 }),
     });
   }
   if (tool.name === "run_subagent") {

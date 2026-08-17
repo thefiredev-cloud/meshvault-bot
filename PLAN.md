@@ -168,3 +168,12 @@ Empty — first pass.
 - [x] Label each result by scope and cap each scope at five matches.
 - [x] Prove scope isolation and caps with focused executor and database journey tests.
 - [x] Pass focused tests and the repository verification gates.
+
+## Shell approval integrity subtask
+
+- [x] Reject empty, hidden, NUL-bearing, or overlong shell commands before approval.
+- [x] Execute the approved command without user-controlled shell startup files.
+- [x] Keep service secrets out of desktop command environments.
+- [x] Fail E2B command execution closed while its SDK cannot preserve exact argv semantics.
+- [x] Treat missing or nonzero exits as failed protected effects.
+- [x] Pass focused, type, lint, fast, database, browser, and independent review gates.

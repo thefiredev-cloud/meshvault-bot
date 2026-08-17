@@ -3,6 +3,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   COMPUTER_IMAGE,
+  COMPUTER_PATH,
+  commandExitCode,
   containerCreateOptions,
   containerNameFor,
   screenUrlFor,
@@ -10,6 +12,13 @@ import {
 } from "./computer-spec.js";
 
 describe("graphical computer spec", () => {
+  it("fails commands closed when Docker returns no exit status", () => {
+    expect(commandExitCode(0)).toBe(0);
+    expect(commandExitCode(7)).toBe(7);
+    expect(commandExitCode(null)).toBe(1);
+    expect(commandExitCode(undefined)).toBe(1);
+  });
+
   it("creates a VNC desktop, not an alpine sleep fallback", () => {
     const options = containerCreateOptions({
       name: "meshbot-bot-abc",
@@ -24,9 +33,7 @@ describe("graphical computer spec", () => {
     expect(options).not.toHaveProperty("Entrypoint");
     expect(JSON.stringify(options)).not.toMatch(/sleep/);
     expect(options.HostConfig.Binds).toEqual(["/var/meshbot/homes/abc:/home/meshbot"]);
-    expect(options.Env).toContain(
-      "PATH=/home/meshbot/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-    );
+    expect(options.Env).toContain(`PATH=${COMPUTER_PATH}`);
     expect(options.Env).toContain("NPM_CONFIG_PREFIX=/home/meshbot/.local");
     expect(options.ExposedPorts).toEqual({ "6080/tcp": {} });
     expect(options.HostConfig.PortBindings["6080/tcp"]?.[0]?.HostIp).toBe("127.0.0.1");
@@ -41,6 +48,7 @@ describe("graphical computer spec", () => {
     const start = readFileSync(path.join(root, "start.sh"), "utf8");
     expect(dockerfile).toMatch(/chromium/);
     expect(start).toMatch(/meshbot-browser/);
+    expect(start).not.toMatch(/PATH=.*\.local\/bin/);
     expect(start).not.toMatch(/windowsize 1280 800/);
   });
 

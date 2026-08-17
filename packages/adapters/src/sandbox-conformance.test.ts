@@ -4,9 +4,10 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import type { SandboxProvider } from "@meshbot/adapter-kit";
 import { afterAll, describe, expect, it } from "vitest";
-import { DesktopSandboxProvider } from "./desktop-sandbox.js";
+import { DesktopSandboxProvider, desktopCommandEnvironment } from "./desktop-sandbox.js";
 import { DockerSandboxProvider } from "./docker-sandbox.js";
 import { ManagedSandboxEmulator } from "./e2b-emulator.js";
+import { E2BSandboxProvider } from "./e2b-sandbox.js";
 import { FakeSandboxProvider } from "./fake-sandbox.js";
 
 const ctx = {
@@ -70,6 +71,38 @@ describe("sandbox conformance", () => {
     expect(code).toBe(1);
     expect(stderr).toMatch(/outside this computer's home/i);
     await desktop.destroy(computer, ctx);
+  });
+
+  it("keeps service secrets out of desktop commands", () => {
+    const environment = desktopCommandEnvironment("/bot/home", {
+      PATH: "/trusted/bin",
+      LANG: "en_US.UTF-8",
+      DATABASE_URL: "postgres://secret",
+      ENCRYPTION_KEY: "secret-key",
+      OPENAI_API_KEY: "secret-model-key",
+    });
+    expect(environment).toEqual({
+      HOME: "/bot/home",
+      PATH: "/trusted/bin",
+      TMPDIR: "/bot/home/.tmp",
+      LANG: "en_US.UTF-8",
+    });
+  });
+
+  it("fails E2B commands closed while its SDK inserts a writable login shell", async () => {
+    const e2b = new E2BSandboxProvider("unused");
+    const events = [];
+    for await (const event of e2b.execute(
+      { id: "e2b-1", botId: "bot-e2b", kind: "e2b", providerRef: "e2b-1" },
+      { argv: ["echo", "must-not-run"] },
+      ctx,
+    )) {
+      events.push(event);
+    }
+    expect(events).toEqual([
+      { type: "stderr", data: expect.stringMatching(/writable login shell/) },
+      { type: "exit", code: 1 },
+    ]);
   });
 });
 

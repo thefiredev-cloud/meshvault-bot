@@ -123,16 +123,15 @@ export class E2BSandboxProvider implements SandboxProvider {
   }
 
   async *execute(
-    computer: ComputerRef,
-    request: CommandRequest,
+    _computer: ComputerRef,
+    _request: CommandRequest,
     _context: AdapterContext,
   ): AsyncIterable<ProcessEvent> {
-    const desktop = await this.box(computer);
-    const cmd = request.argv.join(" ");
-    const result = await desktop.commands.run(cmd, { cwd: request.cwd ?? "/home/user" });
-    if (result.stdout) yield { type: "stdout", data: result.stdout };
-    if (result.stderr) yield { type: "stderr", data: result.stderr };
-    yield { type: "exit", code: result.exitCode ?? 0 };
+    yield {
+      type: "stderr",
+      data: "E2B command execution is disabled because this SDK starts a writable login shell; use the Docker or desktop sandbox",
+    };
+    yield { type: "exit", code: 1 };
   }
 
   async connectScreen(

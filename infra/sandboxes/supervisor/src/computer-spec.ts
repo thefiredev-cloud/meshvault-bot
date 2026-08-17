@@ -1,5 +1,10 @@
 export const COMPUTER_IMAGE = process.env.MESHBOT_COMPUTER_IMAGE ?? "meshbot/computer:local";
 export const SCREEN_HOST = process.env.SANDBOX_SCREEN_HOST ?? "127.0.0.1";
+export const COMPUTER_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
+
+export function commandExitCode(code: number | null | undefined): number {
+  return code ?? 1;
+}
 
 export interface ComputerCreateInput {
   name: string;
@@ -31,7 +36,7 @@ export function containerCreateOptions(input: ComputerCreateInput) {
     Env: [
       "DISPLAY=:1",
       "HOME=/home/meshbot",
-      "PATH=/home/meshbot/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      `PATH=${COMPUTER_PATH}`,
       "NPM_CONFIG_PREFIX=/home/meshbot/.local",
       "PIP_USER=1",
     ],

@@ -4,7 +4,7 @@ export DISPLAY="${DISPLAY:-:1}"
 export HOME="${HOME:-/home/meshbot}"
 AGENT_HOME="$HOME"
 mkdir -p "$AGENT_HOME" "$AGENT_HOME/.local/bin" "$AGENT_HOME/.config" /tmp/meshbot /tmp/.X11-unix /tmp/fluxbox-home
-export PATH="$AGENT_HOME/.local/bin:/usr/local/bin:$PATH"
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 export NPM_CONFIG_PREFIX="$AGENT_HOME/.local"
 export PIP_USER=1
 cd "$AGENT_HOME"

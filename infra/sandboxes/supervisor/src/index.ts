@@ -11,6 +11,8 @@ import { Hono } from "hono";
 import { z } from "zod";
 import {
   COMPUTER_IMAGE,
+  COMPUTER_PATH,
+  commandExitCode,
   containerCreateOptions,
   containerNameFor,
   type SandboxInput,
@@ -154,7 +156,7 @@ app.post("/computers/:id/exec", async (c) => {
       Env: [
         "DISPLAY=:1",
         "HOME=/home/meshbot",
-        "PATH=/home/meshbot/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        `PATH=${COMPUTER_PATH}`,
         "NPM_CONFIG_PREFIX=/home/meshbot/.local",
         "PIP_USER=1",
         ...Object.entries(body.env ?? {}).map(([k, v]) => `${k}=${v}`),
@@ -171,7 +173,7 @@ app.post("/computers/:id/exec", async (c) => {
     return c.json({
       stdout: stripDockerStream(Buffer.concat(chunks)),
       stderr: "",
-      code: inspect.ExitCode ?? 0,
+      code: commandExitCode(inspect.ExitCode),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -231,7 +233,7 @@ app.post("/computers/:id/input", async (c) => {
       stream.resume();
     });
     const inspect = await exec.inspect();
-    if ((inspect.ExitCode ?? 0) !== 0) {
+    if (commandExitCode(inspect.ExitCode) !== 0) {
       return c.json({ ok: false, error: "input failed" }, 500);
     }
     return c.json({ ok: true, leaseId: body.leaseId ?? null });

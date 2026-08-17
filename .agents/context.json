@@ -303,6 +303,25 @@
       ],
       "worked": "Bots now have one recall_memory tool beside remember. The executor searches current-bot and account scopes separately, labels results, and returns at most five per scope. The Markdown store performs case-insensitive matching and applies the requested limit in Postgres before documents reach Node. A focused mock proves exact query shapes and caps; the real two-user Postgres journey proves current-bot plus account recall while excluding a sibling bot and another user. Focused tests passed 24 of 24; verify:fast passed 228 tests with 20 expected skips; lint checked 232 files; all 19 checks passed; the full fresh-Postgres gate passed 243 tests with 5 expected skips and both Chromium journeys. Independent review found no remaining high or medium issue. No service was deployed or restarted.",
       "failed": "The first version sliced results only after the store loaded and scanned all scoped documents. Independent review caught the unbounded work; database-side filtering and take fixed it before commit."
+    },
+    {
+      "at": "2026-08-16",
+      "paths": [
+        "packages/adapters/src/executor.ts",
+        "packages/adapters/src/executor.test.ts",
+        "packages/adapters/src/desktop-sandbox.ts",
+        "packages/adapters/src/e2b-sandbox.ts",
+        "packages/adapters/src/pi-runtime.ts",
+        "packages/adapters/src/sandbox-conformance.test.ts",
+        "infra/sandboxes/computer/start.sh",
+        "infra/sandboxes/supervisor/src/computer-spec.ts",
+        "infra/sandboxes/supervisor/src/computer-spec.test.ts",
+        "infra/sandboxes/supervisor/src/index.ts",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Shell owner approval now rejects blank, NUL-bearing, overlong, Unicode control, and Unicode format text before display or dispatch; displays the full bounded command and cwd; and revalidates legacy approved requests before the one-way intended claim. Desktop commands no longer inherit service secrets, approved shells bypass startup files with a fixed system path, the Docker computer no longer searches bot-writable executables, and every missing or nonzero exit fails the protected effect. E2B command execution now fails closed because installed SDK 2.38.3 inserts a writable login shell before every command; browser and takeover remain available. Focused tests passed 27 with 1 expected Docker skip; all 19 type checks passed; verify:fast passed 231 tests with 20 expected skips; lint checked 232 files; the full fresh-Postgres gate passed 246 tests with 5 expected skips and both Chromium journeys. Independent review found no remaining high or medium issue. No service was deployed or restarted.",
+      "failed": "The first patch quoted E2B argv but could not stop the SDK's hidden /bin/bash -l startup phase. Independent review caught the bypass, so command execution was disabled on E2B until its provider exposes a non-login exact-argv process API. Run cancellation, lease heartbeats, runtime/output limits, browser container isolation, role grants, and Windows signing remain separate work."
     }
   ]
 }

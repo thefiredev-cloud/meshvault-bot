@@ -2,10 +2,13 @@ import type { AdapterContext, MemorySearchRequest, MemoryStore } from "@meshbot/
 import { describe, expect, it } from "vitest";
 import {
   approvalActionDetail,
+  approvalRequestError,
   recallAgentMemory,
   requireBotModelAccess,
   requiresOwnerApproval,
   resolveBotModelSelection,
+  sandboxCommandResult,
+  sandboxShellArgv,
 } from "./executor.js";
 
 describe("persistent memory recall", () => {
@@ -182,6 +185,54 @@ describe("owner approval boundary", () => {
     const secret = "top-secret-token";
     expect(requiresOwnerApproval("shell")).toBe(true);
     expect(requiresOwnerApproval("write_file")).toBe(false);
+    expect(approvalRequestError("shell", { command: "" })).toMatch(/required/);
+    expect(approvalRequestError("shell", { command: "echo\0hidden" })).toMatch(/NUL/);
+    expect(approvalRequestError("shell", { command: "echo ok\necho hidden" })).toMatch(/control/);
+    expect(approvalRequestError("shell", { command: "echo \u202ehidden" })).toMatch(
+      /bidirectional/,
+    );
+    expect(approvalRequestError("shell", { command: "echo\u200bhidden" })).toMatch(/control/);
+    expect(approvalRequestError("shell", { command: "x".repeat(801) })).toMatch(/800/);
+    expect(approvalRequestError("shell", { command: "pwd", cwd: `/${"x".repeat(200)}` })).toMatch(
+      /200/,
+    );
+    expect(approvalRequestError("shell", { command: "pwd", cwd: "/work\n/hidden" })).toMatch(
+      /control/,
+    );
+    expect(approvalRequestError("shell", { command: "pwd", cwd: "/work\u061chidden" })).toMatch(
+      /control/,
+    );
+    const visible = "x".repeat(800);
+    expect(approvalRequestError("shell", { command: visible })).toBeUndefined();
+    expect(approvalActionDetail("shell", { command: visible }, [])).toContain(visible);
+    expect(approvalActionDetail("shell", { command: visible }, [])).not.toContain("omitted");
+    expect(sandboxShellArgv("echo approved")).toEqual([
+      "/usr/bin/env",
+      "-u",
+      "BASH_ENV",
+      "-u",
+      "ENV",
+      "PATH=/opt/homebrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "/bin/bash",
+      "--noprofile",
+      "--norc",
+      "-c",
+      "echo approved",
+    ]);
+    expect(sandboxCommandResult("", "bad", 7)).toMatchObject({
+      code: 7,
+      error: "command exited with code 7",
+    });
+    expect(sandboxCommandResult("", "", undefined)).toMatchObject({
+      code: 1,
+      error: "command returned no exit status",
+    });
+    expect(sandboxCommandResult("ok", "", 0)).toEqual({ stdout: "ok", stderr: "", code: 0 });
+    const visibleCwd = `/${"w".repeat(199)}`;
+    expect(approvalRequestError("shell", { command: "pwd", cwd: visibleCwd })).toBeUndefined();
+    expect(approvalActionDetail("shell", { command: "pwd", cwd: visibleCwd }, [])).toContain(
+      visibleCwd,
+    );
     expect(
       approvalActionDetail(
         "shell",

@@ -75,9 +75,79 @@ const OWNER_APPROVAL_ACTIONS = [
   { id: "approve", label: "Approve" },
   { id: "deny", label: "Deny" },
 ];
+const MAX_APPROVED_SHELL_COMMAND_CHARS = 800;
+const MAX_APPROVED_SHELL_CWD_CHARS = 200;
+const SANDBOX_SHELL_PATH =
+  "/opt/homebrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
+const APPROVAL_CONTROL = /[\p{Cc}\p{Cf}]/u;
+
+function containsApprovalControl(value: string): boolean {
+  return APPROVAL_CONTROL.test(value);
+}
 
 export function requiresOwnerApproval(name: string): boolean {
   return OWNER_APPROVAL_TOOLS.has(name);
+}
+
+export function approvalRequestError(
+  name: string,
+  args: Record<string, unknown>,
+  runSecrets: string[] = [],
+): string | undefined {
+  if (name !== "shell") return undefined;
+  const command = String(args.command ?? args.cmd ?? "");
+  if (!command.trim()) return "shell command is required";
+  if (command.includes("\0")) return "shell command cannot contain a NUL byte";
+  if (containsApprovalControl(command)) {
+    return "shell command cannot contain control or bidirectional formatting characters";
+  }
+  if (
+    command.length > MAX_APPROVED_SHELL_COMMAND_CHARS ||
+    redactSecrets(command, runSecrets).length > MAX_APPROVED_SHELL_COMMAND_CHARS
+  ) {
+    return `shell command exceeds the ${MAX_APPROVED_SHELL_COMMAND_CHARS}-character approval display; split it into smaller commands`;
+  }
+  if (args.cwd !== undefined) {
+    const cwd = String(args.cwd);
+    if (containsApprovalControl(cwd)) {
+      return "shell working directory cannot contain control or bidirectional formatting characters";
+    }
+    if (
+      cwd.length > MAX_APPROVED_SHELL_CWD_CHARS ||
+      redactSecrets(cwd, runSecrets).length > MAX_APPROVED_SHELL_CWD_CHARS
+    ) {
+      return `shell working directory exceeds the ${MAX_APPROVED_SHELL_CWD_CHARS}-character approval display`;
+    }
+  }
+  return undefined;
+}
+
+export function sandboxShellArgv(command: string): string[] {
+  return [
+    "/usr/bin/env",
+    "-u",
+    "BASH_ENV",
+    "-u",
+    "ENV",
+    `PATH=${SANDBOX_SHELL_PATH}`,
+    "/bin/bash",
+    "--noprofile",
+    "--norc",
+    "-c",
+    command,
+  ];
+}
+
+export function sandboxCommandResult(stdout: string, stderr: string, code: number | undefined) {
+  if (code === 0) return { stdout, stderr, code };
+  const exitCode = code ?? 1;
+  return {
+    stdout,
+    stderr,
+    code: exitCode,
+    error:
+      code === undefined ? "command returned no exit status" : `command exited with code ${code}`,
+  };
 }
 
 export async function recallAgentMemory(
@@ -364,7 +434,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
         if (name === "shell") {
           const command = String(args.command ?? args.cmd ?? "");
           const cwd = String(args.cwd ?? (computer.kind === "desktop" ? "." : "/home/meshbot"));
-          return runSandboxCommand(deps.sandbox, computer, ["bash", "-lc", command], cwd, context);
+          return runSandboxCommand(deps.sandbox, computer, sandboxShellArgv(command), cwd, context);
         }
         if (name === "remember") {
           await deps.memory.commit(
@@ -508,7 +578,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
 
       try {
         const approvalInstruction = approvalCheckpoint?.decision
-          ? await resumeOwnerApproval(deps, run, approvalCheckpoint, executeTool)
+          ? await resumeOwnerApproval(deps, run, approvalCheckpoint, runSecrets, executeTool)
           : "";
         for await (const event of deps.runtime.run(
           {
@@ -907,6 +977,8 @@ function withOwnerApproval(
   execute: (name: string, args: Record<string, unknown>, executionId: string) => Promise<unknown>,
 ) {
   return async (name: string, args: Record<string, unknown>, executionId: string) => {
+    const inputError = approvalRequestError(name, args, runSecrets);
+    if (inputError) return { error: inputError, executionId };
     if (!requiresOwnerApproval(name)) return execute(name, args, executionId);
 
     const existing = await deps.prisma.externalEffect.findUnique({
@@ -1065,6 +1137,7 @@ async function resumeOwnerApproval(
   deps: ExecutorDeps,
   run: ApprovalRun,
   checkpoint: { effectId: string; decision?: "approve" | "deny" },
+  runSecrets: string[],
   execute: (name: string, args: Record<string, unknown>, executionId: string) => Promise<unknown>,
 ): Promise<string> {
   const effect = await deps.prisma.externalEffect.findFirst({
@@ -1092,6 +1165,22 @@ async function resumeOwnerApproval(
     throw new Error("approved action outcome is ambiguous; review before retrying");
   }
 
+  const storedRequest = jsonObject(effect.request);
+  const inputError = approvalRequestError(effect.kind, storedRequest, runSecrets);
+  if (inputError) {
+    const rejected = await deps.prisma.externalEffect.updateMany({
+      where: {
+        id: effect.id,
+        runId: run.id,
+        workspaceId: run.workspaceId,
+        status: "approved",
+      },
+      data: { status: "failed", result: { error: inputError } },
+    });
+    if (rejected.count === 1) throw new Error(`approved action is no longer valid: ${inputError}`);
+    throw new Error("approved action changed before validation");
+  }
+
   const claimed = await deps.prisma.externalEffect.updateMany({
     where: {
       id: effect.id,
@@ -1109,7 +1198,7 @@ async function resumeOwnerApproval(
 
   let result: unknown;
   try {
-    result = await execute(effect.kind, jsonObject(effect.request), effect.idempotencyKey);
+    result = await execute(effect.kind, storedRequest, effect.idempotencyKey);
   } catch (error) {
     await markProtectedEffectAmbiguous(deps, effect.id, error);
     throw new Error(
@@ -1213,11 +1302,9 @@ export function approvalActionDetail(
 ): string {
   const tool = `Tool: ${name}`;
   if (name === "shell") {
-    return boundedApprovalDetail([
-      tool,
-      `Command: ${approvalPreview(args.command ?? args.cmd ?? "", runSecrets, 800)}`,
-      `Working directory: ${approvalPreview(args.cwd ?? "default", runSecrets, 200)}`,
-    ]);
+    const command = redactSecrets(String(args.command ?? args.cmd ?? ""), runSecrets);
+    const cwd = redactSecrets(String(args.cwd ?? "default"), runSecrets);
+    return boundedApprovalDetail([tool, `Command: ${command}`, `Working directory: ${cwd}`]);
   }
   if (name === "delete_bot") {
     const target = approvalPreview(
@@ -1557,13 +1644,13 @@ async function runSandboxCommand(
 ) {
   let stdout = "";
   let stderr = "";
-  let code = 0;
+  let code: number | undefined;
   for await (const event of sandbox.execute(computer, { argv, cwd }, context)) {
     if (event.type === "stdout") stdout += event.data;
     if (event.type === "stderr") stderr += event.data;
     if (event.type === "exit") code = event.code;
   }
-  return { stdout, stderr, code };
+  return sandboxCommandResult(stdout, stderr, code);
 }
 
 async function resolveModelKey(
