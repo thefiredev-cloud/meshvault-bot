@@ -6,6 +6,7 @@ import {
   FakeSandboxProvider,
   ManagedSandboxEmulator,
 } from "@meshbot/adapters";
+import { createAuth, ownerBootstrapId } from "@meshbot/auth";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 type App = { request: (input: string, init?: RequestInit) => Promise<Response> };
@@ -69,6 +70,179 @@ describeJourneys("required product journeys", () => {
 
   afterAll(async () => {
     await stop();
+  });
+
+  it("0: signup policy is live and public signup cannot claim deployment ownership", async () => {
+    const settings = await prisma.deploymentSettings.findUniqueOrThrow({
+      where: { id: "default" },
+    });
+    const ownerUserId = settings.ownerUserId;
+    if (process.env.MESHBOT_BOOTSTRAP_OWNER_EMAIL) {
+      const owner = ownerUserId
+        ? await prisma.user.findUnique({ where: { id: ownerUserId } })
+        : null;
+      expect(owner?.email).toBe(process.env.MESHBOT_BOOTSTRAP_OWNER_EMAIL);
+      expect(settings.signupsEnabled).toBe(false);
+      expect(await prisma.session.count({ where: { userId: ownerUserId! } })).toBe(0);
+    }
+    const allowed = `policy-j-${stamp}@meshbot.test`;
+    const next = `policy-next-j-${stamp}@meshbot.test`;
+    const reserved = `policy-reserved-j-${stamp}@meshbot.test`;
+
+    try {
+      await prisma.deploymentSettings.update({
+        where: { id: "default" },
+        data: { signupsEnabled: false, signupAllowlist: allowed },
+      });
+      expect((await signupResponse(app, allowed, "Policy")).status).toBe(400);
+
+      await prisma.deploymentSettings.update({
+        where: { id: "default" },
+        data: { signupsEnabled: true, signupAllowlist: "" },
+      });
+      expect((await signupResponse(app, allowed, "Policy")).status).toBe(400);
+
+      await prisma.deploymentSettings.update({
+        where: { id: "default" },
+        data: {
+          ownerUserId: ownerBootstrapId(reserved),
+          signupsEnabled: true,
+          signupAllowlist: reserved,
+        },
+      });
+      expect((await signupResponse(app, reserved, "Reserved")).status).toBe(400);
+
+      const { createApp } = await import("../../../apps/api/src/app.ts");
+      const staleRestart = await createApp({
+        databaseUrl: process.env.DATABASE_URL!,
+        dataDir: mkdtempSync(path.join(tmpdir(), "meshbot-stale-restart-")),
+        wakeupDriver: "memory",
+        sandboxProvider: "fake",
+        agentRuntime: "scripted",
+        ownerBootstrapEmail: undefined,
+        ownerBootstrapPassword: undefined,
+        signupsEnabled: "true",
+        signupAllowlist: "attacker@example.com",
+      });
+      await staleRestart.stop();
+      expect(
+        await prisma.deploymentSettings.findUniqueOrThrow({ where: { id: "default" } }),
+      ).toMatchObject({ ownerUserId: null, signupsEnabled: false, signupAllowlist: "" });
+
+      const incompleteEmail = `policy-incomplete-j-${stamp}@meshbot.test`;
+      const incompleteReservation = ownerBootstrapId(incompleteEmail);
+      const incompleteUser = await prisma.user.create({
+        data: {
+          id: `incomplete-${stamp}`,
+          name: "Incomplete Owner",
+          email: incompleteEmail,
+          emailVerified: false,
+          ownerBootstrapReservation: incompleteReservation,
+        },
+      });
+      await prisma.deploymentSettings.update({
+        where: { id: "default" },
+        data: { ownerUserId: incompleteReservation, signupsEnabled: false, signupAllowlist: "" },
+      });
+      const incompleteRestart = await createApp({
+        databaseUrl: process.env.DATABASE_URL!,
+        dataDir: mkdtempSync(path.join(tmpdir(), "meshbot-incomplete-restart-")),
+        wakeupDriver: "memory",
+        sandboxProvider: "fake",
+        agentRuntime: "scripted",
+        ownerBootstrapEmail: undefined,
+        ownerBootstrapPassword: undefined,
+      });
+      await incompleteRestart.stop();
+      expect(await prisma.user.findUnique({ where: { id: incompleteUser.id } })).toBeNull();
+      expect(
+        await prisma.deploymentSettings.findUniqueOrThrow({ where: { id: "default" } }),
+      ).toMatchObject({ ownerUserId: null, signupsEnabled: false, signupAllowlist: "" });
+
+      const crashEmail = `policy-crash-j-${stamp}@meshbot.test`;
+      const crashReservation = ownerBootstrapId(crashEmail);
+      await prisma.deploymentSettings.update({
+        where: { id: "default" },
+        data: { ownerUserId: crashReservation, signupsEnabled: false, signupAllowlist: "" },
+      });
+      const crashAuth = createAuth(prisma, {
+        secret: "crash-recovery-secret-with-enough-length",
+        baseURL: "http://127.0.0.1:3110",
+        webOrigin: "http://127.0.0.1:5180",
+        ownerBootstrapToken: "crash-recovery-token",
+      });
+      const crashedOwner = await crashAuth.api.signUpEmail({
+        body: { email: crashEmail, password: "password12", name: "Crash Owner" },
+        headers: new Headers({ "x-meshbot-owner-bootstrap": "crash-recovery-token" }),
+      });
+      expect(
+        await prisma.user.findUniqueOrThrow({ where: { id: crashedOwner.user.id } }),
+      ).toMatchObject({ ownerBootstrapReservation: crashReservation });
+      const recoveredRestart = await createApp({
+        databaseUrl: process.env.DATABASE_URL!,
+        dataDir: mkdtempSync(path.join(tmpdir(), "meshbot-recovered-restart-")),
+        wakeupDriver: "memory",
+        sandboxProvider: "fake",
+        agentRuntime: "scripted",
+        ownerBootstrapEmail: undefined,
+        ownerBootstrapPassword: undefined,
+      });
+      await recoveredRestart.stop();
+      expect(
+        await prisma.deploymentSettings.findUniqueOrThrow({ where: { id: "default" } }),
+      ).toMatchObject({
+        ownerUserId: crashedOwner.user.id,
+        signupsEnabled: false,
+        signupAllowlist: "",
+      });
+      expect(await prisma.session.count({ where: { userId: crashedOwner.user.id } })).toBe(0);
+      expect(
+        await prisma.user.findUniqueOrThrow({ where: { id: crashedOwner.user.id } }),
+      ).toMatchObject({ ownerBootstrapReservation: null });
+
+      await prisma.deploymentSettings.update({
+        where: { id: "default" },
+        data: { ownerUserId: null, signupsEnabled: true, signupAllowlist: allowed },
+      });
+      const policyRestart = await createApp({
+        databaseUrl: process.env.DATABASE_URL!,
+        dataDir: mkdtempSync(path.join(tmpdir(), "meshbot-policy-restart-")),
+        wakeupDriver: "memory",
+        sandboxProvider: "fake",
+        agentRuntime: "scripted",
+        ownerBootstrapEmail: undefined,
+        ownerBootstrapPassword: undefined,
+        signupsEnabled: "false",
+        signupAllowlist: "other@example.com",
+      });
+      await policyRestart.stop();
+      expect(
+        await prisma.deploymentSettings.findUniqueOrThrow({ where: { id: "default" } }),
+      ).toMatchObject({ ownerUserId: null, signupsEnabled: true, signupAllowlist: allowed });
+      expect((await signupResponse(app, `outside-j-${stamp}@meshbot.test`, "Outside")).status).toBe(
+        400,
+      );
+      expect((await signupResponse(app, allowed, "Policy")).status).toBeLessThan(400);
+      expect(
+        (await prisma.deploymentSettings.findUniqueOrThrow({ where: { id: "default" } }))
+          .ownerUserId,
+      ).toBeNull();
+
+      await prisma.deploymentSettings.update({
+        where: { id: "default" },
+        data: { signupsEnabled: false, signupAllowlist: next },
+      });
+      expect((await signupResponse(app, next, "Policy Next")).status).toBe(400);
+    } finally {
+      await prisma.deploymentSettings.update({
+        where: { id: "default" },
+        data: {
+          ownerUserId,
+          signupsEnabled: true,
+          signupAllowlist: "@meshbot.test",
+        },
+      });
+    }
   });
 
   it("1+2: two users are isolated and two bots keep separate homes", async () => {
@@ -817,7 +991,15 @@ type Snap = {
 };
 
 async function signup(app: App, email: string, name: string) {
-  const res = await app.request("/api/auth/sign-up/email", {
+  const res = await signupResponse(app, email, name);
+  if (res.status >= 400) {
+    throw new Error(`signup failed ${res.status}: ${await res.text()}`);
+  }
+  return cookieHeader(res);
+}
+
+async function signupResponse(app: App, email: string, name: string) {
+  return app.request("/api/auth/sign-up/email", {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -825,10 +1007,6 @@ async function signup(app: App, email: string, name: string) {
     },
     body: JSON.stringify({ email, password: "password12", name }),
   });
-  if (res.status >= 400) {
-    throw new Error(`signup failed ${res.status}: ${await res.text()}`);
-  }
-  return cookieHeader(res);
 }
 
 function cookieHeader(res: Response) {

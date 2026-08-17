@@ -264,6 +264,29 @@
       "paths": ["package.json", "pnpm-lock.yaml", "PLAN.md", ".agents/context.json"],
       "worked": "A root pnpm override moved Dockerode UUID 10 and Xcode UUID 7 to patched CommonJS-compatible UUID 11.1.1. Direct smoke checks proved Dockerode emits a 36-character session UUID and Xcode emits its required 24-character project id. Production audit is now zero moderate and two high; 225 fast tests with 19 expected skips, lint, all 19 checks, and all 4 builds passed.",
       "failed": "image-size 1.2.1 remains two upstream Expo/Metro build-time high findings because npm has no patched release."
+    },
+    {
+      "at": "2026-08-16",
+      "paths": [
+        ".env.example",
+        "PLAN.md",
+        "apps/api/src/app.ts",
+        "apps/api/src/env.test.ts",
+        "apps/api/src/env.ts",
+        "apps/api/src/router.ts",
+        "docs/self-host.md",
+        "packages/auth/src/index.test.ts",
+        "packages/auth/src/index.ts",
+        "packages/core/src/signup-policy.test.ts",
+        "packages/core/src/signup-policy.ts",
+        "packages/db/prisma/migrations/0007_signup_policy/migration.sql",
+        "packages/db/prisma/schema.prisma",
+        "packages/testkit/src/cli/verify.ts",
+        "packages/testkit/src/journeys.test.ts",
+        ".agents/context.json"
+      ],
+      "worked": "Signup now fails closed, reads its live database policy, and never assigns deployment ownership from a public signup. A one-shot local secret reserves the owner before listen; a hidden durable marker recovers only a fully provisioned bootstrap user after a crash, while atomic CAS cleanup removes incomplete debris without crossing process ownership. Environment values seed only a new database row, stale values cannot reopen signup, and invalid flags close it. The upgrade proof converted an old true-plus-empty row to false and installed a false default plus nullable marker. Focused tests passed 12 of 12; verify:fast passed 227 tests with 20 expected skips; lint checked 232 files; all 19 checks passed; the full fresh-Postgres gate passed 242 tests with 5 expected skips and both Chromium journeys. No service was deployed or restarted.",
+      "failed": "Mailbox verification remains required before signup can be enabled safely on the public Internet; no approved sender is wired. The Better Auth low-entropy warning came only from the fixed verification secret, while production secret validation remains enforced."
     }
   ]
 }

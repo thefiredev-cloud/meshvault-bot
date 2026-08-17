@@ -10,11 +10,11 @@ Same as the README quick start: `.env` from `.env.example`, Postgres via Compose
 
 ## Docker Compose (single machine)
 
-1. Copy `.env.example` to `.env` and set `BETTER_AUTH_SECRET` and `ENCRYPTION_KEY` to long random strings. Mesh Bot refuses placeholder or missing secrets outside `development` / `test` (or when `MESHBOT_ALLOW_DEV_SECRETS=1` is set).
+1. Copy `.env.example` to `.env`, set `BETTER_AUTH_SECRET` and `ENCRYPTION_KEY` to long random strings, and set `MESHBOT_BOOTSTRAP_OWNER_EMAIL` plus `MESHBOT_BOOTSTRAP_OWNER_PASSWORD` for the first start only. Mesh Bot refuses placeholder or missing secrets outside `development` / `test` (or when `MESHBOT_ALLOW_DEV_SECRETS=1` is set).
 2. Set `QWEN_API_KEY` or `DASHSCOPE_API_KEY` for the default Qwen path. Optional: `QWEN_BASE_URL` / `DASHSCOPE_BASE_URL` for a compatible OpenAI API. `OPENROUTER_API_KEY` still works. Deployment-owned local models use `MESHBOT_GATEWAY_URL`, `MESHBOT_GATEWAY_KEY`, and an exact `MESHBOT_GATEWAY_MODELS` list. Plugins use personal Composio sign-in and do not need a project API key.
 3. Build the computer image: `pnpm sandbox:build` (Compose also builds it via the `computer` service).
-4. `docker compose -f infra/compose/docker-compose.yml up --build`
-5. Open the web origin (`http://127.0.0.1:5173` by default). The first registered user becomes the deployment owner.
+4. `docker compose -f infra/compose/docker-compose.yml up -d --build`
+5. After the API starts, remove both bootstrap values from `.env`, run `docker compose -f infra/compose/docker-compose.yml up -d --force-recreate`, then open the web origin (`http://127.0.0.1:5173` by default) and sign in with the owner credentials. Public signup never assigns deployment ownership.
 
 Compose runs Postgres, the sandbox supervisor (Docker socket), API, worker, and a Vite preview of the web app. Bot computers are sibling containers (`meshbot/computer:local`). The API process does not get an unrestricted Docker socket; the supervisor owns lifecycle.
 
@@ -30,12 +30,12 @@ WEB_ORIGIN=https://app.example.com
 API_URL=https://app.example.com
 ```
 
-Cookies and CORS follow those origins. In production, `API_URL` must be browser-reachable HTTPS because it forms `/api/connections/composio/callback`. HTTP is accepted only in development or tests on `localhost`, `127.0.0.1`, or `::1`. Keep `SIGNUPS_ENABLED` / `SIGNUP_ALLOWLIST` tight on a public host.
+Cookies and CORS follow those origins. In production, `API_URL` must be browser-reachable HTTPS because it forms `/api/connections/composio/callback`. HTTP is accepted only in development or tests on `localhost`, `127.0.0.1`, or `::1`. Signup stays closed unless `SIGNUPS_ENABLED=true` and `SIGNUP_ALLOWLIST` contains at least one exact email or domain. The allowlist is an enrollment filter, not proof that a registrant controls an email address; keep signup closed on an untrusted network until mailbox verification is wired.
 
 Optional:
 
 ```env
-SIGNUPS_ENABLED=true
+SIGNUPS_ENABLED=false
 SIGNUP_ALLOWLIST=you@example.com,@company.com
 SANDBOX_PROVIDER=docker   # or e2b. Keep fake only for pnpm verify:fast.
 AGENT_RUNTIME=pi          # Keep scripted only for pnpm verify:fast.
@@ -96,7 +96,7 @@ To run a hosted product (same codebase):
 7. Set public HTTPS `WEB_ORIGIN` / `BETTER_AUTH_URL` / `API_URL`, secrets, and a Qwen / DashScope (or OpenRouter / other Pi) deployment key if you want to skip per-user model keys.
 8. Put the web app behind the same origin as `/api` and `/rpc` (Vite preview proxy, or a reverse proxy). Docker noVNC connections use short-lived signed `/novnc/*` capabilities; do not replace that route with an unrestricted port proxy.
 9. Deploy `apps/www` to `meshvault.ai` and point `app.meshvault.ai` (or similar) at the product origin.
-10. Turn on `SIGNUP_ALLOWLIST` until you want open registration. There is no MeshVault-managed model billing in version 1 — users bring keys.
+10. Keep signup closed unless the owner intentionally enables a non-empty allowlist. Empty allowlists never open registration, and the allowlist does not verify mailbox ownership. There is no MeshVault-managed model billing in version 1 — users bring keys.
 
 Expo / desktop installers are clients of that origin (`EXPO_PUBLIC_API_URL`, `MESHBOT_WEB_URL`). They are not a Cloud control plane.
 

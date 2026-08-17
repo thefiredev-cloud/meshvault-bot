@@ -39,6 +39,15 @@ describe("loadEnv", () => {
     expect(env.wakeupDriver).toBe("memory");
   });
 
+  it("requires both one-shot owner bootstrap values", () => {
+    expect(() =>
+      loadEnv({
+        ...base,
+        MESHBOT_BOOTSTRAP_OWNER_EMAIL: "owner@example.com",
+      }),
+    ).toThrow(/must be set together/);
+  });
+
   it("throws when production omits secrets", () => {
     expect(() =>
       loadEnv({

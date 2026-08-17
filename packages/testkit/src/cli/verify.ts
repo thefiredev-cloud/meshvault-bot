@@ -32,7 +32,10 @@ async function main() {
   process.env.WEB_PORT = String(webPort);
   process.env.PLAYWRIGHT_BASE_URL = webOrigin;
   process.env.DATA_DIR = path.join(reportDir, "data");
-  process.env.SIGNUPS_ENABLED = "true";
+  delete process.env.SIGNUPS_ENABLED;
+  delete process.env.SIGNUP_ALLOWLIST;
+  process.env.MESHBOT_BOOTSTRAP_OWNER_EMAIL = "owner@meshbot.test";
+  process.env.MESHBOT_BOOTSTRAP_OWNER_PASSWORD = "password12";
   process.env.CI = "1";
 
   execSync("pnpm --filter @meshbot/db generate", { stdio: "inherit", env: process.env });
@@ -47,6 +50,10 @@ async function main() {
   const { createApp } = await import("../../../../apps/api/src/app.ts");
   const { serve } = await import("@hono/node-server");
   const handles = await createApp({ databaseUrl, prisma: undefined });
+  await handles.prisma.deploymentSettings.update({
+    where: { id: "default" },
+    data: { signupsEnabled: true, signupAllowlist: "@meshbot.test" },
+  });
   const server = serve({ fetch: handles.app.fetch, port: apiPort, hostname: "127.0.0.1" });
   await waitForHealth(`http://127.0.0.1:${apiPort}/health`, 15_000);
 

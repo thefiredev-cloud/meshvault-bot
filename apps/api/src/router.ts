@@ -134,7 +134,7 @@ export function createRouter(deps: RouterDeps) {
           create: {
             id: "default",
             ownerUserId: context.actor.userId,
-            signupsEnabled: input.signupsEnabled ?? true,
+            signupsEnabled: input.signupsEnabled ?? false,
             signupAllowlist: (input.signupAllowlist ?? []).join(","),
             computerHost: input.computerHost ?? undefined,
           },
@@ -1359,7 +1359,7 @@ async function deploymentDto(prisma: PrismaClient, sandboxProvider: string) {
   const settings = await prisma.deploymentSettings.findUnique({ where: { id: "default" } });
   return {
     ownerUserId: settings?.ownerUserId ?? null,
-    signupsEnabled: settings?.signupsEnabled ?? true,
+    signupsEnabled: settings?.signupsEnabled ?? false,
     signupAllowlist: settings?.signupAllowlist
       ? settings.signupAllowlist.split(",").filter(Boolean)
       : [],

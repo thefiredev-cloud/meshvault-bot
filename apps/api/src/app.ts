@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import type { SandboxProvider, WakeupDriver } from "@meshbot/adapter-kit";
 import {
   type ComposioConnector,
@@ -16,7 +17,13 @@ import {
   ScriptedAgentRuntime,
   sleepComputerIfIdle,
 } from "@meshbot/adapters";
-import { blockedAuthPaths, createAuth } from "@meshbot/auth";
+import {
+  blockedAuthPaths,
+  bootstrapDeploymentOwner,
+  createAuth,
+  recoverReservedDeploymentOwner,
+} from "@meshbot/auth";
+import { parseAllowlist, signupsOpen } from "@meshbot/core";
 import { createDb, type PrismaClient, requireMembership } from "@meshbot/db";
 import { MarkdownMemoryStore } from "@meshbot/memory";
 import { RPCHandler } from "@orpc/server/fetch";
@@ -47,18 +54,24 @@ export async function createApp(
     : createDb(env.databaseUrl);
   const { prisma } = created;
   created.pool?.on("error", () => undefined);
+  const signupAllowlist = parseAllowlist(env.signupAllowlist);
+  const signupPolicy = {
+    signupsEnabled: signupsOpen(env.signupsEnabled) && signupAllowlist.length > 0,
+    signupAllowlist: signupAllowlist.join(","),
+  };
   await prisma.deploymentSettings.upsert({
     where: { id: "default" },
-    create: { id: "default" },
+    create: { id: "default", ...signupPolicy },
     update: {},
   });
+  await recoverReservedDeploymentOwner(prisma);
 
+  const ownerBootstrapToken = env.ownerBootstrapEmail ? randomBytes(32).toString("hex") : undefined;
   const auth = createAuth(prisma, {
     secret: env.authSecret,
     baseURL: env.authUrl,
     webOrigin: env.webOrigin,
-    signupsEnabled: env.signupsEnabled,
-    signupAllowlist: env.signupAllowlist,
+    ownerBootstrapToken,
     extraOrigins: [
       "meshbot://",
       "meshvault://",
@@ -70,6 +83,13 @@ export async function createApp(
       "http://127.0.0.1:19006",
     ],
   });
+  if (env.ownerBootstrapEmail && env.ownerBootstrapPassword && ownerBootstrapToken) {
+    await bootstrapDeploymentOwner(prisma, auth, {
+      email: env.ownerBootstrapEmail,
+      password: env.ownerBootstrapPassword,
+      token: ownerBootstrapToken,
+    });
+  }
   const wakeupKind = env.wakeupDriver;
   const wakeup =
     wakeupKind === "memory"

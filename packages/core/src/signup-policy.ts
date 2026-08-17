@@ -7,7 +7,7 @@ export function parseAllowlist(raw: string | undefined): string[] {
 }
 
 export function emailAllowed(email: string, allowlist: string[]): boolean {
-  if (allowlist.length === 0) return true;
+  if (allowlist.length === 0) return false;
   const normalized = email.trim().toLowerCase();
   const domain = normalized.split("@")[1];
   return allowlist.some((entry) => {
@@ -17,6 +17,5 @@ export function emailAllowed(email: string, allowlist: string[]): boolean {
 }
 
 export function signupsOpen(enabled: string | undefined): boolean {
-  if (enabled === undefined) return true;
-  return enabled !== "false" && enabled !== "0";
+  return enabled === "true" || enabled === "1";
 }

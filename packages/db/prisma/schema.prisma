@@ -13,6 +13,7 @@ model User {
   email         String
   emailVerified Boolean   @default(false)
   image         String?
+  ownerBootstrapReservation String? @unique
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
@@ -139,7 +140,7 @@ model Invitation {
 model DeploymentSettings {
   id                             String   @id @default("default")
   ownerUserId                    String?
-  signupsEnabled                 Boolean  @default(true)
+  signupsEnabled                 Boolean  @default(false)
   signupAllowlist                String   @default("")
   defaultModelProvider           String?
   defaultModelId                 String?

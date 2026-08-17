@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { emailAllowed, parseAllowlist, signupsOpen } from "./signup-policy.js";
 
 describe("signup policy", () => {
-  it("allows any email when the list is empty", () => {
-    expect(emailAllowed("a@x.com", [])).toBe(true);
+  it("denies every email when the list is empty", () => {
+    expect(emailAllowed("a@x.com", [])).toBe(false);
   });
 
   it("matches exact addresses and domains case-insensitively", () => {
@@ -14,7 +14,13 @@ describe("signup policy", () => {
   });
 
   it("honors SIGNUPS_ENABLED", () => {
-    expect(signupsOpen(undefined)).toBe(true);
+    expect(signupsOpen(undefined)).toBe(false);
+    expect(signupsOpen("true")).toBe(true);
+    expect(signupsOpen("1")).toBe(true);
     expect(signupsOpen("false")).toBe(false);
+    expect(signupsOpen("0")).toBe(false);
+    expect(signupsOpen("yes")).toBe(false);
+    expect(signupsOpen("fasle")).toBe(false);
+    expect(signupsOpen("")).toBe(false);
   });
 });

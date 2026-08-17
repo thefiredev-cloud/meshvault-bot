@@ -18,6 +18,8 @@ export interface AppEnv {
   apiUrl: string;
   signupsEnabled: string | undefined;
   signupAllowlist: string | undefined;
+  ownerBootstrapEmail: string | undefined;
+  ownerBootstrapPassword: string | undefined;
   encryptionKey: string;
   dataDir: string;
   sandboxSupervisorUrl: string;
@@ -38,6 +40,13 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
   const authSecret = resolveAuthSecret(source);
   const qwenKey = qwenApiKey(source);
   const openRouterKey = openRouterApiKey(source);
+  const ownerBootstrapEmail = source.MESHBOT_BOOTSTRAP_OWNER_EMAIL?.trim() || undefined;
+  const ownerBootstrapPassword = source.MESHBOT_BOOTSTRAP_OWNER_PASSWORD || undefined;
+  if (Boolean(ownerBootstrapEmail) !== Boolean(ownerBootstrapPassword)) {
+    throw new Error(
+      "MESHBOT_BOOTSTRAP_OWNER_EMAIL and MESHBOT_BOOTSTRAP_OWNER_PASSWORD must be set together",
+    );
+  }
   return {
     nodeEnv: source.NODE_ENV ?? "development",
     databaseUrl: required(source, "DATABASE_URL"),
@@ -47,6 +56,8 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     apiUrl: source.API_URL ?? "http://127.0.0.1:3100",
     signupsEnabled: source.SIGNUPS_ENABLED,
     signupAllowlist: source.SIGNUP_ALLOWLIST,
+    ownerBootstrapEmail,
+    ownerBootstrapPassword,
     encryptionKey: resolveEncryptionKey(source),
     dataDir: source.DATA_DIR ?? "./data",
     sandboxSupervisorUrl: source.SANDBOX_SUPERVISOR_URL ?? "http://127.0.0.1:7091",

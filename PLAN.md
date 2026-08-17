@@ -151,3 +151,12 @@ Empty — first pass.
 - [x] Override the shared UUID leaf to the first patched release.
 - [x] Prove the Xcode and Dockerode caller paths plus all repository gates.
 - [x] Keep the unpatched image-size findings visible.
+
+## Owner-authenticated signup subtask
+
+- [x] Make missing, disabled, and empty-allowlist signup policies fail closed.
+- [x] Read the live database policy on every signup without freezing it at startup.
+- [x] Reserve deployment ownership for a one-shot local bootstrap before the server listens.
+- [x] Prove policy changes apply without restart and public signup cannot claim ownership.
+- [x] Apply the migration and pass the focused, fast, type, lint, and full verification gates.
+- [ ] Add an approved mailbox-verification sender before enabling signup on the public Internet.
