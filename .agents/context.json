@@ -327,24 +327,20 @@
     },
     {
       "at": "2026-08-19",
-      "paths": [
-        "PLAN.md",
-        "UPSTREAM.md",
-        ".agents/context.json",
-        "apps/desktop"
-      ],
+      "paths": ["PLAN.md", "UPSTREAM.md", ".agents/context.json", "apps/desktop"],
       "worked": "Rebased cursor/hermes-bot-mode-desktop-9bae onto origin/main after #17 (f2e140c). Conflicts only PLAN.md, UPSTREAM.md, .agents/context.json — kept both Expo #17 and desktop Hermes Bot Mode. apps/mobile unchanged vs main. Desktop 47 tests still pass.",
       "failed": null
     },
     {
       "at": "2026-08-19",
-      "paths": [
-        "vendor",
-        "apps/desktop",
-        "PLAN.md",
-        "UPSTREAM.md"
-      ],
+      "paths": ["vendor", "apps/desktop", "PLAN.md", "UPSTREAM.md"],
       "worked": "#19 stays on origin/main (f2e140c) only. Did not merge #18 (cursor/hermes-bot-mode-0f98). No vendor/hermes-agent or vendor/hermes-agent-self-evolution on this branch. Diff vs main is desktop Bot Mode + docs. MERGEABLE without #18 files.",
+      "failed": null
+    },
+    {
+      "at": "2026-08-19",
+      "paths": [".agents/context.json"],
+      "worked": "CI lint failed after rebase because biome wanted the new context.json paths arrays on one line. Formatted those records. No #18 vendor spine. iOS untouched.",
       "failed": null
     }
   ]

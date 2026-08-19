@@ -186,3 +186,7 @@ Empty — first pass.
 - [x] Rebase #19 only onto `origin/main`. Do not merge `cursor/hermes-bot-mode-0f98` (#18).
 - [x] Leave `vendor/hermes-agent` and `vendor/hermes-agent-self-evolution` out of this branch.
 - [x] Keep the PR as desktop/Electron Hermes Bot Mode only so it stays MERGEABLE without #18's files.
+
+## Fix #19 lint after rebase
+
+- [x] Format `.agents/context.json` so `biome check .` passes. Do not take #18. Do not touch iOS.
