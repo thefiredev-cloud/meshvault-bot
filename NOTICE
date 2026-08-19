@@ -8,3 +8,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 The original Rakazo NOTICE / attribution is retained as required by Apache-2.0.
+
+This product includes Hermes Bot Mode logic developed by Nous Research
+(https://github.com/NousResearch/hermes-agent), Copyright 2026 Nous Research,
+licensed under the MIT License. See apps/desktop/src/plugins/hermes-bots/LICENSE.

@@ -6,7 +6,7 @@
   "main": "dist/main.js",
   "scripts": {
     "dev": "pnpm build && electron .",
-    "build": "tsc -p tsconfig.json && cp src/preload.cjs src/connect.html src/connect.js dist/",
+    "build": "tsc -p tsconfig.json && cp src/preload.cjs src/connect.html src/connect.js src/bots.html src/bots.js dist/",
     "pack": "pnpm build && electron-builder --mac --win --linux",
     "pack:dir": "pnpm build && electron-builder --dir",
     "release:mac:check": "node scripts/check-macos-release.mjs",

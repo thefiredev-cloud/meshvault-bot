@@ -106,6 +106,19 @@ Native red / yellow / green buttons close, minimize, and zoom that window. They 
 
 Development defaults to `http://127.0.0.1:5173`. A packaged build asks for the HTTPS origin served by the Windows-owned MeshVault runtime and remembers it. Use **MeshVault → Change Server…** to change it; `MESHBOT_WEB_URL` remains the explicit startup override.
 
+### Desktop Bot Mode
+
+Hermes Bot Mode is bundled in the Electron app (from [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) `apps/desktop/src/plugins/hermes-bots`). It is a local roster of named bots with one canonical Bot Chat each. No Hermes API key is invented or required.
+
+With `pnpm --filter @meshbot/desktop dev` running:
+
+1. Choose **MeshVault → Bot Mode** (or **Open Bot Mode** on the connection screen).
+2. Create an agent (`researcher`, `ops`, …) or open the default Hermes row.
+3. Click a bot to pin and open its forever Bot Chat. **Sessions** lists that bot's stored conversations.
+4. **Open MeshVault** returns to the connected MeshVault application (model + application + compute).
+
+Roster state is stored in the desktop user-data directory (`bot-mode.json`, mode `0600`). The Expo/iOS client is unchanged.
+
 Packaged installers (optional):
 
 ```bash

@@ -20,6 +20,7 @@
       input { width: 100%; min-height: 46px; padding: 0 14px; border: 1px solid #3b3b42; border-radius: 10px; color: inherit; background: #09090b; font: inherit; outline: none; }
       input:focus { border-color: #8b8b96; box-shadow: 0 0 0 3px #ffffff14; }
       button { width: 100%; min-height: 46px; margin-top: 14px; border: 0; border-radius: 10px; color: #09090b; background: #f5f5f5; font: inherit; font-weight: 700; cursor: pointer; }
+      button.secondary { color: #f5f5f5; background: #1c1c20; border: 1px solid #3b3b42; }
       button:disabled { cursor: wait; opacity: 0.6; }
       #status { min-height: 22px; margin: 14px 0 0; color: #aaaab2; font-size: 13px; }
       #status.error { color: #ff9d9d; }
@@ -36,6 +37,7 @@
         <label for="server-origin">Server address</label>
         <input id="server-origin" name="server-origin" type="url" inputmode="url" autocomplete="url" placeholder="https://meshbot.example.com" required />
         <button id="connect" type="submit">Connect</button>
+        <button id="bot-mode" class="secondary" type="button">Open Bot Mode</button>
       </form>
       <div id="status" role="status" aria-live="polite"></div>
       <p id="hint">HTTPS is required. HTTP is allowed only for a server on this Mac.</p>

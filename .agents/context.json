@@ -311,6 +311,19 @@
       ],
       "worked": "Expo Bot Mode ports Hermes roster/identity/routines onto bots/* and routines/* RPC. Hide is local SecureStore. Duplicate uses bots/create. Instructions stay a distinct identity field. Mobile sell string is the exact one-product sentence. Electron untouched. verify:fast 260/19; mobile+contracts tsc clean.",
       "failed": null
+    },
+    {
+      "at": "2026-08-19",
+      "paths": [
+        "apps/desktop/src/plugins/hermes-bots",
+        "apps/desktop/src/plugin-host.ts",
+        "apps/desktop/src/bot-mode.ts",
+        "apps/desktop/src/main.ts",
+        "UPSTREAM.md",
+        "NOTICE"
+      ],
+      "worked": "Ported Hermes Bot Mode core from NousResearch/hermes-agent 395c70d (plugin.js helpers + tests), not the 10k-line React UI. Electron plugin host + bots.html roster, canonical chat pins, session workspace. Self-evolution skipped (DSPy/GEPA). iOS untouched. Desktop check + 47 tests passed.",
+      "failed": "Full plugin.js is 10097 lines and imports @hermes/plugin-sdk; dumping it would not compile in this Electron shell."
     }
   ]
 }

@@ -167,3 +167,10 @@ Empty — first pass.
 - [x] Persist hide locally; talk to existing `bots/*` and `routines/*` RPC from Expo.
 - [x] Add Expo identity + routines screens; keep founding/checkout; use the locked sell on touched surfaces.
 - [x] Add tests and leave `pnpm verify:fast` green.
+
+## Desktop Hermes Bot Mode merge subtask
+
+- [x] Extract the portable hermes-bots core (identity, search, canonical chat, sessions, groups, hide, mentions, routines owner) from NousResearch/hermes-agent.
+- [x] Add an Electron plugin host and a local Bot Mode page; do not dump the 10k-line Hermes React UI.
+- [x] Port hermes-bots tests that can run here as Vitest. Skip self-evolution (DSPy/GEPA, not Electron).
+- [ ] Keep MIT attribution. Do not touch Expo/iOS. Leave desktop typecheck and tests green.

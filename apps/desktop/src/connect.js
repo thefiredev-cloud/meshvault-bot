@@ -1,6 +1,7 @@
 const form = document.querySelector("#server-form");
 const input = document.querySelector("#server-origin");
 const button = document.querySelector("#connect");
+const botModeButton = document.querySelector("#bot-mode");
 const status = document.querySelector("#status");
 const hint = document.querySelector("#hint");
 
@@ -28,6 +29,16 @@ form.addEventListener("submit", async (event) => {
   } catch (error) {
     showStatus(error instanceof Error ? error.message : "Could not connect to that server.", true);
     button.disabled = false;
+  }
+});
+
+botModeButton.addEventListener("click", async () => {
+  botModeButton.disabled = true;
+  try {
+    await window.meshbotDesktop.botMode.open();
+  } catch (error) {
+    showStatus(error instanceof Error ? error.message : "Could not open Bot Mode.", true);
+    botModeButton.disabled = false;
   }
 });
 
