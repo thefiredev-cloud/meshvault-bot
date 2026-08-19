@@ -137,3 +137,10 @@ Empty — first pass.
 - [x] Rebase `cursor/ios-founding-checkout-2e10` onto current main after #13.
 - [x] Annotate `handleCreateCheckout` and `handleInstallLead` so the public return type is `Promise<Response>`.
 - [x] Push the same PR #14 and leave `pnpm check` green.
+
+## Expo iOS locked MeshVault sell subtask
+
+- [x] Keep one local mobile string with the exact locked MeshVault sell; do not paraphrase.
+- [x] Show that string on Expo founding, commerce, and existing mobile checkout/footer surfaces only.
+- [x] Do not pitch MeshVault as only a model, only an app, or only compute; do not invent other copy, Rakazo leftovers, or store IDs.
+- [x] Leave Electron/desktop/www untouched; prove the string and pass `pnpm verify:fast`.

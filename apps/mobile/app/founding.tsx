@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { currentApiBase } from "../lib/api";
 import { startCheckout, submitInstallLead } from "../lib/commerce";
+import { MESHVAULT_SELL } from "../lib/sell";
 
 export default function Founding() {
   const [name, setName] = useState("");
@@ -81,6 +82,9 @@ export default function Founding() {
         keyboardDismissMode="on-drag"
       >
         <Text style={{ color: "#1B1B1E", fontSize: 28, fontWeight: "500" }}>Mesh Bot</Text>
+        <Text style={{ color: "#1B1B1E", marginTop: 10, fontSize: 16, lineHeight: 22 }}>
+          {MESHVAULT_SELL}
+        </Text>
         <Text style={{ color: "#6E6E68", marginTop: 10, fontSize: 16, lineHeight: 22 }}>
           iOS is pre-release. There is no App Store or TestFlight download yet.
         </Text>
@@ -186,6 +190,9 @@ export default function Founding() {
         ) : null}
         <Text style={{ color: "#A8A8A2", marginTop: 16, fontSize: 13, lineHeight: 18 }}>
           Or email contact@meshvault.ai. A person replies. No fake inbox.
+        </Text>
+        <Text style={{ color: "#A8A8A2", marginTop: 16, fontSize: 13, lineHeight: 18 }}>
+          {MESHVAULT_SELL}
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
