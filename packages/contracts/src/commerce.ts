@@ -188,7 +188,7 @@ export function foundingInstallMailto(input: FoundingInstallLeadInput): string {
   );
   const body = encodeURIComponent(
     [
-      "Founding / managed install lead from Mesh Bot",
+      "Founding / managed install lead from MeshVault",
       "",
       `Name: ${lead.name || "(not given)"}`,
       `Email: ${lead.email || "(not given)"}`,

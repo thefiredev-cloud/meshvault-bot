@@ -114,20 +114,20 @@ function catalogBilling(
   opts: { apiKey: boolean; oauth: boolean },
 ) {
   if (providerId === "qwen") {
-    return "Uses your Qwen / DashScope API key (QWEN_API_KEY or DASHSCOPE_API_KEY). Mesh Bot does not pay for model usage.";
+    return "Uses your Qwen / DashScope API key (QWEN_API_KEY or DASHSCOPE_API_KEY). MeshVault does not pay for model usage.";
   }
   if (providerId === "meshbot-gateway") {
-    return "Uses the deployment owner's OpenAI-compatible local gateway. Mesh Bot does not pay for model usage.";
+    return "Uses the deployment owner's OpenAI-compatible local gateway. MeshVault does not pay for model usage.";
   }
   const device = DEVICE_CODE_PROVIDERS[providerId];
   if (device) return device.billing;
   if (opts.oauth && !opts.apiKey) {
-    return `${name} subscription login is not in the Mesh Bot UI yet. Skip if this deployment already has credentials.`;
+    return `${name} subscription login is not in the MeshVault UI yet. Skip if this deployment already has credentials.`;
   }
   if (opts.apiKey) {
-    return `Uses your ${name} API key. Mesh Bot does not pay for model usage.`;
+    return `Uses your ${name} API key. MeshVault does not pay for model usage.`;
   }
-  return `Uses your ${name} key. Mesh Bot does not pay for model usage.`;
+  return `Uses your ${name} key. MeshVault does not pay for model usage.`;
 }
 
 export const scriptedCatalogEntry: PiCatalogEntry = {

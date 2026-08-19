@@ -144,3 +144,19 @@ Empty — first pass.
 - [x] Show that string on Expo founding, commerce, and existing mobile checkout/footer surfaces only.
 - [x] Do not pitch MeshVault as only a model, only an app, or only compute; do not invent other copy, Rakazo leftovers, or store IDs.
 - [x] Leave Electron/desktop/www untouched; prove the string and pass `pnpm verify:fast`.
+
+## MeshVault sell copy subtask
+
+- [x] Lock one MeshVault sell string: the model plus the application plus compute, sold as one product.
+- [x] Put that wording on README, marketing, splash, onboarding, about, settings, and window titles.
+- [x] Replace leftover generic, Grok-alternative, and Rakazo product pitches on user-facing surfaces.
+- [x] Leave providers, models, keys, schemes, and runtime behavior unchanged.
+- [x] Pass `pnpm verify:fast` and open a PR.
+
+## MeshVault sell rebase subtask
+
+- [ ] Rebase `cursor/meshvault-sell-961d` onto current main after #15.
+- [ ] Keep the locked sentence exactly: MeshVault is the model plus the application plus compute. That is the company, the offer, and the message.
+- [ ] Resolve Expo overlap by keeping #15's iOS sell; apply remaining surfaces.
+- [ ] Fix lint and leave `pnpm verify:fast` green.
+- [ ] Push the same branch so #16 is mergeable.

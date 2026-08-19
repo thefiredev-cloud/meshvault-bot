@@ -81,7 +81,7 @@ export default function Founding() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        <Text style={{ color: "#1B1B1E", fontSize: 28, fontWeight: "500" }}>Mesh Bot</Text>
+        <Text style={{ color: "#1B1B1E", fontSize: 28, fontWeight: "500" }}>MeshVault</Text>
         <Text style={{ color: "#1B1B1E", marginTop: 10, fontSize: 16, lineHeight: 22 }}>
           {MESHVAULT_SELL}
         </Text>
