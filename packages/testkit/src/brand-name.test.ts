@@ -44,7 +44,7 @@ const nameSurfaces = [
 describe("MeshVault sell", () => {
   it("locks the exact company offer", () => {
     expect(MESHVAULT_SELL).toBe(
-      "MeshVault is the model plus the application plus compute. That is the company, the offer, and the message. We sell all three as one product.",
+      "MeshVault is the model plus the application plus compute. That is the company, the offer, and the message.",
     );
   });
 

@@ -1,6 +1,6 @@
 # Self-hosting MeshVault
 
-MeshVault is the model plus the application plus compute. That is the company, the offer, and the message. We sell all three as one product.
+MeshVault is the model plus the application plus compute. That is the company, the offer, and the message.
 
 The signed-in application is a long-running API, a Graphile Worker, Postgres, and a computer provider (Docker supervisor or E2B). It is not a static site. The marketing site in `apps/www` can be hosted separately.
 

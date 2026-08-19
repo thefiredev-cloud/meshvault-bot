@@ -1,7 +1,7 @@
 export const SITE_NAME = "MeshVault";
 export const SITE_URL = "https://meshvault.ai";
 export const SITE_DESCRIPTION =
-  "MeshVault is the model plus the application plus compute. That is the company, the offer, and the message. We sell all three as one product.";
+  "MeshVault is the model plus the application plus compute. That is the company, the offer, and the message.";
 
 export const GITHUB_URL = "https://github.com/thefiredev-cloud/meshvault-bot";
 export const GITHUB_API_REPO = "https://api.github.com/repos/thefiredev-cloud/meshvault-bot";

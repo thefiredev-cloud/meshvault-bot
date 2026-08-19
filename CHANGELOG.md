@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- User-facing copy now states the MeshVault sell: the model plus the application plus compute, sold as one product.
+- User-facing copy now states the MeshVault sell: MeshVault is the model plus the application plus compute. That is the company, the offer, and the message.
 - Renamed the shipped product and workspace scope to Mesh Bot and `@meshbot/*`. Required upstream attribution remains in `UPSTREAM.md` and `NOTICE`.
 - Default model path is Qwen (DashScope / compatible OpenAI API) via `QWEN_API_KEY` / `DASHSCOPE_API_KEY` and optional `QWEN_BASE_URL` / `DASHSCOPE_BASE_URL`. OpenRouter and the rest of the Pi catalog remain.
 - Deployment-owned local models use the explicit `MESHBOT_GATEWAY_*` OpenAI-compatible lane; DGX Spark and ASUS GX10 remain separate inference hosts.

@@ -283,6 +283,19 @@
       ],
       "worked": "Locked MESHVAULT_SELL: MeshVault is the model plus the application plus compute. That is the company, the offer, and the message. Copy-only on README, marketing, splash, onboarding, settings About, window titles. Expo keeps #15 surfaces via lib/sell. Leftover Grok-alternative and Private-bots pitches removed. meshbot://, providers, models, and keys unchanged.",
       "failed": "Rebase onto #15 conflicted on founding, commerce, PLAN, and context.json."
+    },
+    {
+      "at": "2026-08-19",
+      "paths": [
+        "packages/contracts/src/brand.ts",
+        "apps/mobile/lib/sell.ts",
+        "apps/mobile/lib/sell.test.ts",
+        "packages/adapters/src/pi-oauth.ts",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Rebased #16 onto main after #15. Locked sentence is exactly two sentences without We sell all three. Expo still imports ../lib/sell which re-exports contracts. Dropped #15 off-mobile sell ban. Biome wrap on SuperGrok billing line. lint clean; verify:fast 250/19.",
+      "failed": null
     }
   ]
 }

@@ -32,7 +32,8 @@ export const DEVICE_CODE_PROVIDERS: Record<
   [XAI_OAUTH_PROVIDER]: {
     loginLabel: "Sign in with SuperGrok or X Premium",
     hint: "SuperGrok / key",
-    billing: "Sign in with SuperGrok or X Premium, or paste an xAI API key. MeshVault does not pay.",
+    billing:
+      "Sign in with SuperGrok or X Premium, or paste an xAI API key. MeshVault does not pay.",
   },
 };
 

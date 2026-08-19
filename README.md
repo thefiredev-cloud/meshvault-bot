@@ -1,6 +1,6 @@
 # MeshVault
 
-MeshVault is the model plus the application plus compute. That is the company, the offer, and the message. We sell all three as one product.
+MeshVault is the model plus the application plus compute. That is the company, the offer, and the message.
 
 Electron desktop + Expo iOS. Default model path is **Qwen** (DashScope / compatible OpenAI API). OpenRouter and the rest of the Pi catalog stay available. Deployment-owned local models use the explicit `MESHBOT_GATEWAY_*` OpenAI-compatible gateway.
 
