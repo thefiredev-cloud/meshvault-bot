@@ -266,6 +266,23 @@
       ],
       "worked": "Locked MeshVault sell is a local mobile string: model plus application plus compute as one product. Rendered on founding (top+footer), commerce (top+footer), and the existing inbox checkout card. No paraphrase, no Rakazo, no store/EAS IDs, no Electron/www change. Focused 13 mobile tests and verify:fast 229/19 passed.",
       "failed": null
+    },
+    {
+      "at": "2026-08-19",
+      "paths": [
+        "packages/contracts/src/brand.ts",
+        "README.md",
+        "PRODUCT.md",
+        "apps/www/src",
+        "apps/web/src/pages",
+        "apps/desktop",
+        "apps/mobile/app",
+        "packages/testkit/src/brand-name.test.ts",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Locked MESHVAULT_SELL: MeshVault is the model plus the application plus compute. That is the company, the offer, and the message. Copy-only on README, marketing, splash, onboarding, settings About, window titles. Expo keeps #15 surfaces via lib/sell. Leftover Grok-alternative and Private-bots pitches removed. meshbot://, providers, models, and keys unchanged.",
+      "failed": "Rebase onto #15 conflicted on founding, commerce, PLAN, and context.json."
     }
   ]
 }

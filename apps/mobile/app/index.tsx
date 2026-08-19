@@ -1,3 +1,4 @@
+import { MESHVAULT_SELL } from "@meshbot/contracts";
 import { Redirect, useRouter } from "expo-router";
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import {

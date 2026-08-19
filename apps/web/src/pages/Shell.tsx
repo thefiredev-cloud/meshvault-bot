@@ -1,9 +1,9 @@
 import { ChatMarkdown } from "@meshbot/chat-ui/web";
 import {
-  MESHVAULT_NAME,
-  MESHVAULT_SELL,
   type Bot,
   type ComputerStatus,
+  MESHVAULT_NAME,
+  MESHVAULT_SELL,
   type ProductEvent,
   type Routine,
   type ThreadMessage,
@@ -386,7 +386,9 @@ export function ShellPage({ view = "chat" }: { view?: "chat" | "brain" }) {
                   {usage.runs} runs · {usage.inputTokens + usage.outputTokens} tokens
                 </p>
               ) : null}
-              <p className="px-3 pb-2 text-[12.5px] leading-[1.45] text-[#85858A]">{MESHVAULT_SELL}</p>
+              <p className="px-3 pb-2 text-[12.5px] leading-[1.45] text-[#85858A]">
+                {MESHVAULT_SELL}
+              </p>
               <button
                 type="button"
                 onClick={() => void authClient.signOut().then(() => navigate("/"))}
