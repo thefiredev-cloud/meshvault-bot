@@ -322,7 +322,7 @@
         "UPSTREAM.md",
         "NOTICE"
       ],
-      "worked": "Ported Hermes Bot Mode core from NousResearch/hermes-agent 395c70d (plugin.js helpers + tests), not the 10k-line React UI. Electron plugin host + bots.html roster, canonical chat pins, session workspace. Self-evolution skipped (DSPy/GEPA). iOS untouched. Desktop check + 47 tests passed.",
+      "worked": "Ported Hermes Bot Mode core from NousResearch/hermes-agent 395c70d (plugin.js helpers + tests), not the 10k-line React UI. Electron plugin host + bots.html roster, canonical chat pins, session workspace. Self-evolution skipped (DSPy/GEPA). iOS untouched. Desktop check + 47 tests passed. verify:fast 294/19.",
       "failed": "Full plugin.js is 10097 lines and imports @hermes/plugin-sdk; dumping it would not compile in this Electron shell."
     }
   ]
