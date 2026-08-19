@@ -30,6 +30,7 @@ import { botTag, filterBots, formatThreadTime, userInitials } from "../lib/inbox
 import { native } from "../lib/native";
 import { previewSnippet } from "../lib/preview";
 import { registerPushToken } from "../lib/push";
+import { MESHVAULT_SELL } from "../lib/sell";
 
 const FALLBACK_COLOR = "#9B5CF6";
 
@@ -201,6 +202,7 @@ export default function Home() {
                 style={styles.commerceCard}
               >
                 <Text style={styles.commerceTitle}>Optional $49 skills pack</Text>
+                <Text style={styles.commerceCopy}>{MESHVAULT_SELL}</Text>
                 <Text style={styles.commerceCopy}>
                   Buy the Markdown pack or request a founding install. The app stays Apache-2.0 to
                   self-host. Mac and iPhone clients are not released.

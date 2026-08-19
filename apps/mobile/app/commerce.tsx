@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { native } from "../lib/native";
+import { MESHVAULT_SELL } from "../lib/sell";
 
 function openUrl(url: string) {
   void Linking.openURL(url);
@@ -76,6 +77,7 @@ export default function Commerce() {
       contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) + 16 }}
       keyboardShouldPersistTaps="handled"
     >
+      <Text style={styles.sell}>{MESHVAULT_SELL}</Text>
       <Text style={styles.lede}>
         Mesh Bot stays Apache-2.0 and self-hosted. These are optional. Native Mac and iPhone clients
         are in development and are not released.
@@ -157,6 +159,7 @@ export default function Commerce() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {leadStatus ? <Text style={styles.status}>{leadStatus}</Text> : null}
+      <Text style={styles.footer}>{MESHVAULT_SELL}</Text>
     </ScrollView>
   );
 }
@@ -167,11 +170,18 @@ const styles = StyleSheet.create({
     backgroundColor: native.page,
     paddingHorizontal: 20,
   },
+  sell: {
+    color: native.label,
+    fontSize: 16,
+    lineHeight: 22,
+    marginTop: 8,
+    marginBottom: 12,
+  },
   lede: {
     color: native.secondaryLabel,
     fontSize: 15,
     lineHeight: 21,
-    marginTop: 8,
+    marginTop: 0,
     marginBottom: 16,
   },
   card: {
@@ -240,5 +250,11 @@ const styles = StyleSheet.create({
   status: {
     color: native.secondaryLabel,
     fontSize: 14,
+  },
+  footer: {
+    color: native.secondaryLabel,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 8,
   },
 });
