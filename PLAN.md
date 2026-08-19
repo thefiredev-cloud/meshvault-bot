@@ -140,7 +140,7 @@ Empty — first pass.
 
 ## Expo iOS locked MeshVault sell subtask
 
-- [ ] Keep one local mobile string with the exact locked MeshVault sell; do not paraphrase.
-- [ ] Show that string on Expo founding, commerce, and existing mobile checkout/footer surfaces only.
-- [ ] Do not pitch MeshVault as only a model, only an app, or only compute; do not invent other copy, Rakazo leftovers, or store IDs.
-- [ ] Leave Electron/desktop/www untouched; prove the string and pass `pnpm verify:fast`.
+- [x] Keep one local mobile string with the exact locked MeshVault sell; do not paraphrase.
+- [x] Show that string on Expo founding, commerce, and existing mobile checkout/footer surfaces only.
+- [x] Do not pitch MeshVault as only a model, only an app, or only compute; do not invent other copy, Rakazo leftovers, or store IDs.
+- [x] Leave Electron/desktop/www untouched; prove the string and pass `pnpm verify:fast`.

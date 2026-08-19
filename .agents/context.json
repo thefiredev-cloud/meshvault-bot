@@ -252,6 +252,20 @@
       ],
       "worked": "Rebased #14 onto main after #13. Kept #13 /commerce plus /founding. handleCreateCheckout and handleInstallLead now return Promise<Response> so tsc does not leak undici-types (TS2742). Local pnpm check 19/19, lint clean, verify:fast 225/19.",
       "failed": null
+    },
+    {
+      "at": "2026-08-19",
+      "paths": [
+        "apps/mobile/lib/sell.ts",
+        "apps/mobile/lib/sell.test.ts",
+        "apps/mobile/app/founding.tsx",
+        "apps/mobile/app/commerce.tsx",
+        "apps/mobile/app/index.tsx",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Locked MeshVault sell is a local mobile string: model plus application plus compute as one product. Rendered on founding (top+footer), commerce (top+footer), and the existing inbox checkout card. No paraphrase, no Rakazo, no store/EAS IDs, no Electron/www change. Focused 13 mobile tests and verify:fast 229/19 passed.",
+      "failed": null
     }
   ]
 }
