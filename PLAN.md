@@ -160,3 +160,10 @@ Empty — first pass.
 - [x] Resolve Expo overlap by keeping #15's iOS sell; apply remaining surfaces.
 - [x] Fix lint and leave `pnpm verify:fast` green.
 - [x] Push the same branch so #16 is mergeable.
+
+## Expo Hermes Bot Mode subtask
+
+- [x] Add portable roster / identity / routine helpers in `@meshbot/contracts` (no Electron plugin host).
+- [x] Persist hide locally; talk to existing `bots/*` and `routines/*` RPC from Expo.
+- [x] Add Expo identity + routines screens; keep founding/checkout; use the locked sell on touched surfaces.
+- [x] Add tests and leave `pnpm verify:fast` green.

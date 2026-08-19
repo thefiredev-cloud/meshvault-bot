@@ -1,3 +1,4 @@
+import { rosterForDisplay } from "@meshbot/contracts";
 import { Redirect, useRouter } from "expo-router";
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -26,6 +27,7 @@ import {
   rpc,
   signOut,
 } from "../lib/api";
+import { loadHiddenBotIds, setBotHidden } from "../lib/bot-mode";
 import { botTag, filterBots, formatThreadTime, userInitials } from "../lib/inbox";
 import { native } from "../lib/native";
 import { previewSnippet } from "../lib/preview";
@@ -43,6 +45,8 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  const [showHidden, setShowHidden] = useState(false);
 
   const loadBots = useCallback(async () => {
     setError(null);
@@ -73,12 +77,16 @@ export default function Home() {
     if (!hasSession) return;
     void registerPushToken().catch(() => undefined);
     void loadBots();
+    void loadHiddenBotIds().then(setHiddenIds);
     void rpc<MobileMe>("me")
       .then(setMe)
       .catch(() => undefined);
   }, [hasSession, loadBots]);
 
-  const visible = useMemo(() => filterBots(bots, query), [bots, query]);
+  const visible = useMemo(
+    () => rosterForDisplay(filterBots(bots, query), hiddenIds, showHidden),
+    [bots, query, hiddenIds, showHidden],
+  );
   const initials = userInitials(me?.name ?? "");
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -212,7 +220,29 @@ export default function Home() {
             </View>
           )
         }
-        renderItem={({ item }) => <BotRow bot={item} />}
+        renderItem={({ item }) => (
+          <BotRow
+            bot={item}
+            hidden={hiddenIds.includes(item.id)}
+            onHide={async () => {
+              const next = await setBotHidden(item.id, hiddenIds);
+              setHiddenIds(next.hiddenIds);
+            }}
+          />
+        )}
+        ListFooterComponent={
+          hiddenIds.length ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setShowHidden((open) => !open)}
+              style={styles.hiddenToggle}
+            >
+              <Text style={styles.hiddenToggleLabel}>
+                {showHidden ? "Hide hidden bots" : `Show ${hiddenIds.length} hidden`}
+              </Text>
+            </Pressable>
+          ) : null
+        }
       />
     </View>
   );
@@ -242,17 +272,66 @@ function CircleButton({
   );
 }
 
-function BotRow({ bot }: { bot: MobileBot }) {
+function BotRow({
+  bot,
+  hidden,
+  onHide,
+}: {
+  bot: MobileBot;
+  hidden: boolean;
+  onHide: () => Promise<void>;
+}) {
   const router = useRouter();
   const preview = previewSnippet(bot.preview, 40) || bot.title || "No messages yet";
   const time = bot.updatedAt ? formatThreadTime(bot.updatedAt) : "";
   const tag = botTag(bot.title, bot.name);
+
+  function openMenu() {
+    const openThread = () =>
+      router.push({ pathname: "/thread", params: { botId: bot.id, name: bot.name } });
+    const openIdentity = () =>
+      router.push({ pathname: "/bot", params: { botId: bot.id, name: bot.name } });
+    const openRoutines = () =>
+      router.push({ pathname: "/routines", params: { botId: bot.id, name: bot.name } });
+    const hideLabel = hidden ? "Unhide" : "Hide";
+
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ["Open", "Identity", "Routines", hideLabel, "Cancel"],
+          cancelButtonIndex: 4,
+          userInterfaceStyle: "dark",
+        },
+        (index) => {
+          if (index === 0) openThread();
+          if (index === 1) openIdentity();
+          if (index === 2) openRoutines();
+          if (index === 3) void onHide();
+        },
+      );
+      return;
+    }
+
+    Alert.alert(bot.name, undefined, [
+      { text: "Open", onPress: openThread },
+      { text: "Identity", onPress: openIdentity },
+      { text: "Routines", onPress: openRoutines },
+      { text: hideLabel, onPress: () => void onHide() },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  }
+
   return (
     <Pressable
       onPress={() =>
         router.push({ pathname: "/thread", params: { botId: bot.id, name: bot.name } })
       }
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      onLongPress={openMenu}
+      style={({ pressed }) => [
+        styles.row,
+        pressed && styles.rowPressed,
+        hidden && styles.rowHidden,
+      ]}
     >
       <BotAvatar color={bot.color || FALLBACK_COLOR} />
       <View style={styles.rowBody}>
@@ -362,6 +441,18 @@ const styles = StyleSheet.create({
     color: native.secondaryLabel,
     fontSize: 14,
     lineHeight: 20,
+  },
+  hiddenToggle: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  hiddenToggleLabel: {
+    color: native.secondaryLabel,
+    fontSize: 15,
+  },
+  rowHidden: {
+    opacity: 0.45,
   },
   row: {
     flexDirection: "row",

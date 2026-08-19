@@ -1,3 +1,4 @@
+export * from "./bot-mode.js";
 export * from "./brand.js";
 export * from "./commerce.js";
 export * from "./domain.js";

@@ -7,3 +7,5 @@ Rakazo is licensed under Apache License 2.0. The upstream `LICENSE` file and Git
 Mesh Bot changes include product identity, package scopes, local protocol names, container identity, model routing, a bounded Brain surface, personal Composio OAuth, build coverage, and release hardening. The original name remains only in this provenance record, `NOTICE`, `LICENSE`, and retained Git history.
 
 MeshVault is not affiliated with or endorsed by xAI. Grok Bot is used only as a public behavior reference.
+
+Expo Bot Mode roster, identity, and routines adapt concepts from [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) Bot Mode (`apps/desktop/src/plugins/hermes-bots`) onto the existing Mesh Bot API. Desktop/Electron remains a separate surface.

@@ -51,6 +51,8 @@ export default function Layout() {
           }}
         />
         <Stack.Screen name="thread" options={{ title: "Thread" }} />
+        <Stack.Screen name="bot" options={{ title: "Identity" }} />
+        <Stack.Screen name="routines" options={{ title: "Routines" }} />
         <Stack.Screen name="computer" options={{ title: "Computer" }} />
         <Stack.Screen name="commerce" options={{ title: "Skills pack" }} />
       </Stack>
