@@ -180,3 +180,9 @@ Empty — first pass.
 - [x] Rebase `cursor/hermes-bot-mode-desktop-9bae` onto `origin/main`.
 - [x] Resolve `PLAN.md`, `UPSTREAM.md`, `.agents/context.json` by keeping both Expo #17 and desktop Hermes Bot Mode.
 - [x] Do not drop Electron Bot Mode; do not touch Expo/iOS.
+
+## Keep #19 off the #18 vendor spine
+
+- [x] Rebase #19 only onto `origin/main`. Do not merge `cursor/hermes-bot-mode-0f98` (#18).
+- [x] Leave `vendor/hermes-agent` and `vendor/hermes-agent-self-evolution` out of this branch.
+- [x] Keep the PR as desktop/Electron Hermes Bot Mode only so it stays MERGEABLE without #18's files.
