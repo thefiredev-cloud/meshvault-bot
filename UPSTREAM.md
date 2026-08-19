@@ -8,4 +8,12 @@ Mesh Bot changes include product identity, package scopes, local protocol names,
 
 MeshVault is not affiliated with or endorsed by xAI. Grok Bot is used only as a public behavior reference.
 
-Expo Bot Mode roster, identity, and routines adapt concepts from [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) Bot Mode (`apps/desktop/src/plugins/hermes-bots`) onto the existing Mesh Bot API. Desktop/Electron remains a separate surface.
+Expo Bot Mode roster, identity, and routines adapt concepts from [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) Bot Mode (`apps/desktop/src/plugins/hermes-bots`) onto the existing Mesh Bot API.
+
+## Hermes Bot Mode
+
+The Electron desktop hosts Hermes Bot Mode, ported from [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) `apps/desktop/src/plugins/hermes-bots` at commit `395c70d616f6426e990632ff8b57cf1e9499702f` (MIT). The vendored LICENSE is `apps/desktop/src/plugins/hermes-bots/LICENSE`.
+
+Taken: plugin contract (`id` + `register`), roster identity/search, hide/unhide, groups, canonical Bot Chat pin/open rules, profile session workspace, routine-owner targeting, and single-flight. The 10k-line Hermes React UI and `@hermes/plugin-sdk` host were not copied; MeshVault wires the same helpers through a local Electron plugin host and Bot Mode page.
+
+[NousResearch/hermes-agent-self-evolution](https://github.com/NousResearch/hermes-agent-self-evolution) is a Python DSPy + GEPA training loop. Nothing from it was vendored: it does not compile or run inside Electron.

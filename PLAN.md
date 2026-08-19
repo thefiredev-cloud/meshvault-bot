@@ -167,3 +167,26 @@ Empty — first pass.
 - [x] Persist hide locally; talk to existing `bots/*` and `routines/*` RPC from Expo.
 - [x] Add Expo identity + routines screens; keep founding/checkout; use the locked sell on touched surfaces.
 - [x] Add tests and leave `pnpm verify:fast` green.
+
+## Desktop Hermes Bot Mode merge subtask
+
+- [x] Extract the portable hermes-bots core (identity, search, canonical chat, sessions, groups, hide, mentions, routines owner) from NousResearch/hermes-agent.
+- [x] Add an Electron plugin host and a local Bot Mode page; do not dump the 10k-line Hermes React UI.
+- [x] Port hermes-bots tests that can run here as Vitest. Skip self-evolution (DSPy/GEPA, not Electron).
+- [x] Keep MIT attribution. Do not touch Expo/iOS. Leave desktop typecheck and tests green.
+
+## Rebase #19 onto main after #17
+
+- [x] Rebase `cursor/hermes-bot-mode-desktop-9bae` onto `origin/main`.
+- [x] Resolve `PLAN.md`, `UPSTREAM.md`, `.agents/context.json` by keeping both Expo #17 and desktop Hermes Bot Mode.
+- [x] Do not drop Electron Bot Mode; do not touch Expo/iOS.
+
+## Keep #19 off the #18 vendor spine
+
+- [x] Rebase #19 only onto `origin/main`. Do not merge `cursor/hermes-bot-mode-0f98` (#18).
+- [x] Leave `vendor/hermes-agent` and `vendor/hermes-agent-self-evolution` out of this branch.
+- [x] Keep the PR as desktop/Electron Hermes Bot Mode only so it stays MERGEABLE without #18's files.
+
+## Fix #19 lint after rebase
+
+- [x] Format `.agents/context.json` so `biome check .` passes. Do not take #18. Do not touch iOS.
