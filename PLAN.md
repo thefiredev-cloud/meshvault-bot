@@ -174,3 +174,9 @@ Empty — first pass.
 - [x] Add an Electron plugin host and a local Bot Mode page; do not dump the 10k-line Hermes React UI.
 - [x] Port hermes-bots tests that can run here as Vitest. Skip self-evolution (DSPy/GEPA, not Electron).
 - [x] Keep MIT attribution. Do not touch Expo/iOS. Leave desktop typecheck and tests green.
+
+## Rebase #19 onto main after #17
+
+- [x] Rebase `cursor/hermes-bot-mode-desktop-9bae` onto `origin/main`.
+- [x] Resolve `PLAN.md`, `UPSTREAM.md`, `.agents/context.json` by keeping both Expo #17 and desktop Hermes Bot Mode.
+- [x] Do not drop Electron Bot Mode; do not touch Expo/iOS.
