@@ -188,13 +188,13 @@ describe("Hermes Bot Mode protocol", () => {
     expect(botToBotMessage("Hermes", "what is the disk space?")).toBe(
       "Message from 🤖 Hermes (@hermes): what is the disk space?",
     );
-    expect(parseBotToBotMessage(botToBotMessage("manager", "Learn-share: skill installed"))).toEqual(
-      {
-        senderName: "manager",
-        handle: "manager",
-        text: "Learn-share: skill installed",
-      },
-    );
+    expect(
+      parseBotToBotMessage(botToBotMessage("manager", "Learn-share: skill installed")),
+    ).toEqual({
+      senderName: "manager",
+      handle: "manager",
+      text: "Learn-share: skill installed",
+    });
     expect(BOT_CHAT_TITLE).toBe("Bot Chat");
   });
 

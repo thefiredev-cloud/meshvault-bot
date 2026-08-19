@@ -22,10 +22,10 @@ function loadRootEnv() {
 loadRootEnv();
 
 import {
+  createAgentRuntime,
   createConnectorStack,
   createRunExecutor,
   createRunSandbox,
-  createAgentRuntime,
   EncryptedSecretStore,
   ExpoPushProvider,
   enqueueQueuedRuns,

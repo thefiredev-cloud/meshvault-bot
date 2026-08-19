@@ -151,9 +151,10 @@ export function inferScript(
       },
     ];
   }
-  const tell = /(?:message|tell|ask)\s+(?:the bot named\s+)?@?([A-Za-z0-9][A-Za-z0-9_-]{0,39})\s*[:\s]+(.+)/i.exec(
-    prompt,
-  );
+  const tell =
+    /(?:message|tell|ask)\s+(?:the bot named\s+)?@?([A-Za-z0-9][A-Za-z0-9_-]{0,39})\s*[:\s]+(.+)/i.exec(
+      prompt,
+    );
   if (tell && (lower.includes("message ") || lower.includes("tell @") || lower.includes("ask @"))) {
     return [
       {

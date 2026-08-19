@@ -30,7 +30,10 @@ export function parseSkillMarkdown(raw: string): SkillDocument {
     const colon = trimmed.indexOf(":");
     if (colon < 1) continue;
     const key = trimmed.slice(0, colon).trim();
-    const value = trimmed.slice(colon + 1).trim().replace(/^['"]|['"]$/g, "");
+    const value = trimmed
+      .slice(colon + 1)
+      .trim()
+      .replace(/^['"]|['"]$/g, "");
     if (key === "name") name = value;
     if (key === "description") description = value;
   }
@@ -38,7 +41,7 @@ export function parseSkillMarkdown(raw: string): SkillDocument {
 }
 
 export function reassembleSkill(frontmatter: string, evolvedBody: string): string {
-  if (!frontmatter.trim()) return evolvedBody.trimEnd() + "\n";
+  if (!frontmatter.trim()) return `${evolvedBody.trimEnd()}\n`;
   return `---\n${frontmatter.trim()}\n---\n\n${evolvedBody.trim()}\n`;
 }
 
@@ -55,7 +58,7 @@ export function findSkillMarkdown(skillsRoot: string, skillName: string): string
     }
     for (const entry of entries) {
       const full = path.join(dir, entry);
-      let stat;
+      let stat: ReturnType<typeof statSync>;
       try {
         stat = statSync(full);
       } catch {
@@ -72,9 +75,7 @@ export function findSkillMarkdown(skillsRoot: string, skillName: string): string
         if (head.includes(`name: ${skillName}`) || head.includes(`name: "${skillName}"`)) {
           fuzzy.push(full);
         }
-      } catch {
-        continue;
-      }
+      } catch {}
     }
   }
   return fuzzy[0] ?? null;
@@ -103,7 +104,7 @@ export function evaluateSkillImprove(input: SkillImproveInput): SkillImproveResu
     failures.push("size");
   }
   if (input.midConversation) failures.push("mid-conversation");
-  const purpose = (input.purpose ?? original.description || original.name).trim();
+  const purpose = (input.purpose ?? (original.description || original.name)).trim();
   if (purpose && !input.candidate.toLowerCase().includes(purpose.toLowerCase())) {
     failures.push("purpose");
   }

@@ -244,10 +244,7 @@ export function routineNamespace(botName: string, routineName: string): string {
   return `[bot:${hermesProfileSlug(botName)}] ${routineName.trim()}`;
 }
 
-export function matchPeerBots<T extends { id: string; name: string }>(
-  peers: T[],
-  to: string,
-): T[] {
+export function matchPeerBots<T extends { id: string; name: string }>(peers: T[], to: string): T[] {
   const wanted = to.trim();
   const slug = hermesProfileSlug(wanted);
   return peers.filter((bot) => bot.name === wanted || hermesProfileSlug(bot.name) === slug);

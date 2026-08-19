@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
 import { BOT_CHAT_TITLE, HERMES_VERSION } from "@meshbot/contracts";
+import { describe, expect, it } from "vitest";
 import { HermesAgentRuntime, hermesChatArgv, hermesVendorRoot } from "./hermes-runtime.js";
 
 describe("Hermes runtime spine", () => {
@@ -14,9 +14,9 @@ describe("Hermes runtime spine", () => {
     });
     const vendor = hermesVendorRoot();
     expect(existsSync(path.join(vendor, "LICENSE"))).toBe(true);
-    expect(
-      existsSync(path.join(vendor, "apps/desktop/src/plugins/hermes-bots/plugin.js")),
-    ).toBe(true);
+    expect(existsSync(path.join(vendor, "apps/desktop/src/plugins/hermes-bots/plugin.js"))).toBe(
+      true,
+    );
   });
 
   it("builds the Bot Mode CLI handoff argv", () => {

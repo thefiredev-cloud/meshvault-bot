@@ -1,11 +1,11 @@
 import type { SandboxProvider, WakeupDriver } from "@meshbot/adapter-kit";
 import {
   type ComposioConnector,
+  createAgentRuntime,
   createConnectorStack,
   createRunExecutor,
   createRunSandbox,
   type DestinationEmulator,
-  createAgentRuntime,
   EncryptedSecretStore,
   ExpoPushProvider,
   GraphileWakeupDriver,
