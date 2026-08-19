@@ -4,6 +4,7 @@ import type {
   AgentRuntime,
   AgentRuntimeEvent,
 } from "@meshbot/adapter-kit";
+import { parseBotMention } from "@meshbot/contracts";
 
 // Modified by FireDev LLC dba MeshVault on 2026-08-13.
 
@@ -136,6 +137,29 @@ export function inferScript(
       {
         assistant: "removing that bot permanently.",
         toolCalls: [{ name: "delete_bot", args: { confirm_name: name } }],
+        complete: true,
+      },
+    ];
+  }
+  const mention = parseBotMention(prompt);
+  if (mention) {
+    return [
+      {
+        assistant: "handing that to the mentioned bot.",
+        toolCalls: [{ name: "message_bot", args: { to: mention.handle, text: mention.rest } }],
+        complete: true,
+      },
+    ];
+  }
+  const tell =
+    /(?:message|tell|ask)\s+(?:the bot named\s+)?@?([A-Za-z0-9][A-Za-z0-9_-]{0,39})\s*[:\s]+(.+)/i.exec(
+      prompt,
+    );
+  if (tell && (lower.includes("message ") || lower.includes("tell @") || lower.includes("ask @"))) {
+    return [
+      {
+        assistant: "handing that to the mentioned bot.",
+        toolCalls: [{ name: "message_bot", args: { to: tell[1], text: tell[2]!.trim() } }],
         complete: true,
       },
     ];

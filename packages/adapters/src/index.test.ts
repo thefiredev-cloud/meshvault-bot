@@ -49,6 +49,14 @@ describe("scripted runtime", () => {
     expect(script?.some((t) => t.toolCalls?.some((c) => c.name === "run_subagent"))).toBe(true);
   });
 
+  it("hands an @mention to message_bot", () => {
+    const script = inferScript("@scout have a look at this");
+    const call = script
+      ?.flatMap((turn) => turn.toolCalls ?? [])
+      .find((item) => item.name === "message_bot");
+    expect(call?.args).toEqual({ to: "scout", text: "have a look at this" });
+  });
+
   it("deletes a spawned bot by exact name", () => {
     const script = inferScript("delete the bot named Scout");
     expect(
@@ -85,6 +93,7 @@ describe("builtin tools", () => {
         "run_subagent",
         "spawn_bot",
         "delete_bot",
+        "message_bot",
       ]),
     );
   });

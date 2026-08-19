@@ -14,7 +14,7 @@
     {
       "at": "2026-08-14",
       "paths": ["packages/core/src/model-env.ts", ".env.example"],
-      "worked": "Defaults: PI_DEFAULT_PROVIDER=qwen, PI_DEFAULT_MODEL=qwen-plus. SPARK_GX10_BASE_URL set → provider spark-gx10 / deepseek-v4-flash. Explicit PI_DEFAULT_PROVIDER=openrouter keeps deepseek/deepseek-v4-flash-0731.",
+      "worked": "Defaults: PI_DEFAULT_PROVIDER=qwen, PI_DEFAULT_MODEL=qwen-plus. SPARK_GX10_BASE_URL set \u2192 provider spark-gx10 / deepseek-v4-flash. Explicit PI_DEFAULT_PROVIDER=openrouter keeps deepseek/deepseek-v4-flash-0731.",
       "failed": null
     },
     {
@@ -26,7 +26,7 @@
     {
       "at": "2026-08-14",
       "paths": ["AGENTS.md", "PLAN.md", ".agents/context.json"],
-      "worked": "Rituals live in AGENTS.md. No CLAUDE.md in this repo. Structured context is .agents/context.json (append JSON records). PLAN.md is plan→decompose→validate→repeat. Failed impl → revise plan, retry; no LLM review loop. Do not add mulch/seeds.",
+      "worked": "Rituals live in AGENTS.md. No CLAUDE.md in this repo. Structured context is .agents/context.json (append JSON records). PLAN.md is plan\u2192decompose\u2192validate\u2192repeat. Failed impl \u2192 revise plan, retry; no LLM review loop. Do not add mulch/seeds.",
       "failed": null
     },
     {
@@ -328,7 +328,7 @@
     {
       "at": "2026-08-19",
       "paths": ["PLAN.md", "UPSTREAM.md", ".agents/context.json", "apps/desktop"],
-      "worked": "Rebased cursor/hermes-bot-mode-desktop-9bae onto origin/main after #17 (f2e140c). Conflicts only PLAN.md, UPSTREAM.md, .agents/context.json — kept both Expo #17 and desktop Hermes Bot Mode. apps/mobile unchanged vs main. Desktop 47 tests still pass.",
+      "worked": "Rebased cursor/hermes-bot-mode-desktop-9bae onto origin/main after #17 (f2e140c). Conflicts only PLAN.md, UPSTREAM.md, .agents/context.json \u2014 kept both Expo #17 and desktop Hermes Bot Mode. apps/mobile unchanged vs main. Desktop 47 tests still pass.",
       "failed": null
     },
     {
@@ -342,6 +342,38 @@
       "paths": [".agents/context.json"],
       "worked": "CI lint failed after rebase because biome wanted the new context.json paths arrays on one line. Formatted those records. No #18 vendor spine. iOS untouched.",
       "failed": null
+    },
+    {
+      "at": "2026-08-19",
+      "paths": [
+        "vendor/hermes-agent",
+        "vendor/hermes-agent-self-evolution",
+        "packages/adapters/src/hermes-runtime.ts",
+        "packages/adapters/src/runtime-factory.ts",
+        "packages/contracts/src/bot-mode.ts",
+        "NOTICE",
+        "UPSTREAM.md"
+      ],
+      "worked": "Vendored hermes-agent v0.20.4 (v2026.8.18 / e624e9f) including apps/desktop hermes-bots. Default AGENT_RUNTIME=hermes wraps Pi for Qwen/DeepSeek/gateway tokens. Bot Mode message_bot uses Message from \ud83e\udd16 name (@slug). MIT skill-improve gates only; no Darwinian/AGPL. Pi remains AGENT_RUNTIME=pi.",
+      "failed": "Full hermes-agent subtree is huge; sparse vendor of LICENSE/README/pyproject + desktop Bot Mode is the CI-safe spine. Self-evolution has no root LICENSE file; NOTICE records MIT from README/pyproject. Mixed ??/|| in skill-improve broke oxc until parenthesized."
+    },
+    {
+      "at": "2026-08-19",
+      "paths": [
+        "PLAN.md",
+        "UPSTREAM.md",
+        "packages/contracts/src/bot-mode.ts",
+        "packages/contracts/src/bot-mode.test.ts",
+        ".agents/context.json"
+      ],
+      "worked": "Rebased cursor/hermes-bot-mode-0f98 onto main after #17 (f2e140c). Kept Expo slugify/roster helpers and appended Hermes protocol (hermesProfileSlug, botToBotMessage). No apps/mobile or apps/desktop Mesh Bot edits. #19 still open so Electron left alone. PLAN conflict markers stripped.",
+      "failed": "Conflicts only on shared docs/contracts (context.json, PLAN, UPSTREAM, bot-mode). Committed PLAN briefly kept rebase markers until this record."
+    },
+    {
+      "at": "2026-08-19",
+      "paths": [".agents/context.json", "CHANGELOG.md", "NOTICE", "PLAN.md", "UPSTREAM.md"],
+      "worked": "Rebased cursor/hermes-bot-mode-0f98 onto origin/main after #19 (f228379). Kept vendor Hermes v0.20.4, MIT skill-improve, AGENT_RUNTIME=hermes, MeshVault sell, $49. Docs keep both #19 Electron Bot Mode attribution and #18 vendor spine. No Expo rewrite; no Electron rewrite.",
+      "failed": "Conflicts only CHANGELOG, NOTICE, PLAN, UPSTREAM, context.json after #19 merged mid-rebase."
     }
   ]
 }

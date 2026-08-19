@@ -1,16 +1,23 @@
 import { describe, expect, it } from "vitest";
 import {
+  BOT_CHAT_TITLE,
   botDisplayName,
   botHandle,
   botIdentitySummary,
+  botToBotMessage,
   duplicateBotCreateInput,
   filterRoster,
+  hermesProfileSlug,
+  matchPeerBots,
   nextDuplicateBotName,
   parseBotIdentityDraft,
   parseBotIdentityUpdate,
+  parseBotMention,
+  parseBotToBotMessage,
   parseHiddenBotIds,
   parseRoutineDraft,
   rosterForDisplay,
+  routineNamespace,
   routineOwnerError,
   routinePresetCron,
   slugifyBotName,
@@ -167,5 +174,49 @@ describe("routines", () => {
         active: false,
       },
     });
+  });
+});
+
+describe("Hermes Bot Mode protocol", () => {
+  it("slugs a bot name the way Hermes profiles do", () => {
+    expect(hermesProfileSlug("Scout")).toBe("scout");
+    expect(hermesProfileSlug("Research Lead")).toBe("research-lead");
+    expect(hermesProfileSlug("  ")).toBe("bot");
+  });
+
+  it("uses the in-tree Bot Mode attribution line", () => {
+    expect(botToBotMessage("Hermes", "what is the disk space?")).toBe(
+      "Message from 🤖 Hermes (@hermes): what is the disk space?",
+    );
+    expect(
+      parseBotToBotMessage(botToBotMessage("manager", "Learn-share: skill installed")),
+    ).toEqual({
+      senderName: "manager",
+      handle: "manager",
+      text: "Learn-share: skill installed",
+    });
+    expect(BOT_CHAT_TITLE).toBe("Bot Chat");
+  });
+
+  it("parses a leading @mention handoff", () => {
+    expect(parseBotMention("@scout have a look at this")).toEqual({
+      handle: "scout",
+      rest: "have a look at this",
+    });
+    expect(parseBotMention("plain text")).toBeNull();
+  });
+
+  it("namespaces routines per bot", () => {
+    expect(routineNamespace("Scout", "Monday briefing")).toBe("[bot:scout] Monday briefing");
+  });
+
+  it("matches a peer by exact name or slug", () => {
+    const peers = [
+      { id: "1", name: "Scout" },
+      { id: "2", name: "Chief" },
+    ];
+    expect(matchPeerBots(peers, "scout").map((bot) => bot.id)).toEqual(["1"]);
+    expect(matchPeerBots(peers, "Chief").map((bot) => bot.id)).toEqual(["2"]);
+    expect(matchPeerBots(peers, "missing")).toEqual([]);
   });
 });

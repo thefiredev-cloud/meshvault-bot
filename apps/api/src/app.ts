@@ -1,6 +1,7 @@
 import type { SandboxProvider, WakeupDriver } from "@meshbot/adapter-kit";
 import {
   type ComposioConnector,
+  createAgentRuntime,
   createConnectorStack,
   createRunExecutor,
   createRunSandbox,
@@ -10,10 +11,8 @@ import {
   GraphileWakeupDriver,
   InMemoryWakeupDriver,
   LocalAgentHomeStore,
-  PiAgentRuntime,
   PiOAuthLogins,
   resolveComposioCallbackUrl,
-  ScriptedAgentRuntime,
   sleepComputerIfIdle,
 } from "@meshbot/adapters";
 import { blockedAuthPaths, createAuth } from "@meshbot/auth";
@@ -93,8 +92,7 @@ export async function createApp(
   });
   const connector = stack.destination;
   await connector.start();
-  const runtime =
-    env.agentRuntime === "scripted" ? new ScriptedAgentRuntime() : new PiAgentRuntime();
+  const runtime = createAgentRuntime(env.agentRuntime);
   const notifications = new ExpoPushProvider(env.dataDir);
   const executor = createRunExecutor({
     prisma,

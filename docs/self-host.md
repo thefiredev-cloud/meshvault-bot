@@ -2,7 +2,7 @@
 
 MeshVault is the model plus the application plus compute. That is the company, the offer, and the message.
 
-The signed-in application is a long-running API, a Graphile Worker, Postgres, and a computer provider (Docker supervisor or E2B). It is not a static site. The marketing site in `apps/www` can be hosted separately.
+The signed-in application is a long-running API, a Graphile Worker, Postgres, and a computer provider (Docker supervisor or E2B). The agent spine is Hermes Agent + Bot Mode (`AGENT_RUNTIME=hermes`). It is not a static site. The marketing site in `apps/www` can be hosted separately.
 
 Desktop is Electron. Mobile is the existing Expo iOS app. License and provenance are recorded in `LICENSE`, `NOTICE`, and `UPSTREAM.md`.
 
@@ -40,7 +40,7 @@ Optional:
 SIGNUPS_ENABLED=true
 SIGNUP_ALLOWLIST=you@example.com,@company.com
 SANDBOX_PROVIDER=docker   # or e2b. Keep fake only for pnpm verify:fast.
-AGENT_RUNTIME=pi          # Keep scripted only for pnpm verify:fast.
+AGENT_RUNTIME=hermes      # Product spine. Use pi only for the pre-Hermes loop. Keep scripted only for pnpm verify:fast.
 WAKEUP_DRIVER=graphile
 SANDBOX_IDLE_MS=600000    # pause the bot computer after 10 minutes idle
 E2B_API_KEY=              # when SANDBOX_PROVIDER=e2b

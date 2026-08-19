@@ -1,6 +1,12 @@
 import { rm } from "node:fs/promises";
 import type { AdapterContext, AgentHomeStore, SandboxProvider } from "@meshbot/adapter-kit";
-import type { Actor } from "@meshbot/contracts";
+import {
+  type Actor,
+  BOT_CHAT_TITLE,
+  botToBotMessage,
+  hermesProfileSlug,
+  matchPeerBots,
+} from "@meshbot/contracts";
 import { createRepos, type PrismaClient } from "@meshbot/db";
 import { resolveAgentHomePath } from "./home.js";
 
@@ -106,6 +112,93 @@ export async function spawnBot(
     name: created.name,
     title: created.title,
     threadId: created.threadId,
+  };
+}
+
+export async function messagePeerBot(
+  deps: {
+    prisma: PrismaClient;
+    wakeup?: {
+      enqueue: (job: { name: string; payload: Record<string, unknown> }) => Promise<void>;
+    };
+  },
+  input: {
+    from: {
+      id: string;
+      name: string;
+      workspaceId: string;
+      userId: string;
+    };
+    runId: string;
+    to: string;
+    text: string;
+  },
+) {
+  const to = input.to.trim();
+  const text = input.text.trim();
+  if (!to) return { error: "message_bot needs a bot name." };
+  if (!text) return { error: "message_bot needs a message." };
+
+  const peers = await deps.prisma.bot.findMany({
+    where: {
+      workspaceId: input.from.workspaceId,
+      userId: input.from.userId,
+      id: { not: input.from.id },
+    },
+  });
+  const matches = matchPeerBots(peers, to);
+  if (matches.length === 0) return { error: `No bot named "${to}" in this workspace.` };
+  if (matches.length > 1) {
+    return { error: `More than one bot matches "${to}". Use the exact name.` };
+  }
+
+  const target = matches[0]!;
+  const thread = await deps.prisma.thread.findUniqueOrThrow({ where: { botId: target.id } });
+  const attributed = botToBotMessage(input.from.name, text);
+  const last = await deps.prisma.message.findFirst({
+    where: { threadId: thread.id },
+    orderBy: { seq: "desc" },
+  });
+  await deps.prisma.message.create({
+    data: {
+      threadId: thread.id,
+      seq: (last?.seq ?? -1) + 1,
+      role: "user",
+      blocks: [{ kind: "text", text: attributed }],
+      runId: input.runId,
+    },
+  });
+
+  const task = await deps.prisma.task.create({
+    data: {
+      workspaceId: input.from.workspaceId,
+      botId: target.id,
+      threadId: thread.id,
+      userId: input.from.userId,
+      prompt: attributed,
+      status: "queued",
+    },
+  });
+  const run = await deps.prisma.run.create({
+    data: {
+      workspaceId: input.from.workspaceId,
+      botId: target.id,
+      threadId: thread.id,
+      taskId: task.id,
+      userId: input.from.userId,
+      status: "queued",
+      trigger: "bot_message",
+    },
+  });
+  await deps.wakeup?.enqueue({ name: "run.continue", payload: { runId: run.id } });
+
+  return {
+    ok: true as const,
+    botId: target.id,
+    name: target.name,
+    handle: hermesProfileSlug(target.name),
+    conversation: BOT_CHAT_TITLE,
+    text: attributed,
   };
 }
 

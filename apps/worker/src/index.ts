@@ -22,6 +22,7 @@ function loadRootEnv() {
 loadRootEnv();
 
 import {
+  createAgentRuntime,
   createConnectorStack,
   createRunExecutor,
   createRunSandbox,
@@ -31,9 +32,7 @@ import {
   GraphileWakeupDriver,
   InMemoryWakeupDriver,
   LocalAgentHomeStore,
-  PiAgentRuntime,
   resolveComposioCallbackUrl,
-  ScriptedAgentRuntime,
   sleepComputerIfIdle,
 } from "@meshbot/adapters";
 import { deploymentModelKey, modelSecretsToRedact, resolveEncryptionKey } from "@meshbot/core";
@@ -50,8 +49,7 @@ async function main() {
     process.env.NODE_ENV,
   );
   const { prisma } = createDb(databaseUrl);
-  const runtime =
-    process.env.AGENT_RUNTIME === "scripted" ? new ScriptedAgentRuntime() : new PiAgentRuntime();
+  const runtime = createAgentRuntime(process.env.AGENT_RUNTIME ?? "hermes");
   const dataDir = process.env.DATA_DIR ?? "./data";
   const sandbox = createRunSandbox(process.env.SANDBOX_PROVIDER ?? "docker", {
     supervisorUrl: process.env.SANDBOX_SUPERVISOR_URL ?? "http://127.0.0.1:7091",

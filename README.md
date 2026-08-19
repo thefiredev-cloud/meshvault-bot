@@ -2,9 +2,9 @@
 
 MeshVault is the model plus the application plus compute. That is the company, the offer, and the message.
 
-Electron desktop + Expo iOS. Default model path is **Qwen** (DashScope / compatible OpenAI API). OpenRouter and the rest of the Pi catalog stay available. Deployment-owned local models use the explicit `MESHBOT_GATEWAY_*` OpenAI-compatible gateway.
+Electron desktop + Expo iOS. The agent spine is **Nous Research Hermes Agent v0.20.4** with in-tree **Bot Mode** (named roster, avatars, routines, bot-to-bot). Default model path is **Qwen** (DashScope / compatible OpenAI API). OpenRouter and the rest of the catalog stay available. Deployment-owned local models use the explicit `MESHBOT_GATEWAY_*` OpenAI-compatible gateway.
 
-Each bot has one thread, one computer, memory, routines, and history. A bot can also spawn more bots — each a regular peer with its own thread and computer — or run short-lived subagents inside the current turn. This repository is the complete application — it runs without a separate MeshVault-operated control plane.
+Each bot has one thread, one computer, memory, routines, and history. A bot can also spawn more bots — each a regular peer with its own thread and computer — message another bot, or run short-lived subagents inside the current turn. This repository is the complete application — it runs without a separate MeshVault-operated control plane. Hermes sources are vendored at [`vendor/hermes-agent`](./vendor/hermes-agent) (MIT).
 
 MeshVault is maintained by Tanner Osterkamp / [thefiredev-cloud](https://github.com/thefiredev-cloud). License and upstream attribution are recorded in [`LICENSE`](./LICENSE), [`NOTICE`](./NOTICE), and [`UPSTREAM.md`](./UPSTREAM.md).
 
@@ -71,9 +71,9 @@ Confirm the product path:
 curl -s http://127.0.0.1:3100/health
 ```
 
-You want `"runtime":"pi"`, `"sandbox":"docker"`, `"wakeup":"graphile"`. `"composio":true` means the personal OAuth connector is available; each user still connects Composio in Plugins.
+You want `"runtime":"hermes"`, `"sandbox":"docker"`, `"wakeup":"graphile"`. `"composio":true` means the personal OAuth connector is available; each user still connects Composio in Plugins.
 
-Product defaults are Pi + Docker + Graphile. `pnpm verify:fast` pins the emulators (`AGENT_RUNTIME=scripted`, `SANDBOX_PROVIDER=fake`, `WAKEUP_DRIVER=memory`) so default tests never call live models or Composio.
+Product defaults are Hermes + Docker + Graphile. `AGENT_RUNTIME=pi` is the pre-Hermes loop. `pnpm verify:fast` pins the emulators (`AGENT_RUNTIME=scripted`, `SANDBOX_PROVIDER=fake`, `WAKEUP_DRIVER=memory`) so default tests never call live models or Composio.
 
 ### Computer and app modes
 
@@ -189,6 +189,7 @@ pnpm verify:providers  # optional live OpenRouter / E2B canaries
 ```
 apps/web api worker desktop mobile www
 packages/core contracts db auth memory ui-web adapter-kit adapters testkit
+vendor/hermes-agent vendor/hermes-agent-self-evolution
 infra/compose sandboxes
 ```
 
