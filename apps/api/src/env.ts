@@ -52,7 +52,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     sandboxSupervisorUrl: source.SANDBOX_SUPERVISOR_URL ?? "http://127.0.0.1:7091",
     sandboxSupervisorToken: resolveSupervisorToken(source),
     sandboxProvider: source.SANDBOX_PROVIDER ?? "docker",
-    agentRuntime: source.AGENT_RUNTIME ?? "pi",
+    agentRuntime: source.AGENT_RUNTIME ?? "hermes",
     openRouterKey,
     qwenKey,
     deploymentModelKey: resolveDeploymentModelKey(source),

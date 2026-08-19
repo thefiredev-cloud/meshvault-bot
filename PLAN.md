@@ -190,3 +190,28 @@ Empty — first pass.
 ## Fix #19 lint after rebase
 
 - [x] Format `.agents/context.json` so `biome check .` passes. Do not take #18. Do not touch iOS.
+
+## Hermes Agent + Bot Mode spine subtask
+
+- [x] Vendor Nous Research hermes-agent v0.20.4 (tag `v2026.8.18`) including Bot Mode (`apps/desktop/src/plugins/hermes-bots`) under `vendor/hermes-agent`.
+- [x] Take MIT skill-improve pieces from hermes-agent-self-evolution; skip AGPL Darwinian code.
+- [x] Make Hermes the product agent spine (`AGENT_RUNTIME=hermes`); keep Pi as `AGENT_RUNTIME=pi` and scripted for tests.
+- [x] Ship Bot Mode in Mesh Bot: named roster, routines namespace, bot-to-bot `message_bot` with Hermes attribution.
+- [x] Keep MeshVault sell, Qwen/DeepSeek/gateway, $49 checkout, Expo, and Electron.
+- [x] Attribute Nous Research / hermes-agent (MIT) in NOTICE, UPSTREAM, and README.
+- [x] Pass `pnpm verify:fast` and open one PR to main titled Mesh Bot on Hermes + Bot Mode.
+
+## Hermes spine rebase after #17 subtask
+
+- [x] Rebase `cursor/hermes-bot-mode-0f98` onto current main after Expo iOS Bot Mode (#17).
+- [x] Keep vendor/hermes-agent v0.20.4, MIT skill-improve, AGENT_RUNTIME=hermes, MeshVault sell, $49 checkout, NOTICE/UPSTREAM.
+- [x] Do not rewrite Expo surfaces from #17 unless a conflict forces a merge.
+- [x] Do not touch Electron unless a conflict forces a clean resolve.
+- [x] Push the same branch so #18 is mergeable and CI is green.
+
+## Hermes spine rebase after #19 subtask
+
+- [x] Rebase `cursor/hermes-bot-mode-0f98` onto current main after Electron Bot Mode (#19).
+- [x] Keep vendor Hermes v0.20.4, MIT skill-improve, AGENT_RUNTIME=hermes, MeshVault sell, $49, NOTICE/UPSTREAM.
+- [x] Keep #19 Electron Bot Mode surfaces; do not rewrite Expo.
+- [x] Push the same branch so #18 is mergeable and CI is green.

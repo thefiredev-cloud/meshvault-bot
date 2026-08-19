@@ -6,7 +6,7 @@ MeshVault is the model plus the application plus compute. That is the company, t
 
 ## Purpose
 
-This repository is the application. It preserves MeshVault's Windows-authoritative runtime and native companion work.
+This repository is the application. The agent spine is Nous Research Hermes Agent + Bot Mode. It preserves MeshVault's Windows-authoritative runtime and native companion work.
 
 ## Product contract
 

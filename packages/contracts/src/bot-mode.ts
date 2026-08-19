@@ -208,3 +208,47 @@ export function parseRoutineDraft(draft: RoutineDraft) {
 export function routinePresetCron(id: string) {
   return ROUTINE_PRESETS.find((preset) => preset.id === id)?.cron ?? ROUTINE_PRESETS[0].cron;
 }
+
+export const BOT_CHAT_TITLE = "Bot Chat";
+
+export function hermesProfileSlug(name: string): string {
+  return (
+    name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "bot"
+  );
+}
+
+export function botToBotMessage(senderName: string, text: string): string {
+  const handle = hermesProfileSlug(senderName);
+  return `Message from 🤖 ${senderName.trim()} (@${handle}): ${text.trim()}`;
+}
+
+export function parseBotToBotMessage(
+  value: string,
+): { senderName: string; handle: string; text: string } | null {
+  const match = /^Message from 🤖\s+(.+?)\s+\(@([^)]+)\):\s*([\s\S]+)$/u.exec(value.trim());
+  if (!match) return null;
+  return { senderName: match[1]!, handle: match[2]!, text: match[3]!.trim() };
+}
+
+export function parseBotMention(text: string): { handle: string; rest: string } | null {
+  const match = /^@([A-Za-z0-9][A-Za-z0-9_-]{0,39})\s+([\s\S]+)$/.exec(text.trim());
+  if (!match) return null;
+  return { handle: match[1]!, rest: match[2]!.trim() };
+}
+
+export function routineNamespace(botName: string, routineName: string): string {
+  return `[bot:${hermesProfileSlug(botName)}] ${routineName.trim()}`;
+}
+
+export function matchPeerBots<T extends { id: string; name: string }>(
+  peers: T[],
+  to: string,
+): T[] {
+  const wanted = to.trim();
+  const slug = hermesProfileSlug(wanted);
+  return peers.filter((bot) => bot.name === wanted || hermesProfileSlug(bot.name) === slug);
+}

@@ -1,6 +1,11 @@
 import type { ConnectorTool } from "@meshbot/adapter-kit";
 
-export const DELEGATION_TOOL_NAMES = new Set(["run_subagent", "spawn_bot", "delete_bot"]);
+export const DELEGATION_TOOL_NAMES = new Set([
+  "run_subagent",
+  "spawn_bot",
+  "delete_bot",
+  "message_bot",
+]);
 
 export const builtinAgentTools: ConnectorTool[] = [
   {
@@ -104,6 +109,19 @@ export const builtinAgentTools: ConnectorTool[] = [
         },
       },
       required: ["confirm_name"],
+    },
+  },
+  {
+    name: "message_bot",
+    description:
+      "Send a Bot Mode message to another named bot in this workspace. The recipient sees Hermes attribution (Message from 🤖 you (@handle): ...) in its own Bot Chat and starts a turn. Use this for @mentions and bot-to-bot handoffs. Do not use run_subagent for talking to a lasting bot.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        to: { type: "string", description: "Exact bot name or Hermes profile slug." },
+        text: { type: "string", description: "The message the other bot should receive." },
+      },
+      required: ["to", "text"],
     },
   },
 ];

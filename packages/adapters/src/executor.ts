@@ -26,7 +26,7 @@ import {
 } from "@meshbot/core";
 import { appendEvent, type PrismaClient } from "@meshbot/db";
 import { builtinAgentTools } from "./builtin-tools.js";
-import { deleteSpawnedBot, spawnBot } from "./child-bots.js";
+import { deleteSpawnedBot, messagePeerBot, spawnBot } from "./child-bots.js";
 import { collectLogIds } from "./composio-connector.js";
 import { scheduleComputerSleep } from "./computer-idle.js";
 import { resolveAgentHomePath } from "./home.js";
@@ -402,6 +402,35 @@ export function createRunExecutor(deps: ExecutorDeps) {
           });
           return spawned;
         }
+        if (name === "message_bot") {
+          const messaged = await messagePeerBot(deps, {
+            from: {
+              id: bot.id,
+              name: bot.name,
+              workspaceId: bot.workspaceId,
+              userId: run.userId,
+            },
+            runId,
+            to: String(args.to ?? args.name ?? ""),
+            text: String(args.text ?? args.message ?? args.prompt ?? ""),
+          });
+          if ("error" in messaged) return messaged;
+          await publishMessage(deps, actor, thread.id, bot.id, runId, "bot", [
+            {
+              kind: "text",
+              text: `Handed off to @${messaged.handle} in Bot Chat.`,
+            },
+          ]);
+          await appendEvent(deps.prisma, {
+            workspaceId: run.workspaceId,
+            threadId: thread.id,
+            botId: bot.id,
+            runId: run.id,
+            type: "thread.meta",
+            payload: { childBotId: messaged.botId, name: messaged.name, kind: "bot_message" },
+          });
+          return messaged;
+        }
         if (name === "delete_bot") {
           const removed = await deleteSpawnedBot(
             deps,
@@ -496,6 +525,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
               "spawn_bot creates a lasting regular bot (own chat, computer, memory) that appears in the user's bot list. If the user asked to create a bot, call spawn_bot once and stop. Do not run_subagent to demo it.",
               "run_subagent is a short helper inside this turn only. It is not a bot, has no thread, and does not show in the list. Use it for parallel work you will summarize here.",
               "delete_bot permanently destroys a bot this bot created, and only that bot. Only delete when the user asked or that bot is finished and unused. confirm_name must exactly match its name.",
+              "message_bot is Hermes Bot Mode: send a lasting peer a message with attribution `Message from 🤖 <you> (@handle): ...`. If the user wrote @name, call message_bot once with that handle and the rest of the text.",
               pluginLine,
               approvalInstruction,
               "Never print API keys, access tokens, or secret values. Prefer tools over claiming you already did the work.",

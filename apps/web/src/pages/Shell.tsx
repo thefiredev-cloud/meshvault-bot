@@ -2,6 +2,7 @@ import { ChatMarkdown } from "@meshbot/chat-ui/web";
 import {
   type Bot,
   type ComputerStatus,
+  HERMES_ATTRIBUTION,
   MESHVAULT_NAME,
   MESHVAULT_SELL,
   type ProductEvent,
@@ -284,6 +285,9 @@ export function ShellPage({ view = "chat" }: { view?: "chat" | "brain" }) {
             placeholder="Search"
             className="w-full bg-transparent outline-none"
           />
+        </div>
+        <div className="px-4 pb-1 text-[12px] font-medium uppercase tracking-[0.08em] text-[#6C6C70]">
+          Bots
         </div>
         <div className="rk-scroll flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 pb-2.5">
           {filtered.map((bot) => (
@@ -1292,6 +1296,7 @@ function BotSettings({
       <div className="mt-5 rounded-[11px] border border-[#26262A] bg-[#141416] px-3.5 py-3">
         <div className="text-[13px] font-medium text-[#C9C9CE]">About {MESHVAULT_NAME}</div>
         <p className="mt-1.5 text-[13px] leading-[1.45] text-[#85858A]">{MESHVAULT_SELL}</p>
+        <p className="mt-1.5 text-[13px] leading-[1.45] text-[#85858A]">{HERMES_ATTRIBUTION}</p>
       </div>
       <div className="mt-5 flex flex-col items-start gap-3">
         <button

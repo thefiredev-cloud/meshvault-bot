@@ -650,6 +650,30 @@ describeJourneys("required product journeys", () => {
     expect((await rpc<Bot[]>(app, cookie, "bots/list")).map((bot) => bot.name)).toEqual(["Nested"]);
   });
 
+  it("12b: a bot can message a peer with Hermes Bot Mode attribution", async () => {
+    const cookie = await signup(app, `botmode-j-${stamp}@meshbot.test`, "BotMode");
+    const chief = await rpc<Bot>(app, cookie, "bots/create", {
+      name: "Chief",
+      title: "",
+      description: "",
+      instructions: "",
+      notifyOnFinish: true,
+    });
+    const scout = await rpc<Bot>(app, cookie, "bots/create", {
+      name: "Scout",
+      title: "",
+      description: "",
+      instructions: "",
+      notifyOnFinish: true,
+    });
+    await sendAndWait(app, cookie, chief.id, "@scout have a look at this");
+    const scoutSnap = await rpc<Snap>(app, cookie, "threads/get", { botId: scout.id });
+    expect(JSON.stringify(scoutSnap.messages)).toMatch(/Message from/);
+    expect(JSON.stringify(scoutSnap.messages)).toMatch(/@chief/);
+    const chiefSnap = await rpc<Snap>(app, cookie, "threads/get", { botId: chief.id });
+    expect(JSON.stringify(chiefSnap.messages)).toMatch(/Handed off to @scout/);
+  });
+
   it("13: a subagent shows up in the parent thread without creating a bot", async () => {
     const cookie = await signup(app, `subagent-j-${stamp}@meshbot.test`, "Subagent");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
