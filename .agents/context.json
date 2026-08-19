@@ -309,7 +309,7 @@
         "PLAN.md",
         ".agents/context.json"
       ],
-      "worked": "Expo Bot Mode ports Hermes roster/identity/routines onto bots/* and routines/* RPC. Hide is local SecureStore. Duplicate uses bots/create. Instructions stay a distinct identity field. Mobile sell string is the exact one-product sentence. Electron untouched.",
+      "worked": "Expo Bot Mode ports Hermes roster/identity/routines onto bots/* and routines/* RPC. Hide is local SecureStore. Duplicate uses bots/create. Instructions stay a distinct identity field. Mobile sell string is the exact one-product sentence. Electron untouched. verify:fast 260/19; mobile+contracts tsc clean.",
       "failed": null
     }
   ]

@@ -166,4 +166,4 @@ Empty — first pass.
 - [x] Add portable roster / identity / routine helpers in `@meshbot/contracts` (no Electron plugin host).
 - [x] Persist hide locally; talk to existing `bots/*` and `routines/*` RPC from Expo.
 - [x] Add Expo identity + routines screens; keep founding/checkout; use the locked sell on touched surfaces.
-- [ ] Add tests and leave `pnpm verify:fast` green.
+- [x] Add tests and leave `pnpm verify:fast` green.
