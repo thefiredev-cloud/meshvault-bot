@@ -1,13 +1,10 @@
+import { filterRoster } from "@meshbot/contracts";
 import type { MobileBot } from "./api";
 
 const DAY_MS = 86_400_000;
 
 export function filterBots(bots: MobileBot[], query: string) {
-  const needle = query.trim().toLowerCase();
-  if (!needle) return bots;
-  return bots.filter((bot) =>
-    `${bot.name} ${bot.title} ${bot.preview}`.toLowerCase().includes(needle),
-  );
+  return filterRoster(bots, query);
 }
 
 export function botTag(title: string, name: string, maxLength = 22) {

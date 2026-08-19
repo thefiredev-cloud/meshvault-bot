@@ -116,6 +116,11 @@ export type MobileBot = {
   color: string;
   updatedAt: string;
   parentBotId?: string | null;
+  description?: string;
+  instructions?: string;
+  modelProvider?: string | null;
+  modelId?: string | null;
+  notifyOnFinish?: boolean;
 };
 
 export type MobileMe = {

@@ -31,10 +31,11 @@ describe("filterBots", () => {
     expect(filterBots(bots, "  ")).toEqual(bots);
   });
 
-  it("matches name, title, or preview", () => {
+  it("matches name, title, handle, or preview", () => {
     expect(filterBots(bots, "seo").map((item) => item.id)).toEqual(["seo"]);
     expect(filterBots(bots, "zero").map((item) => item.id)).toEqual(["inbox"]);
     expect(filterBots(bots, "PIXEL").map((item) => item.id)).toEqual(["seo"]);
+    expect(filterBots(bots, "@inbox-triage").map((item) => item.id)).toEqual(["inbox"]);
   });
 });
 

@@ -296,6 +296,21 @@
       ],
       "worked": "Rebased #16 onto main after #15. Locked sentence is exactly two sentences without We sell all three. Expo still imports ../lib/sell which re-exports contracts. Dropped #15 off-mobile sell ban. Biome wrap on SuperGrok billing line. lint clean; verify:fast 250/19.",
       "failed": null
+    },
+    {
+      "at": "2026-08-19",
+      "paths": [
+        "packages/contracts/src/bot-mode.ts",
+        "apps/mobile/lib/bot-mode.ts",
+        "apps/mobile/app/bot.tsx",
+        "apps/mobile/app/routines.tsx",
+        "apps/mobile/app/index.tsx",
+        "apps/mobile/lib/sell.ts",
+        "PLAN.md",
+        ".agents/context.json"
+      ],
+      "worked": "Expo Bot Mode ports Hermes roster/identity/routines onto bots/* and routines/* RPC. Hide is local SecureStore. Duplicate uses bots/create. Instructions stay a distinct identity field. Mobile sell string is the exact one-product sentence. Electron untouched.",
+      "failed": null
     }
   ]
 }

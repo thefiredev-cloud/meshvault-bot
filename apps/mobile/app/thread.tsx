@@ -25,8 +25,23 @@ export default function Thread() {
   const [answeringRunId, setAnsweringRunId] = useState<string | null>(null);
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: name || "Thread" });
-  }, [name, navigation]);
+    navigation.setOptions({
+      title: name || "Thread",
+      headerRight: () =>
+        botId ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Bot identity"
+            onPress={() =>
+              router.push({ pathname: "/bot", params: { botId, name: name || "Bot" } })
+            }
+            hitSlop={12}
+          >
+            <NativeSymbol ios="person.crop.circle" android="person" size={22} color="#ECECEE" />
+          </Pressable>
+        ) : null,
+    });
+  }, [botId, name, navigation, router]);
 
   async function refresh() {
     if (!botId) return;
