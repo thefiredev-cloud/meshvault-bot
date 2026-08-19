@@ -2,7 +2,7 @@ export const DEV_AUTH_SECRET_PLACEHOLDER = "dev-secret-change-me-please-32chars"
 export const DEV_ENCRYPTION_KEY_PLACEHOLDER = "dev-encryption-key";
 
 const RUNTIME_SECRETS_ERROR =
-  "Set BETTER_AUTH_SECRET and ENCRYPTION_KEY to long random strings before starting Mesh Bot outside local development or tests.";
+  "Set BETTER_AUTH_SECRET and ENCRYPTION_KEY to long random strings before starting MeshVault outside local development or tests.";
 
 export function isDevSecretAllowed(env: NodeJS.ProcessEnv = process.env): boolean {
   if (env.MESHBOT_ALLOW_DEV_SECRETS === "1") return true;

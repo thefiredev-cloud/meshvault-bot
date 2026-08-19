@@ -2,6 +2,7 @@ import {
   CommerceError,
   foundingInstallMailto,
   MESHVAULT_CONTACT_EMAIL,
+  MESHVAULT_SELL,
   SKILL_PACK_PRICE_USD,
   startSkillPackCheckout,
   submitFoundingInstallLead,
@@ -67,8 +68,9 @@ export function CommercePanel({
     <div className={compact ? "space-y-5" : "space-y-6"}>
       <div>
         <h2 className="text-[22px] font-medium text-[#F1F1F2]">{title}</h2>
+        <p className="mt-2 text-[14px] leading-relaxed text-[#85858A]">{MESHVAULT_SELL}</p>
         <p className="mt-2 text-[14px] leading-relaxed text-[#85858A]">
-          Mesh Bot stays Apache-2.0 and self-hosted. These are optional MeshVault purchases — not
+          The application stays Apache-2.0 and self-hosted. These are optional purchases — not
           seats, not a subscription, and not required to run the repo. Native Mac and iPhone clients
           are in development and are not released.
         </p>

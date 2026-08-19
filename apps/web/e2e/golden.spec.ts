@@ -111,7 +111,7 @@ async function completeOnboarding(page: Page, answers: string[]) {
     for (const answer of answers) {
       await page.getByText(answer, { exact: true }).click();
     }
-    await page.getByRole("button", { name: "Open Mesh Bot" }).click();
+    await page.getByRole("button", { name: "Open MeshVault" }).click();
   }
   await page.waitForURL(/\/app/);
   await expect(page.getByText("Chief").first()).toBeVisible();

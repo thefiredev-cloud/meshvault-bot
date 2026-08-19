@@ -1,3 +1,4 @@
+import { MESHVAULT_NAME, MESHVAULT_SELL } from "@meshbot/contracts";
 import { Redirect, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
@@ -73,10 +74,10 @@ export default function SignIn() {
       <StatusBar style="dark" />
       <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 24 }}>
         <Text style={{ color: "#1B1B1E", fontSize: 32, fontWeight: "500", textAlign: "center" }}>
-          Sign in to Mesh Bot
+          Sign in to {MESHVAULT_NAME}
         </Text>
-        <Text style={{ color: "#6E6E68", marginTop: 8, textAlign: "center" }}>
-          Same Better Auth session as the web app.
+        <Text style={{ color: "#6E6E68", marginTop: 8, textAlign: "center", lineHeight: 22 }}>
+          {MESHVAULT_SELL}
         </Text>
         <TextInput
           autoCapitalize="none"
@@ -256,7 +257,7 @@ function ServerSheet({
             </Pressable>
           </View>
           <Text style={{ color: "#6E6E68", marginTop: 28, fontSize: 15, lineHeight: 22 }}>
-            Point this app at your self-hosted Mesh Bot origin — the same HTTPS URL you open in a
+            Point this app at your self-hosted MeshVault origin — the same HTTPS URL you open in a
             browser.
           </Text>
           <TextInput

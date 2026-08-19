@@ -1,11 +1,13 @@
 import { ChatMarkdown } from "@meshbot/chat-ui/web";
-import type {
-  Bot,
-  ComputerStatus,
-  ProductEvent,
-  Routine,
-  ThreadMessage,
-  ThreadSnapshot,
+import {
+  type Bot,
+  type ComputerStatus,
+  MESHVAULT_NAME,
+  MESHVAULT_SELL,
+  type ProductEvent,
+  type Routine,
+  type ThreadMessage,
+  type ThreadSnapshot,
 } from "@meshbot/contracts";
 import {
   cronFromPreset,
@@ -384,6 +386,9 @@ export function ShellPage({ view = "chat" }: { view?: "chat" | "brain" }) {
                   {usage.runs} runs · {usage.inputTokens + usage.outputTokens} tokens
                 </p>
               ) : null}
+              <p className="px-3 pb-2 text-[12.5px] leading-[1.45] text-[#85858A]">
+                {MESHVAULT_SELL}
+              </p>
               <button
                 type="button"
                 onClick={() => void authClient.signOut().then(() => navigate("/"))}
@@ -1284,6 +1289,10 @@ function BotSettings({
           ))}
         </select>
       </label>
+      <div className="mt-5 rounded-[11px] border border-[#26262A] bg-[#141416] px-3.5 py-3">
+        <div className="text-[13px] font-medium text-[#C9C9CE]">About {MESHVAULT_NAME}</div>
+        <p className="mt-1.5 text-[13px] leading-[1.45] text-[#85858A]">{MESHVAULT_SELL}</p>
+      </div>
       <div className="mt-5 flex flex-col items-start gap-3">
         <button
           type="button"

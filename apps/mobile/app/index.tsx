@@ -195,6 +195,7 @@ export default function Home() {
             </Text>
           ) : (
             <View>
+              <Text style={styles.empty}>{MESHVAULT_SELL}</Text>
               <Text style={styles.empty}>Tap + to create a bot</Text>
               <Pressable
                 accessibilityRole="button"
@@ -204,8 +205,8 @@ export default function Home() {
                 <Text style={styles.commerceTitle}>Optional $49 skills pack</Text>
                 <Text style={styles.commerceCopy}>{MESHVAULT_SELL}</Text>
                 <Text style={styles.commerceCopy}>
-                  Buy the Markdown pack or request a founding install. The app stays Apache-2.0 to
-                  self-host. Mac and iPhone clients are not released.
+                  Buy the Markdown pack or request a founding install. The application stays
+                  Apache-2.0 to self-host. Mac and iPhone clients are not released.
                 </Text>
               </Pressable>
             </View>

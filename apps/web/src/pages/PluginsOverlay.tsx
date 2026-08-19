@@ -50,7 +50,7 @@ export function PluginsOverlay({ onClose }: { onClose: () => void }) {
     setPending(item.slug);
     const popup = window.open("about:blank", "meshbot-composio", "popup,width=720,height=800");
     if (!popup) {
-      setError("Allow popups for Mesh Bot, then try Connect again.");
+      setError("Allow popups for MeshVault, then try Connect again.");
       setPending(null);
       return;
     }

@@ -79,8 +79,8 @@ export default function Commerce() {
     >
       <Text style={styles.sell}>{MESHVAULT_SELL}</Text>
       <Text style={styles.lede}>
-        Mesh Bot stays Apache-2.0 and self-hosted. These are optional. Native Mac and iPhone clients
-        are in development and are not released.
+        The application stays Apache-2.0 and self-hosted. These are optional. Native Mac and iPhone
+        clients are in development and are not released.
       </Text>
 
       <View style={styles.card}>

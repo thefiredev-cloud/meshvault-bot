@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { MESHVAULT_NAME, MESHVAULT_SELL } from "@meshbot/contracts";
 import { app, BrowserWindow, ipcMain, Menu } from "electron";
 import {
   normalizeServerOrigin,
@@ -57,6 +58,7 @@ async function createWindow() {
   const icon = developmentIcon();
   const win = new BrowserWindow({
     ...browserWindowOptions(process.platform),
+    title: MESHVAULT_NAME,
     ...(icon ? { icon } : {}),
     webPreferences: {
       preload: path.join(import.meta.dirname, "preload.cjs"),
@@ -115,6 +117,11 @@ function installMenu() {
 }
 
 app.whenReady().then(() => {
+  app.setAboutPanelOptions({
+    applicationName: MESHVAULT_NAME,
+    copyright: "FireDev LLC dba MeshVault",
+    credits: MESHVAULT_SELL,
+  });
   const icon = developmentIcon();
   if (process.platform === "darwin" && icon) app.dock?.setIcon(icon);
   ipcMain.handle("desktop.platform", () => process.platform);
@@ -153,9 +160,9 @@ app.whenReady().then(() => {
   });
   ipcMain.handle("desktop.server.connect", async (event, value: unknown) => {
     assertConnectionPage(event);
-    if (typeof value !== "string") throw new Error("Enter the Mesh Bot server address.");
+    if (typeof value !== "string") throw new Error("Enter the MeshVault server address.");
     const win = windowFrom(event);
-    if (!win) throw new Error("The Mesh Bot window is unavailable.");
+    if (!win) throw new Error("The MeshVault window is unavailable.");
     savedOrigin = await saveServerOrigin(path.join(app.getPath("userData"), "server.json"), value);
     await loadServer(win, savedOrigin);
     return { origin: savedOrigin };

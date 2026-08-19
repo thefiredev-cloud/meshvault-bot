@@ -170,7 +170,7 @@ export async function createApp(
       await stack.composio.completeCallback(new URL(c.req.url).searchParams);
       return c.text("Composio connected. You can close this window.");
     } catch {
-      return c.text("Composio could not connect. Return to Mesh Bot and try again.", 400);
+      return c.text("Composio could not connect. Return to MeshVault and try again.", 400);
     }
   });
   app.on(["GET", "POST"], "/api/auth/*", async (c) => {

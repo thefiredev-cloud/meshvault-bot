@@ -1,3 +1,4 @@
+import { MESHVAULT_NAME, MESHVAULT_SELL } from "@meshbot/contracts";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authClient } from "../lib/auth";
@@ -11,7 +12,8 @@ export function AuthPage({ mode }: { mode: "in" | "up" }) {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const title = mode === "in" ? "Sign in to Mesh Bot" : "Create your Mesh Bot account";
+  const title =
+    mode === "in" ? `Sign in to ${MESHVAULT_NAME}` : `Create your ${MESHVAULT_NAME} account`;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +41,10 @@ export function AuthPage({ mode }: { mode: "in" | "up" }) {
         <div className="flex h-[74px] w-[74px] items-center justify-center rounded-[20px] bg-[#F1F1ED] p-1.5">
           <img src="/favicon.svg" alt="" className="h-full w-full" />
         </div>
-        <h1 className="mb-[38px] mt-[30px] text-[38px] tracking-[-0.02em]">{title}</h1>
+        <h1 className="mb-4 mt-[30px] text-[38px] tracking-[-0.02em]">{title}</h1>
+        <p className="mb-[38px] max-w-[420px] text-center text-[16px] leading-[1.45] text-[#6E6E68]">
+          {MESHVAULT_SELL}
+        </p>
         {mode === "up" ? (
           <label className="mb-4 w-full text-[16px] text-[#6E6E68]">
             Name
