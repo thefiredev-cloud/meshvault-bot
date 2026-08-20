@@ -225,4 +225,4 @@ Lock CopilotKit/openbot (MIT, AG-UI) as MeshVault Bot architecture. Outcome, not
 - [x] Persist permitted / refused / failed rows in MeshVault Postgres (own store, not CopilotKit cloud).
 - [x] Put the existing executor `shell` computer action on that path. Electron/Hermes already call tools through the API executor — no desktop rewrite.
 - [x] Attribute OpenBot MIT in `UPSTREAM.md` / `NOTICE`. Keep MeshVault branding, Electron, Expo, Hermes.
-- [ ] Pass `pnpm verify:fast`, lint, and check. Open a PR off current main.
+- [x] Pass `pnpm verify:fast`, lint, and check. Open a PR off current main.
