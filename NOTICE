@@ -19,3 +19,8 @@ also records the MIT LICENSE at `apps/desktop/src/plugins/hermes-bots/LICENSE`.
 This product includes MIT skill-improve sources from
 https://github.com/NousResearch/hermes-agent-self-evolution (Copyright 2026
 Nous Research). Darwinian / AGPL code from that repo is not included.
+
+This product's action gateway follows the architecture of OpenBot
+(https://github.com/CopilotKit/openbot), Copyright 2026 CopilotKit, licensed
+under the MIT License. MeshVault does not require CopilotKit Intelligence or
+COPILOTKIT_LICENSE_TOKEN. Threads and memory stay in MeshVault's PostgreSQL.

@@ -25,9 +25,11 @@ import {
   shouldYieldToOwnerApproval,
 } from "@meshbot/core";
 import { appendEvent, type PrismaClient } from "@meshbot/db";
+import type { ActionGateway, ActionPolicy, AuditStore } from "@meshbot/gateway";
 import { builtinAgentTools } from "./builtin-tools.js";
 import { deleteSpawnedBot, messagePeerBot, spawnBot } from "./child-bots.js";
 import { collectLogIds } from "./composio-connector.js";
+import { createExecutorActionGateway, executeGovernedShell } from "./computer-action.js";
 import { scheduleComputerSleep } from "./computer-idle.js";
 import { resolveAgentHomePath } from "./home.js";
 import {
@@ -53,6 +55,8 @@ export interface ExecutorDeps {
   dataDir?: string;
   notifications?: NotificationProvider;
   wakeup?: WakeupDriver;
+  auditStore?: AuditStore;
+  actionPolicy?: ActionPolicy | (() => ActionPolicy);
 }
 
 type StoredModelSelection = {
@@ -138,6 +142,7 @@ export async function requireBotModelAccess(
 }
 
 export function createRunExecutor(deps: ExecutorDeps) {
+  const actionGateway: ActionGateway = createExecutorActionGateway(deps);
   return {
     async wakeRoutine(routineId: string, workerId: string) {
       const routine = await deps.prisma.routine.findUnique({ where: { id: routineId } });
@@ -345,7 +350,21 @@ export function createRunExecutor(deps: ExecutorDeps) {
         if (name === "shell") {
           const command = String(args.command ?? args.cmd ?? "");
           const cwd = String(args.cwd ?? (computer.kind === "desktop" ? "." : "/home/meshbot"));
-          return runSandboxCommand(deps.sandbox, computer, ["bash", "-lc", command], cwd, context);
+          const live = await deps.prisma.computer.findUnique({ where: { botId: bot.id } });
+          return executeGovernedShell({
+            gateway: actionGateway,
+            botId: bot.id,
+            actorId: run.userId,
+            workspaceId: run.workspaceId,
+            runId: run.id,
+            computerId: live?.id,
+            controlHolder: live?.controlHolder,
+            command,
+            cwd,
+            secrets: runSecrets,
+            execute: () =>
+              runSandboxCommand(deps.sandbox, computer, ["bash", "-lc", command], cwd, context),
+          });
         }
         if (name === "remember") {
           await deps.memory.commit(

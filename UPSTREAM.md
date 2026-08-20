@@ -6,7 +6,13 @@ Rakazo is licensed under Apache License 2.0. The upstream `LICENSE` file and Git
 
 Mesh Bot changes include product identity, package scopes, local protocol names, container identity, model routing, a bounded Brain surface, personal Composio OAuth, build coverage, and release hardening. The original name remains only in this provenance record, `NOTICE`, `LICENSE`, and retained Git history.
 
-MeshVault is not affiliated with or endorsed by xAI. Grok Bot is used only as a public behavior reference.
+MeshVault is not affiliated with or endorsed by xAI. Do not reverse-engineer Grok Bot. Do not clone Grok Bot. Grok Bot is not an architecture source.
+
+## OpenBot
+
+MeshVault Bot's action architecture is [CopilotKit/openbot](https://github.com/CopilotKit/openbot) (MIT, AG-UI): one gateway that resolves the target, evaluates fail-closed policy, writes an audit row, then acts or refuses and names the rule; one computer per bot; take-the-wheel; secrets off the transcript.
+
+The implementation is MeshVault-owned (`@meshbot/gateway`, Prisma `action_audits`). OpenBot files were not vendored. CopilotKit Intelligence and `COPILOTKIT_LICENSE_TOKEN` are not required. Threads and memory stay in this repo's PostgreSQL. CopilotKit is not affiliated with MeshVault.
 
 Expo Bot Mode roster, identity, and routines adapt concepts from [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) Bot Mode (`apps/desktop/src/plugins/hermes-bots`) onto the existing Mesh Bot API.
 

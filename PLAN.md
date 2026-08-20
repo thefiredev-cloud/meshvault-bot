@@ -215,3 +215,14 @@ Empty — first pass.
 - [x] Keep vendor Hermes v0.20.4, MIT skill-improve, AGENT_RUNTIME=hermes, MeshVault sell, $49, NOTICE/UPSTREAM.
 - [x] Keep #19 Electron Bot Mode surfaces; do not rewrite Expo.
 - [x] Push the same branch so #18 is mergeable and CI is green.
+
+## OpenBot gateway spine subtask
+
+Lock CopilotKit/openbot (MIT, AG-UI) as MeshVault Bot architecture. Outcome, not a clone. Do not reverse-engineer or clone Grok Bot. Do not require CopilotKit Intelligence / `COPILOTKIT_LICENSE_TOKEN`.
+
+- [x] Record OpenBot as the architecture in `AGENTS.md`: gateway decide-then-act, per-bot computer, AG-UI, fail-closed policy, audit, take-the-wheel.
+- [x] Add `@meshbot/gateway`: resolve target, evaluate fail-closed policy, write audit, then act or refuse and name the rule.
+- [x] Persist permitted / refused / failed rows in MeshVault Postgres (own store, not CopilotKit cloud).
+- [x] Put the existing executor `shell` computer action on that path. Electron/Hermes already call tools through the API executor — no desktop rewrite.
+- [x] Attribute OpenBot MIT in `UPSTREAM.md` / `NOTICE`. Keep MeshVault branding, Electron, Expo, Hermes.
+- [x] Pass `pnpm verify:fast`, lint, and check. Open a PR off current main.
