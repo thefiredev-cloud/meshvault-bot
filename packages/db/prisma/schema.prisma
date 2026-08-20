@@ -100,6 +100,7 @@ model Organization {
   notificationPreferences NotificationPreference[]
   computers   Computer[]
   externalEffects ExternalEffect[]
+  actionAudits ActionAudit[]
 
   @@unique([slug])
   @@map("organization")
@@ -543,4 +544,25 @@ model Secret {
 
   @@index([userId, workspaceId])
   @@map("secrets")
+}
+
+model ActionAudit {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  botId       String
+  actorId     String
+  runId       String?
+  computerId  String?
+  eventType   String
+  toolName    String
+  targetType  String
+  targetId    String?
+  decision    Json
+  payload     Json
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([botId, createdAt])
+  @@map("action_audits")
 }

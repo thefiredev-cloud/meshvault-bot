@@ -374,6 +374,20 @@
       "paths": [".agents/context.json", "CHANGELOG.md", "NOTICE", "PLAN.md", "UPSTREAM.md"],
       "worked": "Rebased cursor/hermes-bot-mode-0f98 onto origin/main after #19 (f228379). Kept vendor Hermes v0.20.4, MIT skill-improve, AGENT_RUNTIME=hermes, MeshVault sell, $49. Docs keep both #19 Electron Bot Mode attribution and #18 vendor spine. No Expo rewrite; no Electron rewrite.",
       "failed": "Conflicts only CHANGELOG, NOTICE, PLAN, UPSTREAM, context.json after #19 merged mid-rebase."
+    },
+    {
+      "at": "2026-08-20",
+      "paths": [
+        "AGENTS.md",
+        "packages/gateway",
+        "packages/adapters/src/executor.ts",
+        "packages/adapters/src/computer-action.ts",
+        "packages/db/prisma/schema.prisma",
+        "UPSTREAM.md",
+        "NOTICE"
+      ],
+      "worked": "OpenBot (MIT, AG-UI) is the action architecture. @meshbot/gateway is decide-then-act: resolve target, fail-closed policy, audit row, then act or refuse and name the rule. Executor shell is the first wired computer path. Audit persists to Prisma action_audits. Threads/memory stay in MeshVault Postgres. No CopilotKit Intelligence / COPILOTKIT_LICENSE_TOKEN. Electron/Hermes already call tools via the API executor; no desktop side door. Do not reverse-engineer Grok Bot.",
+      "failed": null
     }
   ]
 }

@@ -19,6 +19,7 @@
     "@meshbot/contracts": "workspace:*",
     "@meshbot/core": "workspace:*",
     "@meshbot/db": "workspace:*",
+    "@meshbot/gateway": "workspace:*",
     "dockerode": "^4.0.7",
     "graphile-worker": "^0.17.3",
     "pino": "^9.9.0",

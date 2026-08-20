@@ -36,9 +36,6 @@ importers:
       '@hono/node-server':
         specifier: ^1.19.1
         version: 1.19.17(hono@4.13.1)
-      '@orpc/server':
-        specifier: ^1.15.0
-        version: 1.15.0(@opentelemetry/api@1.9.0)(crossws@0.3.5)(ws@8.21.3)
       '@meshbot/adapter-kit':
         specifier: workspace:*
         version: link:../../packages/adapter-kit
@@ -60,6 +57,9 @@ importers:
       '@meshbot/memory':
         specifier: workspace:*
         version: link:../../packages/memory
+      '@orpc/server':
+        specifier: ^1.15.0
+        version: 1.15.0(@opentelemetry/api@1.9.0)(crossws@0.3.5)(ws@8.21.3)
       dotenv:
         specifier: ^17.2.1
         version: 17.4.2
@@ -104,9 +104,6 @@ importers:
       '@expo/vector-icons':
         specifier: ^14.1.0
         version: 14.1.0(expo-font@13.3.2(expo@53.0.27(@babel/core@7.29.7)(@expo/metro-runtime@5.0.5(react-native@0.79.5(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.0.0)))(react-native-webview@13.13.5(react-native@0.79.5(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.0.0))(react@19.0.0))(react-native@0.79.5(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.0.0))(react@19.0.0))(react@19.0.0))(react-native@0.79.5(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.0.0))(react@19.0.0)
-      '@orpc/client':
-        specifier: ^1.15.0
-        version: 1.15.0(@opentelemetry/api@1.9.0)
       '@meshbot/chat-ui':
         specifier: workspace:*
         version: link:../../packages/chat-ui
@@ -116,6 +113,9 @@ importers:
       '@meshbot/ui-tokens':
         specifier: workspace:*
         version: link:../../packages/ui-tokens
+      '@orpc/client':
+        specifier: ^1.15.0
+        version: 1.15.0(@opentelemetry/api@1.9.0)
       '@react-navigation/native':
         specifier: ^7.1.17
         version: 7.3.16(react-native@0.79.5(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.0.0))(react@19.0.0)
@@ -165,15 +165,6 @@ importers:
 
   apps/web:
     dependencies:
-      '@orpc/client':
-        specifier: ^1.15.0
-        version: 1.15.0(@opentelemetry/api@1.9.0)
-      '@orpc/contract':
-        specifier: ^1.15.0
-        version: 1.15.0(@opentelemetry/api@1.9.0)
-      '@orpc/tanstack-query':
-        specifier: ^1.15.0
-        version: 1.15.0(@opentelemetry/api@1.9.0)(@orpc/client@1.15.0(@opentelemetry/api@1.9.0))(@tanstack/query-core@5.101.4)
       '@meshbot/chat-ui':
         specifier: workspace:*
         version: link:../../packages/chat-ui
@@ -189,6 +180,15 @@ importers:
       '@meshbot/ui-web':
         specifier: workspace:*
         version: link:../../packages/ui-web
+      '@orpc/client':
+        specifier: ^1.15.0
+        version: 1.15.0(@opentelemetry/api@1.9.0)
+      '@orpc/contract':
+        specifier: ^1.15.0
+        version: 1.15.0(@opentelemetry/api@1.9.0)
+      '@orpc/tanstack-query':
+        specifier: ^1.15.0
+        version: 1.15.0(@opentelemetry/api@1.9.0)(@orpc/client@1.15.0(@opentelemetry/api@1.9.0))(@tanstack/query-core@5.101.4)
       '@tanstack/react-query':
         specifier: ^5.85.5
         version: 5.101.4(react@19.0.0)
@@ -377,9 +377,6 @@ importers:
       '@earendil-works/pi-ai':
         specifier: ^0.84.1
         version: 0.84.1(ws@8.21.3)(zod@4.4.3)
-      '@modelcontextprotocol/client':
-        specifier: 2.0.0
-        version: 2.0.0
       '@meshbot/adapter-kit':
         specifier: workspace:*
         version: link:../adapter-kit
@@ -392,6 +389,12 @@ importers:
       '@meshbot/db':
         specifier: workspace:*
         version: link:../db
+      '@meshbot/gateway':
+        specifier: workspace:*
+        version: link:../gateway
+      '@modelcontextprotocol/client':
+        specifier: 2.0.0
+        version: 2.0.0
       dockerode:
         specifier: ^4.0.7
         version: 4.0.12
@@ -517,15 +520,15 @@ importers:
 
   packages/db:
     dependencies:
+      '@meshbot/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       '@prisma/adapter-pg':
         specifier: ^7.9.1
         version: 7.9.1
       '@prisma/client':
         specifier: ^7.9.1
         version: 7.9.1(prisma@7.9.1(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(magicast@0.5.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3))(typescript@5.9.3)
-      '@meshbot/contracts':
-        specifier: workspace:*
-        version: link:../contracts
       dotenv:
         specifier: ^17.2.1
         version: 17.4.2
@@ -542,6 +545,15 @@ importers:
       prisma:
         specifier: ^7.9.1
         version: 7.9.1(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(magicast@0.5.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12)(yaml@2.9.0))
+
+  packages/gateway:
+    devDependencies:
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
@@ -625,6 +637,12 @@ importers:
 
   packages/ui-web:
     dependencies:
+      '@meshbot/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@meshbot/ui-tokens':
+        specifier: workspace:*
+        version: link:../ui-tokens
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.1.23(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -649,12 +667,6 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.2.8
         version: 1.2.16(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
-      '@meshbot/contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      '@meshbot/ui-tokens':
-        specifier: workspace:*
-        version: link:../ui-tokens
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1615,14 +1627,6 @@ packages:
     peerDependencies:
       '@bufbuild/protobuf': ^2.7.0
 
-  '@modelcontextprotocol/client@2.0.0':
-    resolution: {integrity: sha512-8f1OghQ2rjzIOfqgUCP+8GiUWqRs89njoWLNqAe8kWmDePv3s1fZXseej+QXemssEuuOvLLmLO/kqM3IQHtISw==}
-    engines: {node: '>=20'}
-
-  '@modelcontextprotocol/core@2.0.0':
-    resolution: {integrity: sha512-pJCEwGG7Lfr/+PQp9ZTwKXNeO5wzbfKL7H3MYpCorM4oFBoQrdjnBgEoqG+RjhsvS1FKrDbKux+M1HhlnGWqcA==}
-    engines: {node: '>=20'}
-
   '@e2b/desktop@2.3.1':
     resolution: {integrity: sha512-/WVgs4LpOk28PU9bzMkUWPdYVI0QBPVdclpXC99bsSeNTbG5QuWiS4tgznulzwW2HE0+etxzoOhkQ7fl0gagYw==}
     engines: {node: '>=20.18.1'}
@@ -2253,6 +2257,14 @@ packages:
     peerDependenciesMeta:
       '@opentelemetry/api':
         optional: true
+
+  '@modelcontextprotocol/client@2.0.0':
+    resolution: {integrity: sha512-8f1OghQ2rjzIOfqgUCP+8GiUWqRs89njoWLNqAe8kWmDePv3s1fZXseej+QXemssEuuOvLLmLO/kqM3IQHtISw==}
+    engines: {node: '>=20'}
+
+  '@modelcontextprotocol/core@2.0.0':
+    resolution: {integrity: sha512-pJCEwGG7Lfr/+PQp9ZTwKXNeO5wzbfKL7H3MYpCorM4oFBoQrdjnBgEoqG+RjhsvS1FKrDbKux+M1HhlnGWqcA==}
+    engines: {node: '>=20'}
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     resolution: {integrity: sha512-oTXEIha4SsuXdTA4Iyskj0kpdx2yVXdhd75c2v3xGrHFfVMsbhTPZU/nMPL4sWKo4pBHm3aucLaqGlF696dTyQ==}
@@ -9905,20 +9917,6 @@ snapshots:
     dependencies:
       '@bufbuild/protobuf': 2.13.0
 
-  '@modelcontextprotocol/client@2.0.0':
-    dependencies:
-      '@modelcontextprotocol/core': 2.0.0
-      cross-spawn: 7.0.6
-      eventsource: 3.0.7
-      eventsource-parser: 3.1.1
-      jose: 6.2.8
-      pkce-challenge: 5.0.1
-      zod: 4.4.3
-
-  '@modelcontextprotocol/core@2.0.0':
-    dependencies:
-      zod: 4.4.3
-
   '@e2b/desktop@2.3.1':
     dependencies:
       e2b: 2.38.3
@@ -10756,6 +10754,20 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+
+  '@modelcontextprotocol/client@2.0.0':
+    dependencies:
+      '@modelcontextprotocol/core': 2.0.0
+      cross-spawn: 7.0.6
+      eventsource: 3.0.7
+      eventsource-parser: 3.1.1
+      jose: 6.2.8
+      pkce-challenge: 5.0.1
+      zod: 4.4.3
+
+  '@modelcontextprotocol/core@2.0.0':
+    dependencies:
+      zod: 4.4.3
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true

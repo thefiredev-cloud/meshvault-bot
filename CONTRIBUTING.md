@@ -2,7 +2,7 @@
 
 Thanks for helping improve Mesh Bot. Keep changes focused and testable.
 
-Keep the product architecture: Electron desktop, Expo iOS, Hermes Agent + Bot Mode spine, and Docker/E2B computers. See [`UPSTREAM.md`](UPSTREAM.md) and [`NOTICE`](NOTICE) for required provenance.
+Keep the product architecture: Electron desktop, Expo iOS, Hermes Agent + Bot Mode runtime, OpenBot action gateway (decide-then-act, fail-closed policy, per-bot computer, AG-UI, audit, take-the-wheel), and Docker/E2B computers. Do not reverse-engineer Grok Bot. See [`UPSTREAM.md`](UPSTREAM.md) and [`NOTICE`](NOTICE) for required provenance.
 
 Agents: read [AGENTS.md](AGENTS.md). Plan in [PLAN.md](PLAN.md). Do not skip the session rituals.
 

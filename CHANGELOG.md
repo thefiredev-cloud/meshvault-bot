@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Action architecture is now OpenBot (CopilotKit/openbot, MIT, AG-UI): one gateway decides, audits, then acts. Hermes Agent + Bot Mode remains the in-process runtime. Electron, Expo, and MeshVault branding stay. CopilotKit Intelligence is not required.
 - Mesh Bot now runs on the Hermes Agent + Bot Mode spine (Nous Research hermes-agent v0.20.4, MIT), vendored in-tree. Default `AGENT_RUNTIME=hermes`. Qwen / DeepSeek / `MESHBOT_GATEWAY_*`, the $49 skills pack, Expo iOS, and Electron stay.
 - User-facing copy now states the MeshVault sell: MeshVault is the model plus the application plus compute. That is the company, the offer, and the message.
 - Renamed the shipped product and workspace scope to Mesh Bot and `@meshbot/*`. Required upstream attribution remains in `UPSTREAM.md` and `NOTICE`.
@@ -16,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `@meshbot/gateway`: fail-closed policy, audit redaction, and decide-then-act for computer actions. Executor `shell` is the first wired path. Rows land in Postgres `action_audits`.
 - Hermes Bot Mode protocol in Mesh Bot: named Bots roster, routines namespaced per bot, and `message_bot` / `@mention` handoff with Hermes attribution.
 - Electron Hermes Bot Mode: a local Bots roster with canonical Bot Chats, session workspace, hide/unhide, and search, ported from NousResearch/hermes-agent `apps/desktop/src/plugins/hermes-bots`. Open it from MeshVault → Bot Mode or the connection screen. iOS/Expo is unchanged.
 - Optional $49 Agent Skills Starter Pack checkout and founding-install lead in first-run onboarding, the web/Electron sidebar, and the Expo inbox. The Apache-2.0 self-hosted runtime stays free; native Mac and iPhone clients are in development and are not released.
