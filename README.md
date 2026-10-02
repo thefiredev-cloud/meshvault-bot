@@ -1,8 +1,8 @@
-# MeshVault
+# MeshVault Bot
 
-MeshVault is the model plus the application plus compute. That is the company, the offer, and the message.
+A self-hostable bot application: each bot gets its own thread, memory, routines, and computer (a Docker container by default, or an E2B sandbox), with web, Electron desktop, and Expo iOS clients. It is a fork of [elie222/rakazo](https://github.com/elie222/rakazo) (Apache-2.0), rebuilt on Nous Research Hermes Agent.
 
-Electron desktop + Expo iOS. The agent spine is **Nous Research Hermes Agent v0.20.4** with in-tree **Bot Mode** (named roster, avatars, routines, bot-to-bot). Default model path is **Qwen** (DashScope / compatible OpenAI API). OpenRouter and the rest of the catalog stay available. Deployment-owned local models use the explicit `MESHBOT_GATEWAY_*` OpenAI-compatible gateway.
+The agent spine is **Nous Research Hermes Agent v0.20.4** with in-tree **Bot Mode** (named roster, avatars, routines, bot-to-bot). Default model path is **Qwen** (DashScope / compatible OpenAI API). OpenRouter and the rest of the catalog stay available. Deployment-owned local models use the explicit `MESHBOT_GATEWAY_*` OpenAI-compatible gateway.
 
 Each bot has one thread, one computer, memory, routines, and history. A bot can also spawn more bots — each a regular peer with its own thread and computer — message another bot, or run short-lived subagents inside the current turn. This repository is the complete application — it runs without a separate MeshVault-operated control plane. Hermes sources are vendored at [`vendor/hermes-agent`](./vendor/hermes-agent) (MIT).
 
@@ -200,3 +200,7 @@ infra/compose sandboxes
 See `docs/self-host.md`. Cloud and self-hosted editions share the same application and contracts. There is no separate MeshVault-hosted control plane in this repo yet — a public Cloud deploy is a VPS (or E2B) plus the marketing site, not a serverless push of the chat app.
 
 Upstream and license records: [`UPSTREAM.md`](./UPSTREAM.md) · [`NOTICE`](./NOTICE)
+
+## License
+
+Apache-2.0, inherited from Rakazo. See [`LICENSE`](./LICENSE). Vendored Hermes Agent code is MIT; attributions are in [`NOTICE`](./NOTICE).
