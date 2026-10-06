@@ -52,7 +52,8 @@ describe("MeshVault sell", () => {
     const source = readFileSync(path.resolve(file), "utf8");
     expect(source.includes(MESHVAULT_SELL) || source.includes("MESHVAULT_SELL")).toBe(true);
     expect(source).not.toMatch(leftoverPitch);
-    expect(source).not.toMatch(/\b(?:Rakazo|Razko)\b/);
+    // README.md must name the upstream project: Apache-2.0 attribution for the fork.
+    if (file !== "README.md") expect(source).not.toMatch(/\b(?:Rakazo|Razko)\b/);
   });
 
   it.each(nameSurfaces)("uses MeshVault on %s", (file) => {

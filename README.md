@@ -1,5 +1,7 @@
 # MeshVault Bot
 
+MeshVault is the model plus the application plus compute. That is the company, the offer, and the message.
+
 A self-hostable bot application: each bot gets its own thread, memory, routines, and computer (a Docker container by default, or an E2B sandbox), with web, Electron desktop, and Expo iOS clients. It is a fork of [elie222/rakazo](https://github.com/elie222/rakazo) (Apache-2.0), rebuilt on Nous Research Hermes Agent.
 
 The agent spine is **Nous Research Hermes Agent v0.20.4** with in-tree **Bot Mode** (named roster, avatars, routines, bot-to-bot). Default model path is **Qwen** (DashScope / compatible OpenAI API). OpenRouter and the rest of the catalog stay available. Deployment-owned local models use the explicit `MESHBOT_GATEWAY_*` OpenAI-compatible gateway.
