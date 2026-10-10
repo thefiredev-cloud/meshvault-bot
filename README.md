@@ -1,16 +1,27 @@
 # MeshVault Bot
 
+MeshVault Bot is a self-hostable bot application for people who want AI bots that each keep their own thread, memory, routines, and computer. The computer is a Docker container by default or an E2B sandbox. It ships web, Electron desktop, and Expo iOS clients. It is in beta and aimed at developers who run it themselves.
+
 MeshVault is the model plus the application plus compute. That is the company, the offer, and the message.
 
-A self-hostable bot application: each bot gets its own thread, memory, routines, and computer (a Docker container by default, or an E2B sandbox), with web, Electron desktop, and Expo iOS clients. It is a fork of [elie222/rakazo](https://github.com/elie222/rakazo) (Apache-2.0), rebuilt on Nous Research Hermes Agent.
+> **About this fork.** This is a fork of [elie222/rakazo](https://github.com/elie222/rakazo) (Apache-2.0). Upstream is canonical for the original product and its documentation. This fork branched from upstream commit `fd445cd` and is maintained by FireDev LLC dba MeshVault ([thefiredev-cloud](https://github.com/thefiredev-cloud)). Issues are disabled here. Upstream's `LICENSE`, `NOTICE`, and git history are kept; provenance is in [`UPSTREAM.md`](./UPSTREAM.md).
+>
+> What the fork changes, by area:
+>
+> - **Branding and models.** Rebrand to MeshVault, `@meshbot/*` package scopes, Qwen (DashScope) as the default model path, and the `MESHBOT_GATEWAY_*` lane for a deployment-owned OpenAI-compatible endpoint.
+> - **Agent runtime.** Hermes Agent v0.20.4 is the default runtime (`AGENT_RUNTIME=hermes`). `vendor/hermes-agent` is a sparse snapshot of Nous Research's code, mainly the Bot Mode plugin. Bot Mode is wired into the Electron desktop and ported to the Expo app.
+> - **Action gateway.** `packages/gateway` evaluates a fail-closed policy and writes an audit row (`action_audits`) before a bot acts. It follows the architecture of CopilotKit's OpenBot but shares no code with it.
+> - **Computers.** A `desktop` computer provider ("This Mac"), owner approvals for tool effects, takeover-run binding, and Rust viewer code in `native/meshbot-viewer-core`.
+> - **Release paths.** A signed and notarized macOS release script for the desktop app and a production iOS preflight for the Expo app.
+> - **Commerce.** An optional $49 skills pack checkout (`POST /api/create-checkout`) and a founding-install lead endpoint (`POST /api/install-lead`). Both return an error when their environment variables are unset.
+>
+> Upstream has moved on since the branch point (about 1,100 commits ahead as of 2026-10-10) and ships features this fork does not have, such as the published-image installer, Daytona, CreateOS and Box computers, and Pipedream Connect. Use upstream if you want those. Notable changes here are in [`CHANGELOG.md`](./CHANGELOG.md).
 
-The agent spine is **Nous Research Hermes Agent v0.20.4** with in-tree **Bot Mode** (named roster, avatars, routines, bot-to-bot). Default model path is **Qwen** (DashScope / compatible OpenAI API). OpenRouter and the rest of the catalog stay available. Deployment-owned local models use the explicit `MESHBOT_GATEWAY_*` OpenAI-compatible gateway.
+The agent spine is **Nous Research Hermes Agent v0.20.4** with in-tree **Bot Mode** (named roster, avatars, routines, bot-to-bot), licensed MIT and recorded in [`NOTICE`](./NOTICE). The default model path is **Qwen** (DashScope or a compatible OpenAI API). OpenRouter and the rest of the Pi catalog stay available.
 
-Each bot has one thread, one computer, memory, routines, and history. A bot can also spawn more bots — each a regular peer with its own thread and computer — message another bot, or run short-lived subagents inside the current turn. This repository is the complete application — it runs without a separate MeshVault-operated control plane. Hermes sources are vendored at [`vendor/hermes-agent`](./vendor/hermes-agent) (MIT).
+Each bot has one thread, one computer, memory, routines, and history. A bot can also spawn more bots, each a regular peer with its own thread and computer, message another bot, or run short-lived subagents inside the current turn. The repository is the whole application and runs without a MeshVault-operated control plane.
 
-MeshVault is maintained by Tanner Osterkamp / [thefiredev-cloud](https://github.com/thefiredev-cloud). License and upstream attribution are recorded in [`LICENSE`](./LICENSE), [`NOTICE`](./NOTICE), and [`UPSTREAM.md`](./UPSTREAM.md).
-
-Web, desktop (Electron), and mobile (Expo iOS). The product is still early (beta). Notable product changes are in [`CHANGELOG.md`](./CHANGELOG.md).
+Product notes live in [`PRODUCT.md`](./PRODUCT.md). License and upstream attribution are in [`LICENSE`](./LICENSE), [`NOTICE`](./NOTICE), and [`UPSTREAM.md`](./UPSTREAM.md).
 
 ## Demo
 
@@ -104,9 +115,9 @@ The Electron shell loads the same web UI. Leave `pnpm dev` running, then:
 pnpm --filter @meshbot/desktop dev
 ```
 
-Native red / yellow / green buttons close, minimize, and zoom that window. They do nothing in the browser tab. On first launch the desktop app asks whether bots should keep using Docker or run on this Mac as you. Docker stays the default. macOS will not show a permission prompt for that choice — the consent is MeshVault's.
+Native red / yellow / green buttons close, minimize, and zoom that window. They do nothing in the browser tab. On first launch the desktop app asks whether bots should keep using Docker or run on this Mac as you. Docker stays the default. macOS shows no permission prompt for that choice; the consent is MeshVault's.
 
-Development defaults to `http://127.0.0.1:5173`. A packaged build asks for the HTTPS origin served by the Windows-owned MeshVault runtime and remembers it. Use **MeshVault → Change Server…** to change it; `MESHBOT_WEB_URL` remains the explicit startup override.
+Development defaults to `http://127.0.0.1:5173`. A packaged build has no default and asks for your server's address on first launch (HTTPS, except for loopback addresses), then remembers it. Use **MeshVault → Change Server…** to change it. `MESHBOT_WEB_URL` is the explicit startup override.
 
 ### Desktop Bot Mode
 
@@ -199,7 +210,7 @@ infra/compose sandboxes
 
 ## Self-host and Cloud
 
-See `docs/self-host.md`. Cloud and self-hosted editions share the same application and contracts. There is no separate MeshVault-hosted control plane in this repo yet — a public Cloud deploy is a VPS (or E2B) plus the marketing site, not a serverless push of the chat app.
+See `docs/self-host.md`. Cloud and self-hosted editions share the same application and contracts. This repo has no MeshVault-hosted control plane yet. A public Cloud deploy is a VPS (or E2B) plus the marketing site, not a serverless push of the chat app.
 
 Upstream and license records: [`UPSTREAM.md`](./UPSTREAM.md) · [`NOTICE`](./NOTICE)
 
