@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { loadApiBase } from "../lib/api";
 
-// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+// Modified by thefiredev-cloud on 2026-08-13.
 
 export default function Layout() {
   const [ready, setReady] = useState(false);

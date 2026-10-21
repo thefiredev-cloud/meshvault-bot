@@ -185,7 +185,7 @@
         "PLAN.md",
         ".agents/context.json"
       ],
-      "worked": "Product-facing and generated identifiers now use Mesh Bot across issue forms, API logs, current mobile origins, Brain errors, plugin popup state, the public lockup, Cloud docs, site demo data, and test fixtures. The server still accepts meshvault:// only as inbound compatibility; current clients emit meshbot://. Legal FireDev LLC dba MeshVault text, meshvault.ai, the meshvault-bot repository address, and required Rakazo attribution remain. Focused tests passed 18 of 18; verify:fast passed 194 tests with 19 expected skips; lint checked 220 files; all 19 checks and all 4 builds passed.",
+      "worked": "Product-facing and generated identifiers now use Mesh Bot across issue forms, API logs, current mobile origins, Brain errors, plugin popup state, the public lockup, Cloud docs, site demo data, and test fixtures. The server still accepts meshvault:// only as inbound compatibility; current clients emit meshbot://. Owner-name (thefiredev-cloud) text, meshvault.ai, the meshvault-bot repository address, and required Rakazo attribution remain. Focused tests passed 18 of 18; verify:fast passed 194 tests with 19 expected skips; lint checked 220 files; all 19 checks and all 4 builds passed.",
       "failed": null
     },
     {

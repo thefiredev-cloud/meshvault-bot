@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "license": "Apache-2.0",
   "description": "MeshVault desktop client",
-  "author": "The Fire Dev LLC",
+  "author": "thefiredev-cloud",
   "homepage": "https://meshvault.ai",
   "type": "module",
   "main": "dist/main.js",
@@ -35,7 +35,7 @@
     "productName": "MeshVault",
     "executableName": "meshvault",
     "artifactName": "MeshVault-${version}-${platform}-${arch}.${ext}",
-    "copyright": "Copyright (c) 2026 The Fire Dev LLC. Apache-2.0.",
+    "copyright": "Copyright (c) 2026 thefiredev-cloud. Apache-2.0.",
     "publish": null,
     "directories": {
       "output": "out",
@@ -73,8 +73,8 @@
     "linux": {
       "icon": "assets/icon.png",
       "category": "Network",
-      "maintainer": "The Fire Dev LLC",
-      "vendor": "The Fire Dev LLC",
+      "maintainer": "thefiredev-cloud",
+      "vendor": "thefiredev-cloud",
       "synopsis": "MeshVault desktop client",
       "target": [
         "AppImage",

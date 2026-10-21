@@ -4,7 +4,7 @@ MeshVault Bot is a self-hostable bot application for people who want AI bots tha
 
 MeshVault is the model plus the application plus compute. That is the company, the offer, and the message.
 
-> **About this fork.** This is a fork of [elie222/rakazo](https://github.com/elie222/rakazo) (Apache-2.0). Upstream is canonical for the original product and its documentation. This fork branched from upstream commit `fd445cd` and is maintained by FireDev LLC dba MeshVault ([thefiredev-cloud](https://github.com/thefiredev-cloud)). Issues are disabled here. Upstream's `LICENSE`, `NOTICE`, and git history are kept; provenance is in [`UPSTREAM.md`](./UPSTREAM.md).
+> **About this fork.** This is a fork of [elie222/rakazo](https://github.com/elie222/rakazo) (Apache-2.0). Upstream is canonical for the original product and its documentation. This fork branched from upstream commit `fd445cd` and is maintained by [thefiredev-cloud](https://github.com/thefiredev-cloud). Issues are disabled here. Upstream's `LICENSE`, `NOTICE`, and git history are kept; provenance is in [`UPSTREAM.md`](./UPSTREAM.md).
 >
 > What the fork changes, by area:
 >
@@ -140,7 +140,7 @@ pnpm --filter @meshbot/desktop pack:mac     # dmg and zip, unsigned
 pnpm --filter @meshbot/desktop pack:win     # NSIS installer, unsigned
 ```
 
-Outputs land in `apps/desktop/out/` (app id `ai.meshvault.desktop`, publisher The Fire Dev LLC, no auto-update channel). The `ci` workflow builds the same unsigned artifacts on Ubuntu, macOS and Windows runners for every push and pull request and keeps them for 14 days. Those builds still need a running API and web origin.
+Outputs land in `apps/desktop/out/` (app id `ai.meshvault.desktop`, publisher thefiredev-cloud, no auto-update channel). The `ci` workflow builds the same unsigned artifacts on Ubuntu, macOS and Windows runners for every push and pull request and keeps them for 14 days. Those builds still need a running API and web origin.
 The public Mac download must be signed with a Developer ID Application certificate and notarized by Apple, and the Windows installer needs a code-signing certificate; an unsigned package is only a smoke-test artifact.
 
 For a direct-download macOS release, provide the Developer ID Application certificate and App Store Connect API notarization inputs to electron-builder, then run the release-only command:

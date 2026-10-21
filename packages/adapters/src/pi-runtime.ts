@@ -13,7 +13,7 @@ import { builtinAgentTools, DELEGATION_TOOL_NAMES } from "./builtin-tools.js";
 import { registerGateway } from "./pi-gateway.js";
 import { piModels } from "./pi-registry.js";
 
-// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+// Modified by thefiredev-cloud on 2026-08-13.
 
 const running = new Map<string, AbortController>();
 const models = piModels();

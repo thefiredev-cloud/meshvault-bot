@@ -25,7 +25,7 @@ import {
   signIn,
 } from "../lib/api";
 
-// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+// Modified by thefiredev-cloud on 2026-08-13.
 
 export default function SignIn() {
   const router = useRouter();

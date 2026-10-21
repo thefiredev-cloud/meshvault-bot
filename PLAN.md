@@ -100,7 +100,7 @@ Empty — first pass.
 
 - [x] Use Mesh Bot on shipped UI, public docs, issue forms, runtime messages, and generated metadata.
 - [x] Make current mobile requests emit `meshbot://` while retaining inbound `meshvault://` compatibility.
-- [x] Preserve FireDev LLC dba MeshVault, canonical domains, repository paths, and upstream attribution.
+- [x] Preserve the thefiredev-cloud owner name, canonical domains, repository paths, and upstream attribution.
 - [x] Add one focused brand regression and pass lint, all 19 checks, all 4 builds, and `verify:fast`.
 
 ## macOS direct-download release subtask

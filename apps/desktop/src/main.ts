@@ -162,7 +162,7 @@ app.whenReady().then(() => {
   app.setAboutPanelOptions({
     applicationName: MESHVAULT_NAME,
     applicationVersion: app.getVersion(),
-    copyright: "Copyright (c) 2026 The Fire Dev LLC",
+    copyright: "Copyright (c) 2026 thefiredev-cloud",
     credits: MESHVAULT_SELL,
     website: "https://meshvault.ai",
   });
