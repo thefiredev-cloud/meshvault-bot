@@ -132,14 +132,16 @@ With `pnpm --filter @meshbot/desktop dev` running:
 
 Roster state is stored in the desktop user-data directory (`bot-mode.json`, mode `0600`). The Expo/iOS client is unchanged.
 
-Packaged installers (optional):
+Packaged installers (optional, unsigned):
 
 ```bash
-pnpm --filter @meshbot/desktop pack
+pnpm --filter @meshbot/desktop pack:linux   # AppImage and .deb
+pnpm --filter @meshbot/desktop pack:mac     # dmg and zip, unsigned
+pnpm --filter @meshbot/desktop pack:win     # NSIS installer, unsigned
 ```
 
-Outputs land in `apps/desktop/out/` (macOS dmg/zip, Windows NSIS, Linux AppImage). Those builds still need a running API and web origin.
-The public Mac download must be signed with a Developer ID Application certificate and notarized by Apple; an unsigned local package is only a smoke-test artifact.
+Outputs land in `apps/desktop/out/` (app id `ai.meshvault.desktop`, publisher The Fire Dev LLC, no auto-update channel). The `ci` workflow builds the same unsigned artifacts on Ubuntu, macOS and Windows runners for every push and pull request and keeps them for 14 days. Those builds still need a running API and web origin.
+The public Mac download must be signed with a Developer ID Application certificate and notarized by Apple, and the Windows installer needs a code-signing certificate; an unsigned package is only a smoke-test artifact.
 
 For a direct-download macOS release, provide the Developer ID Application certificate and App Store Connect API notarization inputs to electron-builder, then run the release-only command:
 

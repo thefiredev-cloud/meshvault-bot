@@ -14,21 +14,21 @@
       body { margin: 0; min-height: 100vh; color: #f5f5f5; background: #050506; }
       #app { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
       aside { padding: 28px 20px; border-right: 1px solid #29292d; background: #111113; }
-      .mark { width: 34px; height: 34px; display: grid; place-items: center; margin-bottom: 18px; border: 1px solid #4a4a50; border-radius: 10px; font-weight: 700; }
+      .mark { width: 40px; height: 40px; display: grid; place-items: center; margin-bottom: 18px; border-radius: 10px; background: #1d1d1f; }
       h1 { margin: 0 0 8px; font-size: 22px; letter-spacing: -0.02em; }
       p, .hint { margin: 0 0 16px; color: #aaaab2; line-height: 1.45; font-size: 13px; }
       label { display: block; margin: 12px 0 6px; font-size: 13px; font-weight: 600; }
       input, textarea { width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid #3b3b42; border-radius: 10px; color: inherit; background: #09090b; font: inherit; outline: none; }
       textarea { min-height: 88px; padding: 10px 12px; resize: vertical; }
       input:focus, textarea:focus { border-color: #8b8b96; box-shadow: 0 0 0 3px #ffffff14; }
-      button { min-height: 40px; border: 0; border-radius: 10px; color: #09090b; background: #f5f5f5; font: inherit; font-weight: 700; cursor: pointer; }
+      button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 10px; color: #09090b; background: #f5f5f5; font: inherit; font-weight: 700; cursor: pointer; }
       button.secondary { color: #f5f5f5; background: #1c1c20; border: 1px solid #3b3b42; }
       button:disabled { cursor: wait; opacity: 0.6; }
       #create { width: 100%; margin-top: 12px; }
       #status { min-height: 20px; margin: 12px 0 0; color: #aaaab2; font-size: 12px; }
       #status.error { color: #ff9d9d; }
       main { display: grid; grid-template-rows: auto 1fr auto; min-width: 0; }
-      header { display: flex; justify-content: space-between; gap: 12px; padding: 22px 28px 12px; }
+      header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 22px 28px 12px; }
       #roster { display: grid; gap: 8px; margin: 18px 0; padding: 0; list-style: none; }
       .bot { width: 100%; display: grid; gap: 2px; padding: 10px 12px; border: 1px solid #2a2a30; border-radius: 12px; color: inherit; background: #09090b; text-align: left; }
       .bot[aria-current="page"] { border-color: #8b8b96; background: #16161a; }
@@ -39,15 +39,15 @@
       .message { max-width: 70ch; margin: 0 0 12px; padding: 12px 14px; border-radius: 12px; background: #111113; }
       .message.user { background: #1b1b20; }
       footer { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; padding: 16px 28px 24px; }
-      #toolbar { display: flex; gap: 8px; }
+      #toolbar { display: flex; gap: 8px; padding-top: 4px; }
     </style>
   </head>
   <body>
     <div id="app">
       <aside>
-        <div class="mark" aria-hidden="true">M</div>
+        <div class="mark" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 64 64"><g transform="translate(8.96 8.96) scale(0.461)"><path fill="#F5F5F7" d="M16 44A20 20 0 0 1 56 44L44 44A8 8 0 0 0 28 44ZM44 44A20 20 0 0 1 84 44L72 44A8 8 0 0 0 56 44ZM16 44L28 44L28 65Q28 74.02 31 76L13 76Q16 74.02 16 65ZM44 44L56 44L56 65Q56 74.02 59 76L41 76Q44 74.02 44 65ZM72 44L84 44L84 65Q84 74.02 87 76L69 76Q72 74.02 72 65Z"/></g></svg></div>
         <h1>Bot Mode</h1>
-        <p>MeshVault is the model plus the application plus compute. That is the company, the offer, and the message.</p>
+        <p>Local bots, routines and chats. Pick a bot or create one.</p>
         <label for="search">Search bots</label>
         <input id="search" type="search" placeholder="Search bots…" autocomplete="off" />
         <ul id="roster"></ul>
@@ -59,7 +59,7 @@
           <button id="create" type="submit">Create agent</button>
         </form>
         <div id="status" role="status" aria-live="polite"></div>
-        <p class="hint">Hermes Bot Mode from Nous Research. Local roster and canonical Bot Chats stay on this Mac. No invented API keys.</p>
+        <p class="hint">Bot Mode is adapted from Hermes Agent by Nous Research. The roster and Bot Chats stay on this computer.</p>
       </aside>
       <main>
         <header>

@@ -13,7 +13,7 @@
       * { box-sizing: border-box; }
       body { margin: 0; min-height: 100vh; display: grid; place-items: center; color: #f5f5f5; background: #050506; }
       main { width: min(520px, calc(100vw - 48px)); padding: 36px; border: 1px solid #29292d; border-radius: 18px; background: #111113; box-shadow: 0 24px 80px #0009; }
-      .mark { width: 34px; height: 34px; display: grid; place-items: center; margin-bottom: 24px; border: 1px solid #4a4a50; border-radius: 10px; font-weight: 700; }
+      .mark { width: 40px; height: 40px; display: grid; place-items: center; margin-bottom: 24px; border-radius: 10px; background: #1d1d1f; }
       h1 { margin: 0 0 10px; font-size: 26px; letter-spacing: -0.02em; }
       p { margin: 0 0 24px; color: #aaaab2; line-height: 1.5; }
       label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
@@ -29,18 +29,17 @@
   </head>
   <body>
     <main>
-      <div class="mark" aria-hidden="true">M</div>
-      <h1>Connect MeshVault</h1>
-      <p>MeshVault is the model plus the application plus compute. That is the company, the offer, and the message.</p>
-      <p>Enter the web address served by your Windows-owned runtime.</p>
+      <div class="mark" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 64 64"><g transform="translate(8.96 8.96) scale(0.461)"><path fill="#F5F5F7" d="M16 44A20 20 0 0 1 56 44L44 44A8 8 0 0 0 28 44ZM44 44A20 20 0 0 1 84 44L72 44A8 8 0 0 0 56 44ZM16 44L28 44L28 65Q28 74.02 31 76L13 76Q16 74.02 16 65ZM44 44L56 44L56 65Q56 74.02 59 76L41 76Q44 74.02 44 65ZM72 44L84 44L84 65Q84 74.02 87 76L69 76Q72 74.02 72 65Z"/></g></svg></div>
+      <h1>Connect to MeshVault</h1>
+      <p>Enter the address of your MeshVault server. The desktop app connects to it and remembers it for next time.</p>
       <form id="server-form">
         <label for="server-origin">Server address</label>
-        <input id="server-origin" name="server-origin" type="url" inputmode="url" autocomplete="url" placeholder="https://meshbot.example.com" required />
+        <input id="server-origin" name="server-origin" type="url" inputmode="url" autocomplete="url" placeholder="https://meshvault.example.com" required />
         <button id="connect" type="submit">Connect</button>
         <button id="bot-mode" class="secondary" type="button">Open Bot Mode</button>
       </form>
       <div id="status" role="status" aria-live="polite"></div>
-      <p id="hint">HTTPS is required. HTTP is allowed only for a server on this Mac.</p>
+      <p id="hint">HTTPS is required. HTTP is allowed only for a server on this computer.</p>
     </main>
     <script src="connect.js"></script>
   </body>

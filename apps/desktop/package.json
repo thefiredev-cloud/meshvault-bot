@@ -2,17 +2,23 @@
   "name": "@meshbot/desktop",
   "version": "0.1.0",
   "license": "Apache-2.0",
+  "description": "MeshVault desktop client",
+  "author": "The Fire Dev LLC",
+  "homepage": "https://meshvault.ai",
   "type": "module",
   "main": "dist/main.js",
   "scripts": {
     "dev": "pnpm build && electron .",
-    "build": "tsc -p tsconfig.json && cp src/preload.cjs src/connect.html src/connect.js src/bots.html src/bots.js dist/",
-    "pack": "pnpm build && electron-builder --mac --win --linux",
+    "build": "node scripts/copy-static.mjs sync && tsc -p tsconfig.json && node scripts/copy-static.mjs static",
+    "pack": "pnpm build && electron-builder --mac --win --linux --publish never",
+    "pack:linux": "pnpm build && electron-builder --linux --publish never",
+    "pack:mac": "pnpm build && electron-builder --mac --publish never",
+    "pack:win": "pnpm build && electron-builder --win --publish never",
     "pack:dir": "pnpm build && electron-builder --dir",
     "release:mac:check": "node scripts/check-macos-release.mjs",
     "release:mac:test": "node scripts/check-macos-release.mjs --self-test",
     "release:mac": "pnpm release:mac:check && pnpm build && electron-builder --mac --config electron-builder.release.mjs",
-    "check": "tsc --noEmit -p tsconfig.json",
+    "check": "node scripts/copy-static.mjs sync && tsc --noEmit -p tsconfig.json",
     "test": "vitest run --root ../.. apps/desktop/src"
   },
   "dependencies": {
@@ -25,8 +31,12 @@
     "vitest": "^4.1.10"
   },
   "build": {
-    "appId": "ai.meshbot.desktop",
+    "appId": "ai.meshvault.desktop",
     "productName": "MeshVault",
+    "executableName": "meshvault",
+    "artifactName": "MeshVault-${version}-${platform}-${arch}.${ext}",
+    "copyright": "Copyright (c) 2026 The Fire Dev LLC. Apache-2.0.",
+    "publish": null,
     "directories": {
       "output": "out",
       "buildResources": "assets"
@@ -54,10 +64,21 @@
         "nsis"
       ]
     },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "MeshVault"
+    },
     "linux": {
       "icon": "assets/icon.png",
+      "category": "Network",
+      "maintainer": "The Fire Dev LLC",
+      "vendor": "The Fire Dev LLC",
+      "synopsis": "MeshVault desktop client",
       "target": [
-        "AppImage"
+        "AppImage",
+        "deb"
       ]
     }
   }

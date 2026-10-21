@@ -18,6 +18,7 @@ apps/**/data
 apps/web/dist
 apps/desktop/dist
 apps/desktop/out
+apps/desktop/src/brand.ts
 apps/mobile/.expo
 apps/mobile/dist
 packages/db/src/generated

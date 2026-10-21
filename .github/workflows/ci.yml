@@ -46,3 +46,45 @@ jobs:
         env:
           DATABASE_URL: postgres://meshbot:meshbot@127.0.0.1:5433/meshbot
       - run: pnpm verify:fast
+
+  # Unsigned desktop packages on every OS the app ships to. Signing and
+  # notarization stay in `release:mac` and need the owner's certificates.
+  desktop:
+    name: desktop (${{ matrix.os }})
+    needs: [check]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            script: pack:linux
+            artifacts: |
+              apps/desktop/out/*.AppImage
+              apps/desktop/out/*.deb
+          - os: macos-latest
+            script: pack:mac
+            artifacts: |
+              apps/desktop/out/*.dmg
+              apps/desktop/out/*.zip
+          - os: windows-latest
+            script: pack:win
+            artifacts: |
+              apps/desktop/out/*.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - run: pnpm --filter @meshbot/desktop test
+      - run: pnpm --filter @meshbot/desktop release:mac:test
+      - run: pnpm --filter @meshbot/desktop ${{ matrix.script }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: meshvault-desktop-${{ matrix.os }}
+          if-no-files-found: error
+          retention-days: 14
+          path: ${{ matrix.artifacts }}
