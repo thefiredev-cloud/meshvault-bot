@@ -1,9 +1,9 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { MESHVAULT_NAME, MESHVAULT_SELL } from "@meshbot/contracts";
 import { app, BrowserWindow, ipcMain, Menu } from "electron";
 import { createBotModeRuntime } from "./bot-mode.js";
+import { MESHVAULT_NAME, MESHVAULT_SELL } from "./brand.js";
 import {
   normalizeServerOrigin,
   readSavedServerOrigin,
@@ -161,8 +161,10 @@ app.whenReady().then(() => {
   const botMode = createBotModeRuntime(path.join(app.getPath("userData"), "bot-mode.json"));
   app.setAboutPanelOptions({
     applicationName: MESHVAULT_NAME,
-    copyright: "FireDev LLC dba MeshVault",
+    applicationVersion: app.getVersion(),
+    copyright: "Copyright (c) 2026 The Fire Dev LLC",
     credits: MESHVAULT_SELL,
+    website: "https://meshvault.ai",
   });
   const icon = developmentIcon();
   if (process.platform === "darwin" && icon) app.dock?.setIcon(icon);
