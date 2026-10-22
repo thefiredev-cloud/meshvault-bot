@@ -21,7 +21,8 @@
       "!**/data",
       "!**/*.astro",
       "!**/apps/www",
-      "!**/vendor"
+      "!**/vendor",
+      "!**/docs/architecture"
     ]
   },
   "formatter": {

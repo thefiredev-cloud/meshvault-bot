@@ -1,0 +1,21 @@
+stateDiagram-v2
+  direction LR
+  [*] --> queued
+  queued --> leased
+  queued --> cancelled
+  leased --> running
+  leased --> queued
+  leased --> cancelled
+  running --> waiting_input
+  running --> waiting_takeover
+  running --> completed
+  running --> failed
+  running --> cancelled
+  running --> leased
+  waiting_input --> queued
+  waiting_input --> cancelled
+  waiting_takeover --> queued
+  waiting_takeover --> cancelled
+  failed --> queued
+  completed --> [*]
+  cancelled --> [*]

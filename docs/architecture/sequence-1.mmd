@@ -1,0 +1,25 @@
+sequenceDiagram
+  autonumber
+  actor owner as Owner
+  participant api as API
+  participant db as Postgres
+  participant worker as Worker
+  participant gw as Action gateway
+  participant sup as Supervisor
+  participant comp as Bot computer
+  owner->>api: send message (/rpc)
+  api->>api: session and membership check
+  api->>db: create queued run
+  api-)worker: run.continue job
+  worker->>db: lease run (fenced)
+  worker->>gw: act: computer or tool call
+  alt policy allows
+    gw->>sup: POST /computers/:id/exec (token)
+    sup->>comp: docker exec
+    gw->>db: audit: computer.action_allowed
+  else denied or no rule
+    gw->>db: audit: computer.action_refused
+    gw-->>worker: refusal with reason
+  end
+  worker->>db: run completed or waiting
+  api-->>owner: result
