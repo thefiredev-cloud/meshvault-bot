@@ -314,7 +314,7 @@ Every path below exists at the pinned commit; links are relative to `docs/`.
 | [`packages/db/prisma/schema.prisma`](../packages/db/prisma/schema.prisma) | Data model. |
 | [`README.md`](../README.md) | Fork scope, providers, run modes, desktop and iOS release paths. |
 
-Collected mechanically by the kit ([`architecture/facts.json`](architecture/facts.json), not hand-edited):
+Collected mechanically by the kit (not hand-edited):
 
 - entry points: `start`, `dev`, `test`, `@meshbot/desktop`, `dev`, `build`
 - CI: `.github/workflows/ci.yml`
