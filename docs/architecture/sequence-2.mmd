@@ -1,0 +1,12 @@
+sequenceDiagram
+  autonumber
+  participant gq as Graphile queue
+  participant worker as Worker
+  participant db as Postgres
+  participant sup as Supervisor
+  gq->>worker: routine.wakeup(routineId)
+  worker->>db: load routine and bot
+  worker->>worker: executor.wakeRoutine
+  worker->>sup: ensure computer is up
+  gq-)worker: computer.sleep(botId) later
+  worker->>sup: stop computer if idle

@@ -216,6 +216,38 @@ See `docs/self-host.md`. Cloud and self-hosted editions share the same applicati
 
 Upstream and license records: [`UPSTREAM.md`](./UPSTREAM.md) · [`NOTICE`](./NOTICE)
 
+<!-- arch:begin -->
+## Architecture
+
+A self-hostable app where each AI bot keeps its own thread, memory, routines and sandboxed computer; web, desktop and iOS clients share one API.
+
+```mermaid
+flowchart LR
+  owner(["Bot owner<br/>web, desktop, iOS"]):::actor
+  api["API :3100<br/>Hono + oRPC + auth"]:::app
+  db[("Postgres<br/>state + job queue")]:::store
+  worker["Worker<br/>wakes bots, runs"]:::job
+  gateway["Action gateway<br/>policy + audit"]:::app
+  sup["Sandbox supervisor<br/>Docker, :7091"]:::app
+  computer["Bot computers<br/>one container per bot"]:::app
+  models{{"Model providers<br/>Qwen, OpenRouter, ..."}}:::ext
+  owner -->|"chat, approve"| api
+  api -->|"state"| db
+  worker -->|"jobs"| db
+  worker -->|"every action"| gateway
+  gateway -->|"if allowed"| sup
+  sup -->|"creates, drives"| computer
+  worker -->|"thinks"| models
+  classDef actor fill:#fde68a,stroke:#b45309,color:#111827
+  classDef app fill:#bfdbfe,stroke:#1d4ed8,color:#0b1220
+  classDef ext fill:#e5e7eb,stroke:#4b5563,color:#0b1220,stroke-dasharray:4 3
+  classDef job fill:#fbcfe8,stroke:#be185d,color:#0b1220
+  classDef store fill:#bbf7d0,stroke:#15803d,color:#0b1220
+```
+
+[Full architecture](docs/ARCHITECTURE.md) · Hi-res: [SVG](docs/architecture/whiteboard.svg) · [PNG 3x](docs/architecture/whiteboard@3x.png) · [dark PNG](docs/architecture/whiteboard.dark@3x.png) · [Explorable (Archify)](docs/architecture/meshvault-bot.archify.html) · [Graphify report](docs/architecture/graphify/GRAPH_REPORT.md)
+<!-- arch:end -->
+
 ## License
 
 Apache-2.0, inherited from Rakazo. See [`LICENSE`](./LICENSE). Vendored Hermes Agent code is MIT; attributions are in [`NOTICE`](./NOTICE).

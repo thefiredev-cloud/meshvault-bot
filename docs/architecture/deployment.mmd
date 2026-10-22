@@ -1,0 +1,22 @@
+flowchart LR
+  ci["GitHub Actions (ci)"]:::job
+  e2b{{"E2B (public deployments)"}}:::ext
+  subgraph host_compose["Host running docker compose"]
+    pg[("postgres:16<br/>127.0.0.1:5433")]:::store
+    api["api<br/>:3100"]:::app
+    worker["worker<br/>queue + 5 s recovery"]:::job
+    web["web (vite preview)<br/>:5173"]:::app
+    sup["supervisor<br/>:7091, docker.sock"]:::app
+    comp["bot computers<br/>per bot, on demand"]:::app
+  end
+  web -->|"proxy"| api
+  api -->|"SQL"| pg
+  worker -->|"jobs"| pg
+  api -->|"HTTP + token"| sup
+  sup -->|"docker"| comp
+  ci -.->|"verify, desktop matrix"| api
+  sup -.->|"alt"| e2b
+  classDef app fill:#bfdbfe,stroke:#1d4ed8,color:#0b1220
+  classDef ext fill:#e5e7eb,stroke:#4b5563,color:#0b1220,stroke-dasharray:4 3
+  classDef job fill:#fbcfe8,stroke:#be185d,color:#0b1220
+  classDef store fill:#bbf7d0,stroke:#15803d,color:#0b1220

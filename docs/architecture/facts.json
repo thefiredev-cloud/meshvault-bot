@@ -1,0 +1,836 @@
+{
+ "repo": "meshvault-bot",
+ "files_tracked": 445,
+ "head": "da5823b27ff0a1ac248413942d6fd0f1e3a6d4ab",
+ "origin": "https://github.com/thefiredev-cloud/meshvault-bot.git",
+ "default_branch": "main",
+ "languages": [
+  [
+   ".ts",
+   190
+  ],
+  [
+   ".mjs",
+   51
+  ],
+  [
+   ".json",
+   48
+  ],
+  [
+   ".tsx",
+   32
+  ],
+  [
+   ".png",
+   19
+  ],
+  [
+   ".md",
+   18
+  ],
+  [
+   ".rs",
+   8
+  ],
+  [
+   ".astro",
+   7
+  ]
+ ],
+ "readme": "README.md",
+ "readme_first_paragraph": "MeshVault Bot is a self-hostable bot application for people who want AI bots that each keep their own thread, memory, routines, and computer. The computer is a Docker container by default or an E2B sandbox. It ships web, Electron desktop, and Expo iOS clients. It is in beta and aimed at developers who run it themselves.",
+ "top_dirs": [
+  ".agents",
+  ".github",
+  "apps",
+  "docs",
+  "infra",
+  "native",
+  "packages",
+  "scripts",
+  "vendor"
+ ],
+ "manifests": [
+  {
+   "path": "apps/api/package.json",
+   "kind": "npm",
+   "name": "@meshbot/api"
+  },
+  {
+   "path": "apps/desktop/package.json",
+   "kind": "npm",
+   "name": "@meshbot/desktop"
+  },
+  {
+   "path": "apps/mobile/package.json",
+   "kind": "npm",
+   "name": "@meshbot/mobile"
+  },
+  {
+   "path": "apps/web/package.json",
+   "kind": "npm",
+   "name": "@meshbot/web"
+  },
+  {
+   "path": "apps/worker/package.json",
+   "kind": "npm",
+   "name": "@meshbot/worker"
+  },
+  {
+   "path": "apps/www/package.json",
+   "kind": "npm",
+   "name": "@meshbot/www"
+  },
+  {
+   "path": "infra/sandboxes/supervisor/package.json",
+   "kind": "npm",
+   "name": "@meshbot/sandbox-supervisor"
+  },
+  {
+   "path": "native/meshbot-viewer-core/Cargo.toml",
+   "kind": "cargo",
+   "name": "meshbot-viewer-core"
+  },
+  {
+   "path": "package.json",
+   "kind": "npm",
+   "name": "meshbot"
+  },
+  {
+   "path": "packages/adapter-kit/package.json",
+   "kind": "npm",
+   "name": "@meshbot/adapter-kit"
+  },
+  {
+   "path": "packages/adapters/package.json",
+   "kind": "npm",
+   "name": "@meshbot/adapters"
+  },
+  {
+   "path": "packages/auth/package.json",
+   "kind": "npm",
+   "name": "@meshbot/auth"
+  },
+  {
+   "path": "packages/chat-ui/package.json",
+   "kind": "npm",
+   "name": "@meshbot/chat-ui"
+  },
+  {
+   "path": "packages/contracts/package.json",
+   "kind": "npm",
+   "name": "@meshbot/contracts"
+  },
+  {
+   "path": "packages/core/package.json",
+   "kind": "npm",
+   "name": "@meshbot/core"
+  },
+  {
+   "path": "packages/db/package.json",
+   "kind": "npm",
+   "name": "@meshbot/db"
+  },
+  {
+   "path": "packages/gateway/package.json",
+   "kind": "npm",
+   "name": "@meshbot/gateway"
+  },
+  {
+   "path": "packages/memory/package.json",
+   "kind": "npm",
+   "name": "@meshbot/memory"
+  },
+  {
+   "path": "packages/testkit/package.json",
+   "kind": "npm",
+   "name": "@meshbot/testkit"
+  },
+  {
+   "path": "packages/ui-tokens/package.json",
+   "kind": "npm",
+   "name": "@meshbot/ui-tokens"
+  },
+  {
+   "path": "packages/ui-web/package.json",
+   "kind": "npm",
+   "name": "@meshbot/ui-web"
+  },
+  {
+   "path": "vendor/hermes-agent/apps/desktop/package.json",
+   "kind": "npm",
+   "name": "hermes"
+  }
+ ],
+ "libs": [
+  {
+   "category": "web",
+   "label": "Hono",
+   "dep": "hono",
+   "manifest": "apps/api/package.json"
+  },
+  {
+   "category": "web",
+   "label": "React",
+   "dep": "react",
+   "manifest": "apps/mobile/package.json"
+  },
+  {
+   "category": "web",
+   "label": "Vite",
+   "dep": "vite",
+   "manifest": "apps/web/package.json"
+  },
+  {
+   "category": "proto",
+   "label": "Model Context Protocol",
+   "dep": "@modelcontextprotocol/client",
+   "manifest": "packages/adapters/package.json"
+  },
+  {
+   "category": "store",
+   "label": "PostgreSQL",
+   "dep": "pg",
+   "manifest": "packages/db/package.json"
+  },
+  {
+   "category": "store",
+   "label": "SQL database (Prisma)",
+   "dep": "prisma",
+   "manifest": "packages/db/package.json"
+  }
+ ],
+ "entry_points": [
+  {
+   "kind": "script",
+   "name": "start",
+   "path": "tsx src/index.ts",
+   "from": "apps/api/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "dev",
+   "path": "tsx watch src/index.ts",
+   "from": "apps/api/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run --passWithNoTests",
+   "from": "apps/api/package.json"
+  },
+  {
+   "kind": "main",
+   "name": "@meshbot/desktop",
+   "path": "dist/main.js",
+   "from": "apps/desktop/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "dev",
+   "path": "pnpm build && electron .",
+   "from": "apps/desktop/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "build",
+   "path": "node scripts/copy-static.mjs sync && tsc -p tsconfig.json && node scripts/copy-static.mjs static",
+   "from": "apps/desktop/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run --root ../.. apps/desktop/src",
+   "from": "apps/desktop/package.json"
+  },
+  {
+   "kind": "main",
+   "name": "@meshbot/mobile",
+   "path": "expo-router/entry",
+   "from": "apps/mobile/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "start",
+   "path": "expo start",
+   "from": "apps/mobile/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run --passWithNoTests",
+   "from": "apps/mobile/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "dev",
+   "path": "vite --configLoader runner",
+   "from": "apps/web/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "build",
+   "path": "vite build --configLoader runner",
+   "from": "apps/web/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run --root ../.. apps/web/src",
+   "from": "apps/web/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "start",
+   "path": "tsx src/index.ts",
+   "from": "apps/worker/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "dev",
+   "path": "tsx watch src/index.ts",
+   "from": "apps/worker/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run --passWithNoTests",
+   "from": "apps/worker/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "dev",
+   "path": "astro dev",
+   "from": "apps/www/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "build",
+   "path": "astro build",
+   "from": "apps/www/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "start",
+   "path": "tsx src/index.ts",
+   "from": "infra/sandboxes/supervisor/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "dev",
+   "path": "tsx watch src/index.ts",
+   "from": "infra/sandboxes/supervisor/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run --passWithNoTests",
+   "from": "infra/sandboxes/supervisor/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "dev",
+   "path": "turbo dev --filter=@meshbot/api --filter=@meshbot/worker --filter=@meshbot/web --filter=@meshbot/san",
+   "from": "package.json"
+  },
+  {
+   "kind": "script",
+   "name": "build",
+   "path": "turbo build",
+   "from": "package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run",
+   "from": "packages/adapter-kit/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run",
+   "from": "packages/adapters/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run",
+   "from": "packages/auth/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run --root ../.. packages/chat-ui/src",
+   "from": "packages/chat-ui/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run --passWithNoTests",
+   "from": "packages/contracts/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run",
+   "from": "packages/core/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run --passWithNoTests",
+   "from": "packages/db/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run",
+   "from": "packages/gateway/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run",
+   "from": "packages/memory/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run",
+   "from": "packages/testkit/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run --passWithNoTests",
+   "from": "packages/ui-tokens/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run --passWithNoTests",
+   "from": "packages/ui-web/package.json"
+  },
+  {
+   "kind": "main",
+   "name": "hermes",
+   "path": "dist/electron-main.mjs",
+   "from": "vendor/hermes-agent/apps/desktop/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "start",
+   "path": "npm run build && electron .",
+   "from": "vendor/hermes-agent/apps/desktop/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "dev",
+   "path": "concurrently -k \"npm:dev:renderer\" \"npm:dev:electron\"",
+   "from": "vendor/hermes-agent/apps/desktop/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "build",
+   "path": "node scripts/assert-root-install.mjs && node scripts/write-build-stamp.mjs && vite build && node scr",
+   "from": "vendor/hermes-agent/apps/desktop/package.json"
+  },
+  {
+   "kind": "script",
+   "name": "test",
+   "path": "vitest run",
+   "from": "vendor/hermes-agent/apps/desktop/package.json"
+  }
+ ],
+ "services": [
+  {
+   "kind": "dockerfile",
+   "path": "infra/compose/Dockerfile",
+   "expose": [
+    "3100 5173 7091"
+   ],
+   "from": [
+    "node:22-bookworm"
+   ]
+  },
+  {
+   "kind": "compose-service",
+   "path": "infra/compose/docker-compose.yml",
+   "name": "postgres",
+   "image": "postgres:16",
+   "build": false,
+   "ports": [
+    "127.0.0.1:5433:5432"
+   ]
+  },
+  {
+   "kind": "compose-service",
+   "path": "infra/compose/docker-compose.yml",
+   "name": "supervisor",
+   "image": null,
+   "build": true,
+   "ports": []
+  },
+  {
+   "kind": "compose-service",
+   "path": "infra/compose/docker-compose.yml",
+   "name": "computer",
+   "image": "meshbot/computer:local",
+   "build": true,
+   "ports": []
+  },
+  {
+   "kind": "compose-service",
+   "path": "infra/compose/docker-compose.yml",
+   "name": "api",
+   "image": null,
+   "build": true,
+   "ports": [
+    "3100:3100"
+   ]
+  },
+  {
+   "kind": "compose-service",
+   "path": "infra/compose/docker-compose.yml",
+   "name": "worker",
+   "image": null,
+   "build": true,
+   "ports": []
+  },
+  {
+   "kind": "compose-service",
+   "path": "infra/compose/docker-compose.yml",
+   "name": "web",
+   "image": null,
+   "build": true,
+   "ports": [
+    "5173:5173"
+   ]
+  },
+  {
+   "kind": "dockerfile",
+   "path": "infra/sandboxes/computer/Dockerfile",
+   "expose": [
+    "6080"
+   ],
+   "from": [
+    "debian:bookworm-slim"
+   ]
+  },
+  {
+   "kind": "dockerfile",
+   "path": "infra/sandboxes/desktop/Dockerfile",
+   "expose": [],
+   "from": [
+    "debian:bookworm-slim"
+   ]
+  },
+  {
+   "kind": "dockerfile",
+   "path": "infra/sandboxes/supervisor/Dockerfile",
+   "expose": [],
+   "from": [
+    "node:22-bookworm-slim"
+   ]
+  }
+ ],
+ "deploy_targets": [],
+ "ci_workflows": [
+  {
+   "path": ".github/workflows/ci.yml",
+   "name": "ci",
+   "on": [
+    "push",
+    "pull_request"
+   ],
+   "jobs": [
+    "lint",
+    "check",
+    "verify-fast",
+    "desktop"
+   ],
+   "deploy_hints": []
+  }
+ ],
+ "cron_and_timers": [],
+ "files_scanned": 305,
+ "external_hosts": [
+  {
+   "host": "github.com",
+   "count": 11,
+   "first": ".github/ISSUE_TEMPLATE/bug.yml:10"
+  },
+  {
+   "host": "meshvault.ai",
+   "count": 9,
+   "first": ".agents/context.json:228"
+  },
+  {
+   "host": "api.stripe.com",
+   "count": 1,
+   "first": "apps/api/src/commerce.ts:218"
+  },
+  {
+   "host": "api.resend.com",
+   "count": 1,
+   "first": "apps/api/src/commerce.ts:248"
+  },
+  {
+   "host": "api.github.com",
+   "count": 1,
+   "first": "apps/www/src/site.ts:7"
+  },
+  {
+   "host": "biomejs.dev",
+   "count": 1,
+   "first": "biome.json:2"
+  },
+  {
+   "host": "connect.composio.dev",
+   "count": 1,
+   "first": "packages/adapters/src/composio-connector.ts:28"
+  },
+  {
+   "host": "www.google.com",
+   "count": 1,
+   "first": "packages/adapters/src/e2b-sandbox.ts:46"
+  },
+  {
+   "host": "exp.host",
+   "count": 1,
+   "first": "packages/adapters/src/expo-push.ts:42"
+  },
+  {
+   "host": "dashscope-intl.aliyuncs.com",
+   "count": 1,
+   "first": "packages/core/src/model-env.ts:1"
+  },
+  {
+   "host": "ui.shadcn.com",
+   "count": 1,
+   "first": "packages/ui-web/components.json:2"
+  },
+  {
+   "host": "turbo.build",
+   "count": 1,
+   "first": "turbo.json:2"
+  }
+ ],
+ "env_var_names": [
+  {
+   "name": "AGENT_RUNTIME",
+   "first": "apps/worker/src/index.ts"
+  },
+  {
+   "name": "API_PORT",
+   "first": "packages/testkit/src/cli/verify.ts"
+  },
+  {
+   "name": "API_PROXY_TARGET",
+   "first": "apps/web/vite.config.ts"
+  },
+  {
+   "name": "API_URL",
+   "first": "apps/worker/src/index.ts"
+  },
+  {
+   "name": "BETTER_AUTH_SECRET",
+   "first": "apps/web/vite.config.ts"
+  },
+  {
+   "name": "BETTER_AUTH_URL",
+   "first": "packages/testkit/src/cli/verify.ts"
+  },
+  {
+   "name": "COMPOSIO_API_KEY",
+   "first": "packages/testkit/src/verify-fast-env.test.ts"
+  },
+  {
+   "name": "DATABASE_URL",
+   "first": "apps/worker/src/index.ts"
+  },
+  {
+   "name": "DATA_DIR",
+   "first": "apps/api/src/load-root-env.ts"
+  },
+  {
+   "name": "DOCKER_SOCKET",
+   "first": "infra/sandboxes/supervisor/src/index.ts"
+  },
+  {
+   "name": "E2B_API_KEY",
+   "first": "apps/worker/src/index.ts"
+  },
+  {
+   "name": "EXPO_PUBLIC_API_URL",
+   "first": "apps/mobile/lib/endpoint.ts"
+  },
+  {
+   "name": "EXPO_PUBLIC_PROJECT_ID",
+   "first": "apps/mobile/lib/push.ts"
+  },
+  {
+   "name": "HOSTNAME",
+   "first": "infra/sandboxes/supervisor/src/index.ts"
+  },
+  {
+   "name": "MESHBOT_COMPUTER_CONTEXT",
+   "first": "infra/sandboxes/supervisor/src/index.ts"
+  },
+  {
+   "name": "MESHBOT_COMPUTER_IMAGE",
+   "first": "infra/sandboxes/supervisor/src/computer-spec.ts"
+  },
+  {
+   "name": "MESHBOT_EXPO_OWNER",
+   "first": "apps/mobile/lib/release-config.test.ts"
+  },
+  {
+   "name": "MESHBOT_RELEASE_PROFILE",
+   "first": "apps/mobile/app.config.js"
+  },
+  {
+   "name": "MESHBOT_WEB_URL",
+   "first": "apps/desktop/src/main.ts"
+  },
+  {
+   "name": "NODE_ENV",
+   "first": "apps/worker/src/index.ts"
+  },
+  {
+   "name": "OPENROUTER_API_KEY",
+   "first": "packages/testkit/src/cli/verify.ts"
+  },
+  {
+   "name": "PLAYWRIGHT_BASE_URL",
+   "first": "apps/web/playwright.config.ts"
+  },
+  {
+   "name": "SANDBOX_IDLE_MS",
+   "first": "packages/adapters/src/computer-idle.test.ts"
+  },
+  {
+   "name": "SANDBOX_PROVIDER",
+   "first": "apps/worker/src/index.ts"
+  },
+  {
+   "name": "SANDBOX_SCREEN_HOST",
+   "first": "infra/sandboxes/supervisor/src/computer-spec.ts"
+  },
+  {
+   "name": "SANDBOX_SCREEN_NETWORK",
+   "first": "infra/sandboxes/supervisor/src/index.ts"
+  },
+  {
+   "name": "SANDBOX_SUPERVISOR_URL",
+   "first": "apps/worker/src/index.ts"
+  },
+  {
+   "name": "SIGNUPS_ENABLED",
+   "first": "packages/testkit/src/cli/verify.ts"
+  },
+  {
+   "name": "SUPERVISOR_HOST",
+   "first": "infra/sandboxes/supervisor/src/index.ts"
+  },
+  {
+   "name": "SUPERVISOR_PORT",
+   "first": "infra/sandboxes/supervisor/src/index.ts"
+  },
+  {
+   "name": "VERIFY_PROVIDERS",
+   "first": "packages/testkit/src/cli/verify.ts"
+  },
+  {
+   "name": "WAKEUP_DRIVER",
+   "first": "apps/worker/src/index.ts"
+  },
+  {
+   "name": "WEB_ORIGIN",
+   "first": "packages/testkit/src/cli/verify.ts"
+  },
+  {
+   "name": "WEB_PORT",
+   "first": "apps/web/playwright.config.ts"
+  }
+ ],
+ "ci_secret_names": [],
+ "data_store_signals": {
+  "postgres": [
+   ".github/workflows/ci.yml:36",
+   "infra/compose/docker-compose.yml:53",
+   "packages/db/prisma.config.ts:18",
+   "packages/db/prisma/migrations/0001_init/migration.sql:5"
+  ],
+  "SQL migrations/schema": [
+   "packages/db/prisma/migrations/0001_init/migration.sql",
+   "packages/db/prisma/migrations/0002_bot_parent/migration.sql",
+   "packages/db/prisma/migrations/0003_computer_host/migration.sql",
+   "packages/db/prisma/migrations/0004_bot_models/migration.sql"
+  ],
+  "ORM schema": [
+   "packages/db/prisma/schema.prisma"
+  ]
+ },
+ "auth_signals": {
+  "Bearer/Authorization header": [
+   "apps/api/src/commerce.ts:221",
+   "apps/mobile/lib/api.ts:65",
+   "infra/sandboxes/supervisor/src/index.ts:372",
+   "packages/adapters/src/composio-connector.ts:11"
+  ],
+  "API key header": [
+   "apps/web/src/pages/Onboarding.tsx:39",
+   "packages/adapters/src/pi-models.ts:8",
+   "packages/adapters/src/pi-oauth.ts:48",
+   "packages/contracts/src/rpc.ts:52"
+  ],
+  "OAuth": [
+   ".agents/context.json:293",
+   "apps/api/src/app.ts:14",
+   "apps/api/src/router.ts:13",
+   "apps/web/src/pages/Onboarding.tsx:39"
+  ],
+  "Auth middleware": [
+   "apps/web/src/screen-proxy.ts:8",
+   "apps/web/vite.config.ts:20",
+   "packages/adapters/src/e2b-sandbox.ts:86"
+  ],
+  "Binds loopback only": [
+   ".github/workflows/ci.yml:36",
+   "apps/api/src/app.ts:66",
+   "apps/api/src/env.ts:45",
+   "apps/api/src/index.ts:12"
+  ],
+  "Binds all interfaces": [
+   "apps/web/vite.config.ts:138",
+   "apps/www/astro.config.mjs:18",
+   "infra/compose/docker-compose.yml:26",
+   "infra/sandboxes/computer/start.sh:78"
+  ],
+  "CORS": [
+   "apps/api/src/app.ts:23"
+  ],
+  "Secrets from env or CI secrets": [
+   "apps/api/src/app.ts:42",
+   "apps/api/src/commerce.ts:204",
+   "apps/api/src/env.ts:37",
+   "apps/api/src/load-root-env.ts:11"
+  ],
+  "Approval/consent gate": [
+   ".agents/context.json:82",
+   "apps/api/src/router.ts:33",
+   "apps/mobile/app/thread.tsx:14",
+   "apps/mobile/lib/approval.ts:3"
+  ]
+ },
+ "tests": [
+  "apps/api/src/brain.test.ts",
+  "apps/api/src/commerce.test.ts",
+  "apps/api/src/env.test.ts"
+ ],
+ "docs_files": [
+  "docs/self-host.md"
+ ]
+}

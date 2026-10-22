@@ -1,0 +1,41 @@
+flowchart TB
+  owner(["Bot owner (web, desktop, iOS)"]):::actor
+  models{{"Model providers (Qwen/DashScope, OpenRouter, ...)"}}:::ext
+  composio{{"Composio (plugins)"}}:::ext
+  e2b{{"E2B sandbox (optional)"}}:::ext
+  stripe{{"Checkout + install-lead endpoints"}}:::ext
+  subgraph SYSTEM["MeshVault Bot"]
+    clients["Web, Electron, Expo clients<br/>React 19 + Vite, Electron, Expo"]:::app
+    api["API<br/>Hono + oRPC, :3100"]:::app
+    auth["Better Auth<br/>session cookie or bearer"]:::app
+    worker["Worker<br/>Graphile Worker"]:::job
+    gateway["Action gateway<br/>packages/gateway"]:::app
+    supervisor["Sandbox supervisor<br/>Hono + dockerode, :7091"]:::app
+    computer["Bot computer<br/>Linux desktop container"]:::app
+    db[("Postgres<br/>Prisma, 7 migrations")]:::store
+    data[("DATA_DIR<br/>files")]:::store
+    viewer["meshbot-viewer-core<br/>Rust crate"]:::app
+    hermes["Hermes Agent (vendored)<br/>vendor/hermes-agent snapshot"]:::app
+  end
+  owner -->|"uses"| clients
+  clients -->|"/rpc, /api/auth"| api
+  api -->|"session check"| auth
+  api -->|"Prisma"| db
+  api -->|"agent homes"| data
+  api -->|"SANDBOX_SUPERVISOR_URL"| supervisor
+  api -->|"OAuth connect"| composio
+  api -->|"checkout, lead"| stripe
+  worker -->|"queue + runs"| db
+  worker -->|"act"| gateway
+  gateway -->|"allowed computer actions"| supervisor
+  gateway -->|"audit row"| db
+  supervisor -->|"docker create/exec"| computer
+  worker -->|"agent runtime calls"| models
+  supervisor -.->|"alt provider"| e2b
+  clients -.->|"desktop Bot Mode"| hermes
+  clients -.->|"native viewer"| viewer
+  classDef actor fill:#fde68a,stroke:#b45309,color:#111827
+  classDef app fill:#bfdbfe,stroke:#1d4ed8,color:#0b1220
+  classDef ext fill:#e5e7eb,stroke:#4b5563,color:#0b1220,stroke-dasharray:4 3
+  classDef job fill:#fbcfe8,stroke:#be185d,color:#0b1220
+  classDef store fill:#bbf7d0,stroke:#15803d,color:#0b1220

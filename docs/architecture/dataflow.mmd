@@ -1,0 +1,20 @@
+flowchart LR
+  client["Clients"]:::app
+  api["API"]:::app
+  db[("Postgres")]:::store
+  worker["Worker"]:::job
+  gw["Gateway"]:::app
+  audit[("action_audits")]:::store
+  home[("DATA_DIR homes")]:::store
+  models{{"Model providers"}}:::ext
+  client -->|"messages"| api
+  api -->|"runs, bots"| db
+  db -->|"queued runs"| worker
+  worker -->|"prompts"| models
+  worker -->|"proposed actions"| gw
+  gw -->|"decision"| audit
+  api -->|"agent home"| home
+  classDef app fill:#bfdbfe,stroke:#1d4ed8,color:#0b1220
+  classDef ext fill:#e5e7eb,stroke:#4b5563,color:#0b1220,stroke-dasharray:4 3
+  classDef job fill:#fbcfe8,stroke:#be185d,color:#0b1220
+  classDef store fill:#bbf7d0,stroke:#15803d,color:#0b1220
