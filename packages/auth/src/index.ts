@@ -6,7 +6,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { APIError } from "better-auth/api";
 import { bearer, organization } from "better-auth/plugins";
 
-// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+// Modified by thefiredev-cloud on 2026-08-13.
 
 export interface AuthEnv {
   secret: string;
