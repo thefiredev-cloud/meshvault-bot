@@ -6,7 +6,7 @@ import type {
 } from "@meshbot/adapter-kit";
 import { parseBotMention } from "@meshbot/contracts";
 
-// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+// Modified by thefiredev-cloud on 2026-08-13.
 
 const running = new Map<string, AbortController>();
 

@@ -12,7 +12,7 @@ import {
   stripSensitiveHandshakeHeaders,
 } from "./src/screen-proxy.js";
 
-// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+// Modified by thefiredev-cloud on 2026-08-13.
 
 const webPort = Number(process.env.WEB_PORT ?? 5173);
 

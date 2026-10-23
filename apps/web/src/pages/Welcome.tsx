@@ -2,7 +2,7 @@ import { MESHVAULT_NAME, MESHVAULT_SELL } from "@meshbot/contracts";
 import { useNavigate } from "react-router-dom";
 import { WindowChrome } from "./WindowChrome";
 
-// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+// Modified by thefiredev-cloud on 2026-08-13.
 
 export function WelcomePage() {
   const navigate = useNavigate();

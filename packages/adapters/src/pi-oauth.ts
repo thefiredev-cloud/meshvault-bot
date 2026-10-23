@@ -7,7 +7,7 @@ import type {
 } from "@earendil-works/pi-ai";
 import { piModels } from "./pi-registry.js";
 
-// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+// Modified by thefiredev-cloud on 2026-08-13.
 
 export const CHATGPT_OAUTH_PROVIDER = "openai-codex";
 export const COPILOT_OAUTH_PROVIDER = "github-copilot";

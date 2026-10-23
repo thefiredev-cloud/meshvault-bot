@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { rpc } from "../lib/rpc";
 import { CommercePanel } from "./CommerceOverlay";
 
-// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+// Modified by thefiredev-cloud on 2026-08-13.
 
 const QUESTIONS = [
   {

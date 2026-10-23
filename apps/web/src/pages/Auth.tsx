@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authClient } from "../lib/auth";
 
-// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+// Modified by thefiredev-cloud on 2026-08-13.
 
 export function AuthPage({ mode }: { mode: "in" | "up" }) {
   const navigate = useNavigate();
