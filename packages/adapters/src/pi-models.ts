@@ -3,7 +3,7 @@ import { registerGateway } from "./pi-gateway.js";
 import { DEVICE_CODE_PROVIDERS, DEVICE_CODE_SIGN_IN, isDeviceCodeProvider } from "./pi-oauth.js";
 import { piModels } from "./pi-registry.js";
 
-// Modified by FireDev LLC dba MeshVault on 2026-08-13.
+// Modified by thefiredev-cloud on 2026-08-13.
 
 export type PiCatalogAuth = "api-key" | "oauth" | "both";
 export type PiCatalogSignIn = typeof DEVICE_CODE_SIGN_IN;

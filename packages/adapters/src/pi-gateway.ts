@@ -1,4 +1,4 @@
-// Modified by FireDev LLC dba MeshVault on 2026-08-14.
+// Modified by thefiredev-cloud on 2026-08-14.
 //
 // Mesh Bot fleet gateway provider. The site promises "point a bot at Claude,
 // GPT, Grok, or a local model"; this is the local-model lane. Any
