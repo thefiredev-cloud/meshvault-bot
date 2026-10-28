@@ -1,26 +1,41 @@
-Mesh Bot
-Copyright 2026 thefiredev-cloud
+The Fire Dev LLC
+Proprietary and Confidential
 
-This product includes software developed as Rakazo
-(https://github.com/elie222/rakazo), Copyright 2026 Rakazo contributors,
-licensed under the Apache License, Version 2.0.
-See the License for the specific language governing permissions and
-limitations under the License.
+This repository is proprietary to The Fire Dev LLC.
 
-The original Rakazo NOTICE / attribution is retained as required by Apache-2.0.
+Copyright (c) 2026 The Fire Dev LLC. All rights reserved.
 
-This product includes Hermes Agent and Bot Mode developed by Nous Research
-(https://github.com/NousResearch/hermes-agent), Copyright 2025-2026 Nous Research,
-licensed under the MIT License. The vendored snapshot is `vendor/hermes-agent`
-at tag v2026.8.18 / v0.20.4. Bot Mode lives in-tree at
-`vendor/hermes-agent/apps/desktop/src/plugins/hermes-bots`. The Electron port
-also records the MIT LICENSE at `apps/desktop/src/plugins/hermes-bots/LICENSE`.
+OWNERSHIP
+- Original source code, documentation, designs and assets in this
+  repository are owned by The Fire Dev LLC.
+- Ownership is claimed as copyright in the expressive elements of the
+  Work and as trade secret in the non-public algorithms, data structures,
+  configuration, model weights, prompts and pricing logic.
 
-This product includes MIT skill-improve sources from
-https://github.com/NousResearch/hermes-agent-self-evolution (Copyright 2026
-Nous Research). Darwinian / AGPL code from that repo is not included.
+CONTRIBUTORS
+- Human contributors assign copyright to The Fire Dev LLC by written
+  present-tense assignment before or upon contributing.
+- AI coding agents are tools directed by The Fire Dev LLC. Output is
+  owned by The Fire Dev LLC to the extent human authorship is perceptible
+  in selection, arrangement and modification.
 
-This product's action gateway follows the architecture of OpenBot
-(https://github.com/CopilotKit/openbot), Copyright 2026 CopilotKit, licensed
-under the MIT License. MeshVault does not require CopilotKit Intelligence or
-COPILOTKIT_LICENSE_TOKEN. Threads and memory stay in MeshVault's PostgreSQL.
+TRADE SECRET
+- Non-public content of this repository is a trade secret of The Fire Dev
+  LLC. Access is limited to those bound by confidentiality obligations.
+- Disclosing proprietary content to a public consumer AI service may
+  destroy trade secret status. Use local or contractually confidential
+  inference for proprietary material.
+
+THIRD-PARTY COMPONENTS
+- Open source dependencies remain under their own licenses. See
+  dependency manifests and lockfiles.
+
+
+UPSTREAM SCOPE
+- This repository is derived from third-party open source code. The
+  upstream LICENSE in this repository continues to govern the upstream
+  code.
+- The Fire Dev LLC claims copyright only in its own original
+  contributions: modifications, additions, configuration and integration
+  work made by The Fire Dev LLC.
+- Nothing here relicenses upstream code under proprietary terms.
